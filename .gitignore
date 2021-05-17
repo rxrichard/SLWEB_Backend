@@ -1,7 +1,8 @@
 # Node modules
 node_modules
 
-public
+public/OS
+public/DOCS
 
 yarn.lock
 package-lock.json
