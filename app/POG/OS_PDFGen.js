@@ -1,8 +1,7 @@
 const Helpers = use("Helpers");
 
-exports.PDFGen = (config, Maq, ID, Dados, verified) => {
-
-//Coloco a configuração das bebibas nesse array aqui em cima porque no meio do obj do pdf fica uma bagunça
+exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
+  //Coloco a configuração das bebibas nesse array aqui em cima porque no meio do obj do pdf fica uma bagunça
   const configArray = [
     [
       { text: "Seleção", bold: true },
@@ -10,53 +9,90 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
       { text: "Medida", bold: true },
       { text: "Valor", bold: true },
       { text: "Tipo", bold: true },
+      { text: "Ativa", bold: true },
     ],
   ];
 
-  const detalhes = [
-    [{ text: "Modelo da Máquina: ", bold: true }, `${Maq.maquina}`],
-  ]
+  const contenedores = [];
 
-  if (Maq.maquina !== "LEI SA") {
-    detalhes.push(
-      [{ text: "Inibir copos: ", bold: true },
-      `${Maq.inibCopos ? "Sim" : "Não"}`]
-    )
+  Solicitacao.Contenedor.map((cont) =>
+    contenedores.push([{ text: defineContenedor(cont) }])
+  );
+
+  const detalhes = [
+    [{ text: "Modelo da Máquina: ", bold: true }, `${Solicitacao.Maquina}`],
+  ];
+
+  detalhes.push([
+    { text: "Máquina Corporativa: ", bold: true },
+    `${Solicitacao.Corporativa ? "Sim" : "Não"}`,
+  ]);
+
+  if (Solicitacao.Maquina !== "LEI SA") {
+    detalhes.push([
+      { text: "Inibir copos: ", bold: true },
+      `${Solicitacao.InibirCopos === true ? "Sim" : "Não"}`,
+    ]);
   }
 
-  detalhes.push([{ text: "Acompanha Gabinete: ", bold: true }, `${Maq.gabinete}`])
-  detalhes.push([{ text: "Abastecimento: ", bold: true }, `${Maq.abastecimento}`])
-  detalhes.push([{ text: "Sistema de Pagamento: ", bold: true },`${Maq.sisPagamento}`])
-  
-  if(Maq.sisPagamento === "Validador" || Maq.sisPagamento === "Cartão e Validador") {
-    detalhes.push(
-      [{ text: "Tipo de Validador: ", bold: true }, `${Maq.TValidador}`]
-    )
+  detalhes.push([
+    { text: "Acompanha Gabinete: ", bold: true },
+    `${Solicitacao.Gabinete ? "Sim" : "Não"}`,
+  ]);
+  detalhes.push([
+    { text: "Abastecimento: ", bold: true },
+    `${Solicitacao.Abastecimento}`,
+  ]);
+  detalhes.push([
+    { text: "Sistema de Pagamento: ", bold: true },
+    `${Solicitacao.Pagamento}`,
+  ]);
 
-    if(Maq.TValidador === "Ficha"){
-      detalhes.push([{ text: "Fichas: ", bold: true }, `${Maq.validador.toString()}`])
-    }else{
-      detalhes.push([{ text: "Moedas: ", bold: true }, `${Maq.validador.toString()}`])
-    }
-  } 
-  detalhes.push([{ text: "Antena Externa: ", bold: true }, `${Maq.ExtAnt}`])
-  detalhes.push([{ text: "Operadora do Chip da Telemetria: ", bold: true }, `${Maq.Chip}`])
+  if (
+    Solicitacao.Pagamento === "Validador" ||
+    Solicitacao.Pagamento === "Cartão e Validador"
+  ) {
+    detalhes.push([
+      { text: "Tipo de Validador: ", bold: true },
+      `${Solicitacao.TipoValidador}`,
+    ]);
 
-  config.map((bebida) => {
-    if (bebida.Bebida !== null) {
-      configArray.push([
-        `${bebida.Selecao}`,
-        `${bebida.Bebida.trim()} ${
-          bebida.Medida_Def ? bebida.Medida_Def.trim() : ""
-        } `,
-        `${bebida.Qtd_Def} ${bebida.Un.trim()}`,
-        `${bebida.PrecoMaq}`,
-        `${bebida.TProd}`,
+    if (Solicitacao.TipoValidador === "Ficha") {
+      detalhes.push([
+        { text: "Fichas: ", bold: true },
+        `${Solicitacao.Validador.toString()}`,
+      ]);
+    } else {
+      detalhes.push([
+        { text: "Moedas: ", bold: true },
+        `${Solicitacao.Validador.toString()}`,
       ]);
     }
+  }
+  detalhes.push([
+    { text: "Antena Externa: ", bold: true },
+    `${Solicitacao.AntExt ? "Sim" : "Não"}`,
+  ]);
+  detalhes.push([
+    { text: "Operadora do Chip da Telemetria: ", bold: true },
+    `${Solicitacao.Chip}`,
+  ]);
+
+  Solicitacao.Configuracao.map((bebida) => {
+    configArray.push([
+      `${bebida.selecao}`,
+      `${bebida.bebida.trim()}`,
+      `${bebida.medida}ML`,
+      `${Solicitacao.Pagamento === "Livre" ? "Livre" : bebida.valor}`,
+      `${bebida.tipo}`,
+      `${bebida.configura ? "Sim" : "Não"}`,
+    ]);
   });
 
-  Maq.Tel_Contato = Maq.Tel_Contato.replace(/()-/g, "")
+  Solicitacao.Telefone_Contato = Solicitacao.Telefone_Contato.replace(
+    /()-/g,
+    ""
+  );
 
   //obj que vai virar pdf
   var docDefinition = {
@@ -125,9 +161,9 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
           body: [
             [
               { text: "Cliente: ", bold: true },
-              `${Maq.Cliente_Destino}`,
+              `${Solicitacao.Cliente_Destino}`,
               { text: "CNPJ: ", bold: true },
-              `${Maq.CNPJ_Destino.trim()}`,
+              `${Solicitacao.CNPJ_Destino.trim()}`,
             ],
           ],
         },
@@ -137,7 +173,12 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
         style: "tableExample",
         table: {
           widths: ["auto", "*"],
-          body: [[{ text: "Endereço: ", bold: true }, `${Maq.destino}`]],
+          body: [
+            [
+              { text: "Endereço: ", bold: true },
+              `${Solicitacao.Endereço_Entrega}`,
+            ],
+          ],
         },
       },
 
@@ -156,7 +197,9 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
                 .reverse()
                 .join("/")}`,
               { text: "Data Esperada: ", bold: true },
-              `${Maq.DtPretendida.split("T")[0]
+              `${new Date(Solicitacao.Data_Entrega_Desejada)
+                .toISOString()
+                .split("T")[0]
                 .replace(/-/g, "/")
                 .split("/")
                 .reverse()
@@ -173,14 +216,16 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
           body: [
             [
               { text: "Contato: ", bold: true },
-              `${Maq.Contato}`,
+              `${Solicitacao.Contato}`,
               { text: "Tel: ", bold: true },
               `${[
-                Maq.Tel_Contato.slice(0, Maq.Tel_Contato.length - 4),
+                Solicitacao.Telefone_Contato.slice(
+                  0,
+                  Solicitacao.Telefone_Contato.length - 4
+                ),
                 "-",
-                Maq.Tel_Contato.slice(-4),
-              ]
-                .join("")}`,
+                Solicitacao.Telefone_Contato.slice(-4),
+              ].join("")}`,
             ],
           ],
         },
@@ -190,7 +235,12 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
         style: "tableExample",
         table: {
           widths: ["auto", "*"],
-          body: [[{ text: "Email: ", bold: true }, `${Maq.EmailA}`]],
+          body: [
+            [
+              { text: "Email: ", bold: true },
+              `${Solicitacao.Email_Acompanhamento}`,
+            ],
+          ],
         },
       },
 
@@ -199,12 +249,22 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
       {
         style: "tableExample",
         table: {
-          widths: ["auto", "*", "auto", "auto", "auto"],
-          body: configArray
-        }
+          widths: ["auto", "*", "auto", "auto", "auto", "auto"],
+          body: configArray,
+        },
       },
 
-      { text: "Detalhes", style: "subheader", pageBreak: 'before' },
+      { text: "Contenedores", style: "subheader" },
+
+      {
+        style: "tableExample",
+        table: {
+          widths: ["auto"],
+          body: contenedores,
+        },
+      },
+
+      { text: "Detalhes", style: "subheader", pageBreak: "before" },
 
       {
         style: "tableExample",
@@ -215,8 +275,11 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
       },
 
       { text: "Observações", style: "subheader" },
-      
-      { text: Maq.observacoes !== "" ? Maq.observacoes : "Ausente" },
+
+      {
+        text:
+          Solicitacao.Observacao !== "" ? Solicitacao.Observacao : "Ausente",
+      },
     ],
     styles: {
       header: {
@@ -241,4 +304,23 @@ exports.PDFGen = (config, Maq, ID, Dados, verified) => {
   };
 
   return docDefinition;
-}
+};
+
+const defineContenedor = (cont) => {
+  switch (cont) {
+    case 1:
+      return "Café";
+    case 2:
+      return "Leite";
+    case 3:
+      return "Cappuccino";
+    case 4:
+      return "Café c/ Leite";
+    case 5:
+      return "Achocolatado";
+    case 6:
+      return "Chá de Limão";
+    default:
+      return "Desconhecido";
+  }
+};

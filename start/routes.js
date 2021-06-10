@@ -37,7 +37,7 @@ Route.delete('/client/delete', 'WEB/ClientController.Destroy')
 //Solicitação de equipamentos
 Route.get('/equip/adresses', 'WEB/EquipRequestController.See') //retorna endereços, máquinas, configurações
 Route.get('/equip/requests', 'WEB/EquipRequestController.Show') //retorna todas as requisições do grupo
-Route.get('/equip/default', 'WEB/EquipRequestController.SearchDefaultConfig') //busca as configurações padrão da máquina 
+Route.get('/equip/default/:id', 'WEB/EquipRequestController.SearchDefaultConfig') //busca as configurações padrão da máquina 
 Route.get('/equip/requests/retrive', 'WEB/EquipRequestController.RetriveOS') //retorna o PDF da OS
 Route.post('/equip', 'WEB/EquipRequestController.Store') //Solicita maquina
 Route.delete('/equip', 'WEB/EquipRequestController.Destroy') //cancela a OS
@@ -60,3 +60,4 @@ Route.get('/form/original', 'ADMIN/FuturoFranqueadoController.RetriveWORDFORM') 
 Route.get('/form/all', 'ADMIN/FuturoFranqueadoController.Show') //retorna todos os formulários
 
 Route.get('/SLAPLIC/ATT', 'ADMIN/FuturoFranqueadoController.AttSLAPLIC') //baixa a versão mais recente do SLAplic
+Route.get('/testar', 'MODS/Sl2TelController.Teste') 

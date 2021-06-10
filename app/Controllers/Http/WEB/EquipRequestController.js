@@ -59,9 +59,9 @@ class EquipRequestController {
         })
         .orderBy(
           "Bebida",
+          "Qtd",
           "Cod",
           "Un",
-          "Qtd",
           "Medida",
           "Disp",
           "Dominio",
@@ -71,53 +71,41 @@ class EquipRequestController {
 
       //array auxiliar...
       const BebidasNovo = [];
+      let templateBebida = null;
 
       Bebidas.map((bebida) => {
+        templateBebida = {
+          Cod: bebida.Cod,
+          Bebida: bebida.Bebida,
+          Un: bebida.Un,
+          Qtd: [bebida.Qtd],
+          Medida: [bebida.Medida],
+          Mistura: bebida.Mistura,
+          Pronto: bebida.Pronto,
+          ContPronto: bebida.ContPronto,
+          ContMist: bebida.ContMist,
+          PrecoMaq: 0,
+          Selecao: 0,
+          configura: false,
+          TProd: null,
+        };
         if (BebidasNovo.length === 0) {
-          BebidasNovo.push(
-            Object.assign({
-              Cod: 0,
-              Bebida: "DESATIVADO",
-              Un: "ML",
-              Qtd: ["0"],
-              Medida: [],
-              configura: false,
-              Selecao: 0,
-              PrecoMaq: 0,
-              Mistura: 0,
-              Pronto: 0,
-              TProd: "DESATIVADO",
-            })
-          );
+          BebidasNovo.push(Object.assign(templateBebida));
+        } else {
+          BebidasNovo.map((aux, i) => {
+            if (aux.Bebida === bebida.Bebida) {
+              aux.Qtd.push(bebida.Qtd);
+              aux.Medida.push(bebida.Medida);
+            } else if (i === BebidasNovo.length - 1) {
+              BebidasNovo.push(Object.assign(templateBebida));
+            }
+          });
         }
-
-        BebidasNovo.map((aux, i) => {
-          if (aux.Bebida === bebida.Bebida) {
-            aux.Qtd.push(bebida.Qtd);
-            aux.Medida.push(bebida.Medida);
-          } else if (i === BebidasNovo.length - 1) {
-            BebidasNovo.push(
-              Object.assign({
-                Cod: bebida.Cod,
-                Bebida: bebida.Bebida,
-                Un: bebida.Un,
-                Qtd: [bebida.Qtd],
-                Medida: [bebida.Medida],
-                configura: false,
-                Selecao: 0,
-                PrecoMaq: 0,
-                Mistura: bebida.Mistura,
-                Pronto: bebida.Pronto,
-                TProd: null,
-              })
-            );
-          }
-        });
       });
 
       for (let i = 0; i < BebidasNovo.length; i++) {
-        for (let j = 0; j < BebidasNovo[i].Medida.length; j++) {
-          if (typeof BebidasNovo[i].Medida[j] == "string") {
+        for (let j = 0; j < BebidasNovo[i].Qtd.length; j++) {
+          if (BebidasNovo[i].Qtd[j] > BebidasNovo[i].Qtd[j + 1]) {
             BebidasNovo[i].Medida.push(BebidasNovo[i].Medida[j]);
             BebidasNovo[i].Medida.splice(j, 1);
             BebidasNovo[i].Qtd.push(BebidasNovo[i].Qtd[j]);
@@ -149,114 +137,39 @@ class EquipRequestController {
     }
   }
 
-  async SearchDefaultConfig({ request, response }) {
+  async SearchDefaultConfig({ request, response, params }) {
     const token = request.header("authorization");
-    const { MaqId } = request.only(["MaqId"]);
+    const MaqId = params.id;
 
     try {
       const verified = seeToken(token); //não uso o token aqui mas é melhor testar pela boa pratica
 
       const configPadrao = await Database.raw(
-        "select B.Cod, M.MaqModelo, C.Selecao, B.Un,B.Bebida, B.Qtd as Qtd_Def, B.Medida as Medida_Def, IIF(C.Pront1Mist2 = 1, 'Pronto', 'Mistura') as TProd from dbo.OSMaqConfPadrao as C left join dbo.OSBebidas as B on C.CodBebida = B.Cod left join dbo.OSConfigMaq as M on M.MaqModId = C.MaqModId where M.MaqModId = ?",
+        "select B.Cod, C.MaqConfigId, M.MaqModelo, C.MaqConfigNome , C.Selecao, B.Un,B.Bebida, B.Qtd as Qtd_Def, B.Medida as Medida_Def, IIF(C.Pront1Mist2 = 1, 'Pronto', 'Mistura') as TProd, IIF(C.Pront1Mist2 = 1, B.ContPronto, B.ContMist) as Contenedor from dbo.OSMaqConfPadrao as C left join dbo.OSBebidas as B on C.CodBebida = B.Cod left join dbo.OSConfigMaq as M on M.MaqModId = C.MaqModId where M.MaqModId = ?",
         [MaqId]
       );
 
-      const Bebidas = await Database.select("*")
-        .from("dbo.OSBebidas")
-        .where({
-          Disp: 1,
-        })
-        .orderBy(
-          "Bebida",
-          "Cod",
-          "Un",
-          "Qtd",
-          "Medida",
-          "Disp",
-          "Dominio",
-          "Mistura",
-          "Pronto"
-        );
+      let configPadraoNovo = [];
 
-      //array auxiliar...
-      const BebidasNovo = [];
-
-      Bebidas.map((bebida) => {
-        if (BebidasNovo.length === 0) {
-          BebidasNovo.push(
-            Object.assign({
-              Cod: 0,
-              Bebida: "DESATIVADO",
-              Un: "ML",
-              Qtd: ["0"],
-              Medida: [],
-              configura: false,
-              Selecao: 0,
-              PrecoMaq: 0,
-              Mistura: 0,
-              Pronto: 0,
-              TProd: "DESATIVADO",
-            })
-          );
+      //formato/separo as configurações
+      configPadrao.map((bebida) => {
+        if (typeof configPadraoNovo[bebida.MaqConfigId] == "undefined") {
+          configPadraoNovo[bebida.MaqConfigId] = []
+          configPadraoNovo[bebida.MaqConfigId].push(bebida);
+        } else {
+          configPadraoNovo[bebida.MaqConfigId].push(bebida);
         }
-
-        BebidasNovo.map((aux, i) => {
-          if (aux.Bebida === bebida.Bebida) {
-            aux.Qtd.push(bebida.Qtd);
-            aux.Medida.push(bebida.Medida);
-          } else if (i === BebidasNovo.length - 1) {
-            BebidasNovo.push(
-              Object.assign({
-                Cod: bebida.Cod,
-                Bebida: bebida.Bebida,
-                Un: bebida.Un,
-                Qtd: [bebida.Qtd],
-                Medida: [bebida.Medida],
-                configura: false,
-                Selecao: 0,
-                PrecoMaq: 0,
-                Mistura: bebida.Mistura,
-                Pronto: bebida.Pronto,
-                TProd: null,
-              })
-            );
-          }
-        });
+        return
       });
 
-      for (let i = 0; i < BebidasNovo.length; i++) {
-        for (let j = 0; j < BebidasNovo[i].Medida.length; j++) {
-          if (typeof BebidasNovo[i].Medida[j] == "string") {
-            BebidasNovo[i].Medida.push(BebidasNovo[i].Medida[j]);
-            BebidasNovo[i].Medida.splice(j, 1);
-            BebidasNovo[i].Qtd.push(BebidasNovo[i].Qtd[j]);
-            BebidasNovo[i].Qtd.splice(j, 1);
-          }
-        }
-      }
-
-      let configPadraoAux = [];
-
-      configPadrao.map((config) => {
-        BebidasNovo.map((bebida) => {
-          if (config.Bebida === bebida.Bebida) {
-            configPadraoAux.push(
-              Object.assign(config, {
-                Qtd: bebida.Qtd,
-                Medida: bebida.Medida,
-                Mistura: bebida.Mistura,
-                Pronto: bebida.Pronto,
-                PrecoMaq: 0,
-                configura: true,
-              })
-            );
-          }
-        });
+      //removo qualquer indice do array que seja null
+      let filtered = configPadraoNovo.filter(function (el) {
+        return el != null;
       });
 
-      response.status(200).send({ configPadrao: configPadraoAux });
+      response.status(200).send(filtered);
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send(err);
     }
   }
 
@@ -287,7 +200,7 @@ class EquipRequestController {
 
   async Store({ request, response }) {
     const token = request.header("authorization");
-    const { Maq, config } = request.only(["Maq", "config"]);
+    const { Solicitacao } = request.only(["Solicitacao"]);
     const path = Helpers.publicPath(`/OS`);
 
     const verified = seeToken(token);
@@ -317,11 +230,11 @@ class EquipRequestController {
 
     // Salva as informações cabeçalho da OS
     await Database.insert({
-      OSTId: Maq.maquina === "" ? 2 : 1,
+      OSTId: Solicitacao.Maquina === "" ? 2 : 1,
       OSCStatus: "Ativo",
       GrpVen: verified.grpven,
       OSCDtSolicita: dateCheck(),
-      OSCDtPretendida: Maq.DtPretendida,
+      OSCDtPretendida: Solicitacao.Data_Entrega_Desejada,
       OSCDtAceite: null,
       OSCTecDtVisualizada: null,
       OSCTecDtValidação: null,
@@ -334,46 +247,46 @@ class EquipRequestController {
       OSCComMotivo: null,
       OSCExpDtVisualizada: null,
       OSCExpDtPrevisao: null,
-      OSCnpjDest: Maq.CNPJ_Destino,
-      OSCDestino: Maq.destino,
+      OSCnpjDest: Solicitacao.CNPJ_Destino,
+      OSCDestino: Solicitacao.Endereço_Entrega,
       OSCPDF: `ORDEM-${verified.grpven}-${`000000${ID}`.slice(-6)}.pdf`,
-      OSCEmail: Maq.EmailA,
-      OSCTelCont: Maq.Tel_Contato,
-      OSCcontato: Maq.Contato,
+      OSCEmail: Solicitacao.Email_Acompanhamento,
+      OSCTelCont: Solicitacao.Telefone_Contato,
+      OSCcontato: Solicitacao.Contato,
     }).into("dbo.OSCtrl");
 
     //Salva as configurações de bebida da máquina
-    config.map(async (bebida) => {
-      if (bebida.Bebida) {
-        await Database.insert({
-          OSCId: ID,
-          Selecao: bebida.Selecao,
-          BebidaId: bebida.Cod,
-          UnMedida: bebida.Qtd_Def,
-          GrpVen: verified.grpven,
-          PrecoMaq: bebida.PrecoMaq,
-          TProduto: bebida.TProd,
-        }).into("dbo.OSCtrlDet");
-      }
+    Solicitacao.Configuracao.map(async (bebida) => {
+      await Database.insert({
+        OSCId: ID,
+        Selecao: bebida.selecao,
+        BebidaId: bebida.id,
+        UnMedida: bebida.medida,
+        GrpVen: verified.grpven,
+        PrecoMaq: bebida.valor,
+        TProduto: bebida.tipo,
+        Ativa: bebida.configura,
+      }).into("dbo.OSCtrlDet");
     });
 
     //salva as especificações da máquina
     await Database.insert({
       OSCId: ID,
       GrpVen: verified.grpven,
-      MaqId: Maq.maqid,
-      THidrico: Maq.abastecimento,
-      InibCopos: Maq.inibCopos,
-      Gabinete: Maq.gabinete,
-      SisPag: Maq.sisPagamento,
-      TComunic: Maq.Chip,
-      Antena: Maq.ExtAnt,
-      ValidadorCond: Maq.TValidador,
-      ValidadorVal: Maq.validador.toString(),
-      OSObs: Maq.observacoes,
+      MaqId: Solicitacao.MaquinaId,
+      THidrico: Solicitacao.Abastecimento,
+      InibCopos: Solicitacao.InibirCopos,
+      Gabinete: Solicitacao.Gabinete,
+      SisPag: Solicitacao.Pagamento,
+      TComunic: Solicitacao.Chip,
+      Antena: Solicitacao.AntExt,
+      ValidadorCond: Solicitacao.TipoValidador,
+      ValidadorVal: Solicitacao.Validador.toString(),
+      MaqCorp: Solicitacao.Corporativa,
+      OSObs: Solicitacao.Observacao,
     }).into("dbo.OSCtrlSpec");
 
-    const PDFModel = PDFGen(config, Maq, ID, Dados, verified)
+    const PDFModel = PDFGen(Solicitacao, ID, Dados, verified);
 
     var pdfDoc = printer.createPdfKitDocument(PDFModel);
     pdfDoc.pipe(fs.createWriteStream(PathWithName));
@@ -385,8 +298,8 @@ class EquipRequestController {
       { verified, ID, Frontend: Env.get("CLIENT_URL") },
       (message) => {
         message
-          .to(Maq.EmailA)
-          .cc([Env.get("EMAIL_COMERCIAL_1"), Env.get("EMAIL_COMERCIAL_2")])
+          .to(Solicitacao.Email_Acompanhamento)
+          .cc(Env.get("EMAIL_COMERCIAL_2"))
           .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
           .subject("Nova ordem de serviço")
           .attach(PathWithName);
@@ -439,7 +352,6 @@ class EquipRequestController {
         message
           .to(Env.get("EMAIL_SUPORTE")) //não testei se esse argumento funciona
           .cc([
-            Env.get("EMAIL_COMERCIAL_1"),
             Env.get("EMAIL_COMERCIAL_2"),
             Env.get("EMAIL_TECNICA_1"),
             Env.get("EMAIL_TECNICA_2"),
@@ -450,7 +362,7 @@ class EquipRequestController {
           .attach(PathWithName);
       });
 
-      response.status(201).send('ok');
+      response.status(201).send("ok");
     } catch (err) {
       response.status(400).send();
     }
