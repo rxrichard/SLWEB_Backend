@@ -1,9 +1,6 @@
 "use strict";
 const Database = use("Database");
-const Env = use("Env");
-const Helpers = use("Helpers");
-const { GenTokenTMT, ListClients } = require("../../../POG/TMTConn");
-const GerarExcel = require("../../../POG/excelExportService");
+const { GenTokenTMT, ListClients, FindUltimaInstalacao, FindEnderecoPorInstalacaoCliente } = require("../../../POG/TMTConn");
 
 class Sl2TelController {
   async Update({ response, params }) {
@@ -42,72 +39,26 @@ class Sl2TelController {
     // response.status(200).send({ PontoDeVenda: PDV[0], EquiCod})
   }
 
-  async Teste({ response }) {
-    const Consultor = "CRISTIANE";
-    const workSheetName = [];
-    const filePath = Helpers.publicPath(`/Endereços Outros.xlsx`);
-    const workSheetColumnNames = [
-      "Filial",
-      "Franqueado(a)",
-      "Ativo",
-      "Cliente",
-      "Logradouro",
-      "Número",
-      "Complemento",
-      "Bairro",
-      "Cidade",
-      "UF",
-      "CEP",
-      "Data de Ativação(SLAPlic)",
-    ];
-    const data = [];
+  async Show({ params, response }) {
+    const Ativo = params.ativo
+    const tokenTMT = await GenTokenTMT('0201');
 
-    const Ativos = await Database.raw(
-      "select F.M0_CODFIL as Filial, F.GrupoVenda as Franqueado, P.EquiCod as Ativo, P.AnxDesc as Cliente,P.PdvLogradouroPV as Logradouro, P.PdvNumeroPV as Número, P.PdvComplementoPV as Complemento, P.PdvBairroPV as Bairro, P.PdvCidadePV as Cidade, P.PdvUfPV as UF, P.PdvCEP as CEP, P.PdvDataAtivacao as 'DtAlteração' from dbo.PontoVenda as P inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = P.GrpVen where P.PdvStatus = 'A' and F.Consultor <> 'ALESSANDRO' and F.Consultor <> 'CRISTIANE' order by M0_CODFIL",
-      []
-    );
+    const arrow = (end) => `${checkNull(end.Logradouro).trim()} ${checkNull(end.Numero).trim()} ${checkNull(end.Complemento).trim()}, ${checkNull(end.Bairro).trim()}, ${checkNull(end.NomeCidade).trim()} - ${checkNull(end.UF).trim()}, ${checkNull(end.CEP).trim()}`
+    const checkNull = (value) => value === null || typeof value == 'undefined' ? '' : String(value)
 
-    Ativos.map((ativo) => {
-      if (workSheetName.indexOf(ativo.Filial) < 0) {
-        workSheetName.push(ativo.Filial);
-        data.push([
-          [
-            ativo.Filial,
-            ativo.Franqueado,
-            ativo.Ativo,
-            ativo.Cliente,
-            ativo.Logradouro,
-            ativo.Número,
-            ativo.Complemento,
-            ativo.Bairro,
-            ativo.Cidade,
-            ativo.UF,
-            ativo.CEP,
-            ativo.DtAlteração,
-          ],
-        ]);
-      } else {
-        data[workSheetName.indexOf(ativo.Filial)].push([
-          ativo.Filial,
-          ativo.Franqueado,
-          ativo.Ativo,
-          ativo.Cliente,
-          ativo.Logradouro,
-          ativo.Número,
-          ativo.Complemento,
-          ativo.Bairro,
-          ativo.Cidade,
-          ativo.UF,
-          ativo.CEP,
-          ativo.DtAlteração,
-        ]);
+    //retorna endereço da máquina no SLAplic
+    const EndSLAplic = await Database.raw("SELECT E.EquiDesc AS Modelo, P.EquiCod AS Ativo, P.IMEI, P.AnxDesc AS Nome, P.PdvLogradouroPV AS Logradouro, P.PdvNumeroPV AS Numero, P.PdvComplementoPV AS Complemento, P.PdvBairroPV AS Bairro, P.PdvCidadePV AS NomeCidade, P.PdvUfPV AS UF, P.PdvCEP AS CEP FROM dbo.PontoVenda AS P INNER JOIN dbo.Equipamento AS E ON P.EquiCod = E.EquiCod WHERE (E.EquiCod = ?) AND (P.PdvStatus = 'A')", [Ativo])
+    if(EndSLAplic.length > 0){
+      response.status(200).send(arrow(EndSLAplic[0]))
+    }else{
+      const IdMaqTotvs = await FindUltimaInstalacao(tokenTMT.data.access_token, Ativo);
+      const EndTotvs = await FindEnderecoPorInstalacaoCliente(tokenTMT.data.access_token, IdMaqTotvs);
+      if(typeof EndTotvs.data === 'string'){
+        response.status(200).send(EndTotvs.data)
+      }else{
+        response.status(200).send(arrow(EndTotvs.data))
       }
-    });
-
-    await GerarExcel(data, workSheetColumnNames, workSheetName, filePath);
-    // data, workSheetColumnNames, workSheetName, filePath
-
-    response.status(200).send("Ok");
+    }
   }
 }
 

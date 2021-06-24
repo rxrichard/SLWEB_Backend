@@ -44,6 +44,12 @@ class EquipRequestController {
         .where({ GrpVen: verified.grpven })
         .orderBy("Nome_Fantasia");
 
+        const MinDDL = await Database.select("ParamVlr")
+        .from("dbo.Parametros")
+        .where({
+          ParamId: 'SolMaqDDL',
+        });
+
       //busca tipos de máquina disponiveis para requisição
       const MaquinasDisponiveis = await Database.select("*")
         .from("dbo.OSConfigMaq")
@@ -116,7 +122,7 @@ class EquipRequestController {
 
       response
         .status(200)
-        .send({ endereços, MaquinasDisponiveis, BebidasNovo });
+        .send({ endereços, MaquinasDisponiveis, BebidasNovo, MinDDL: MinDDL[0].ParamVlr });
     } catch (err) {
       response.status(400).send(err);
     }

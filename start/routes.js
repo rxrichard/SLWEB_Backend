@@ -8,7 +8,9 @@ Route.get('/', function() {
   return { message: 'API Funcionando!' }
 })
 
+//Integração com API TOTVS
 Route.get('/tel/update/:filial/:equicod', 'MODS/Sl2TelController.Update')
+Route.get('/mifix/consulta/ativo/:ativo', 'MODS/Sl2TelController.Show')
 
 //Disparar Emails
 Route.get('/emails/history', 'ADMIN/MailerController.Show')
@@ -59,5 +61,5 @@ Route.post('/form', 'ADMIN/FuturoFranqueadoController.FormUpload') //faz upload 
 Route.get('/form/original', 'ADMIN/FuturoFranqueadoController.RetriveWORDFORM') //baixa o formulario .doc
 Route.get('/form/all', 'ADMIN/FuturoFranqueadoController.Show') //retorna todos os formulários
 
-Route.get('/SLAPLIC/ATT', 'ADMIN/FuturoFranqueadoController.AttSLAPLIC') //baixa a versão mais recente do SLAplic
-Route.get('/testar', 'MODS/Sl2TelController.Teste') 
+Route.get('/SLAPLIC/ATT', 'MODS/SLaplicIntController.AttSLAPLIC') //baixa a versão mais recente do SLAplic
+Route.get('/testar', 'ADMIN/ConsultoreController.Teste')

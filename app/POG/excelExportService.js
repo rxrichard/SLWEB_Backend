@@ -10,7 +10,8 @@ const exportExcel = async (data, workSheetColumnNames, workSheetName, filePath) 
     workSheetName.map((aba, i) => {
         workSheetData = [
             workSheetColumnNames,
-            ... data[i]
+            // ... data[i]
+            ... data
         ]
         workSheet = xlsx.utils.aoa_to_sheet(workSheetData);
         xlsx.utils.book_append_sheet(workBook, workSheet, aba);
