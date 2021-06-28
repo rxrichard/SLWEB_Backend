@@ -37,7 +37,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
 
   detalhes.push([
     { text: "Acompanha Gabinete: ", bold: true },
-    `${Solicitacao.Gabinete ? "Sim" : "Não"}`,
+    `${typeof Solicitacao.Gabinete == 'undefined' || Solicitacao.Gabinete === ''|| Solicitacao.Gabinete === false ? "Não" : "Sim"}`,
   ]);
   detalhes.push([
     { text: "Abastecimento: ", bold: true },
@@ -62,9 +62,14 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
         { text: "Fichas: ", bold: true },
         `${Solicitacao.Validador.toString()}`,
       ]);
-    } else {
+    } else if(Solicitacao.TipoValidador === "Moeda"){
       detalhes.push([
         { text: "Moedas: ", bold: true },
+        `${Solicitacao.Validador.toString()}`,
+      ]);
+    }else{
+      detalhes.push([
+        { text: "Moedas/Fichas: ", bold: true },
         `${Solicitacao.Validador.toString()}`,
       ]);
     }
@@ -83,7 +88,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
       `${bebida.selecao}`,
       `${bebida.bebida.trim()}`,
       `${bebida.medida}ML`,
-      `${Solicitacao.Pagamento === "Livre" ? "Livre" : bebida.valor}`,
+      `${typeof bebida.valor == 'undefined' || bebida.valor == null || bebida.valor === '' ? '0' : bebida.valor }`,
       `${bebida.tipo}`,
       `${bebida.configura ? "Sim" : "Não"}`,
     ]);

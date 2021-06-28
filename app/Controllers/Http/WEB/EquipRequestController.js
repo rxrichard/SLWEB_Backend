@@ -270,6 +270,7 @@ class EquipRequestController {
         UnMedida: bebida.medida,
         GrpVen: verified.grpven,
         PrecoMaq: bebida.valor,
+        PrecoRep: typeof bebida.valor2 == 'undefined' ? '0' : bebida.valor2,
         TProduto: bebida.tipo,
         Ativa: bebida.configura,
       }).into("dbo.OSCtrlDet");
@@ -282,7 +283,7 @@ class EquipRequestController {
       MaqId: Solicitacao.MaquinaId,
       THidrico: Solicitacao.Abastecimento,
       InibCopos: Solicitacao.InibirCopos,
-      Gabinete: Solicitacao.Gabinete,
+      Gabinete: typeof Solicitacao.Gabinete == 'undefined' || Solicitacao.Gabinete === '' ? false : Solicitacao.Gabinete,
       SisPag: Solicitacao.Pagamento,
       TComunic: Solicitacao.Chip,
       Antena: Solicitacao.AntExt,
