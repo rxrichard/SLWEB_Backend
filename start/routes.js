@@ -29,6 +29,11 @@ Route.put('/profile/password', 'WEB/ProfileController.ChangePassword')
 Route.put('/profile/email', 'WEB/ProfileController.ChangeEmail')
 Route.put('profile/tax', 'WEB/ProfileController.ChangeTax')
 
+//Leads
+Route.get('/leads', 'WEB/LeadController.Show')
+Route.put('/leads', 'WEB/LeadController.Update')
+Route.post('/leads', 'WEB/LeadController.Store')
+
 //Clientes
 Route.post('/client/details', 'WEB/ClientController.See') //mostra contagem de dados
 Route.get('/client', 'WEB/ClientController.Show') //retorna clientes

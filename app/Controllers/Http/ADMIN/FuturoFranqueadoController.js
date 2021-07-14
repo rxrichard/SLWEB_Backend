@@ -216,9 +216,9 @@ class FuturoFranqueadoController {
         );
       });
 
-      response.status(200).send("ok");
+      response.status(200).send("Arquivos Salvos");
     } catch (err) {
-      response.status(400).send();
+      response.status(200).send("Falha ao salvar arquivos");
     }
   }
 

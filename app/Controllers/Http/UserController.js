@@ -131,7 +131,6 @@ class UserController {
         new Date(tentativa[0].DtSolicita).getSeconds()
       );
 
-      HorarioMaximo.toISOString();
       const HorarioAtual = new Date(
         new Date().getFullYear(),
         new Date().getMonth(),
@@ -140,6 +139,8 @@ class UserController {
         new Date().getMinutes(),
         new Date().getSeconds()
       );
+
+      HorarioMaximo.toISOString();
       HorarioAtual.toISOString();
 
       //data criação <= data de criação + 1min
@@ -160,6 +161,8 @@ class UserController {
 
         const token = await genTokenExternal(code);
         response.status(201).send(token);
+      }else{
+        response.status(200).send('no token');
       }
     } catch (err) {
       response.status(401).send(err);
