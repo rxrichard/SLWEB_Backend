@@ -2,7 +2,7 @@
 
 const Database = use("Database");
 const { seeToken } = require("../../../POG/index");
-const moment = require('moment')
+const moment = require("moment");
 
 class LeadController {
   async Show({ request, response }) {
@@ -24,12 +24,12 @@ class LeadController {
 
       //busca leads assumidos pelo franqueado
       const LeadsFranqueado = await Database.raw(
-        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Contato, L.Fone_1, L.Fone_2, L.Email, A.DataHora, L.Insercao from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where A.GrpVen = ? and A.Ativo = 1",
+        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Contato, L.Fone_1, L.Fone_2, L.Email, A.DataHora, A.Ativo, A.DataFechamento, L.Insercao from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where A.GrpVen = ? and (A.Ativo = 1 or (A.Ativo = 0 and A.DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000))))",
         [verified.grpven]
       );
 
       const Limites = await Database.raw(
-        "select * from (select COUNT(GrpVen) as Tentativas from dbo.LeadsAttr where GrpVen = ? and Ativo = 1) as A join (select ParamVlr as MaxTentativas from dbo.Parametros where ParamId = 'LeadMaxFilial') as P on P.MaxTentativas >= 0 join (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras') as J on J.MaxHoras >= 0",
+        "select * from (select COUNT(GrpVen) as Tentativas from dbo.LeadsAttr where GrpVen = ? and (Ativo = 1 or (Ativo = 0 and DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000))))) as A join (select ParamVlr as MaxTentativas from dbo.Parametros where ParamId = 'LeadMaxFilial') as P on P.MaxTentativas >= 0 join (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras') as J on J.MaxHoras >= 0",
         [verified.grpven]
       );
 
@@ -40,7 +40,7 @@ class LeadController {
   }
 
   async Update({ request, response }) {
-    const { ID, type, motivo } = request.only(["ID", "type", 'motivo']);
+    const { ID, type, motivo } = request.only(["ID", "type", "motivo"]);
     const token = request.header("authorization");
 
     try {
@@ -48,7 +48,7 @@ class LeadController {
 
       if (type === "hold") {
         const Limites = await Database.raw(
-          "select COUNT(L.GrpVen) as Tentativas, P.ParamVlr as MaxTentativas from dbo.LeadsAttr as L inner join dbo.Parametros as P on P.ParamId = 'LeadMaxFilial' where L.GrpVen = ? and Ativo = 1 group by P.ParamVlr",
+          "select COUNT(L.GrpVen) as Tentativas, P.ParamVlr as MaxTentativas from dbo.LeadsAttr as L inner join dbo.Parametros as P on P.ParamId = 'LeadMaxFilial' where L.GrpVen = ? and (L.Ativo = 1 or (L.Ativo = 0 and L.DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)))) group by P.ParamVlr",
           [verified.grpven]
         );
 
@@ -56,7 +56,7 @@ class LeadController {
           typeof Limites[0] != "undefined" &&
           Limites[0].Tentativas >= Limites[0].MaxTentativas
         ) {
-          response.status(401).send(Limites);
+          response.status(401).send();
         } else {
           const endereco = await Database.select(
             "Contato",
@@ -80,7 +80,7 @@ class LeadController {
           }
         }
       } else if (type === "release") {
-        moment.locale('pt-br');
+        moment.locale("pt-br");
         await Database.table("dbo.LeadsAttr")
           .where({
             GrpVen: verified.grpven,
@@ -90,13 +90,13 @@ class LeadController {
             Ativo: false,
             Desistiu: true,
             Motivo: motivo,
-            DataFechamento: moment().subtract(3, 'hours').toDate(),
+            DataFechamento: moment().subtract(3, "hours").toDate(),
           });
 
         response.status(200).send();
       }
     } catch (err) {
-      response.status(409).send(err);
+      response.status(409).send();
     }
   }
 

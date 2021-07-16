@@ -90,7 +90,7 @@ exports.genTokenExternal = async (code) => {
       {
         user_code: dados[0].M0_CODFIL,
         grpven: dados[0].A1_GRPVEN,
-        role: "Franqueado",
+        role: "Franquia",
         user_name: dados[0].GrupoVenda,
         timestamp: new Date().toISOString(),
       },
@@ -98,7 +98,7 @@ exports.genTokenExternal = async (code) => {
       { expiresIn: "2h" }
     );
 
-    return { nome: dados[0].GrupoVenda, token, role: "Franqueado" }
+    return { nome: dados[0].GrupoVenda, token, role: "Franquia" }
   } catch (err) {
     return null;
   }
