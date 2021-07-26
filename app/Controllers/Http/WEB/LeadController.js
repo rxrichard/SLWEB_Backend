@@ -58,22 +58,13 @@ class LeadController {
         ) {
           response.status(401).send();
         } else {
-          const endereco = await Database.select(
-            "Contato",
-            "Fone_1",
-            "Fone_2",
-            "Email"
-          )
-            .from("dbo.Leads")
-            .where({ Id: ID });
+          await Database.raw('IF NOT EXISTS (select * from dbo.LeadsAttr where LeadId = ? AND Ativo = 1) INSERT INTO dbo.LeadsAttr (LeadId, Filial, GrpVen) VALUES (?, ?, ?)', 
+          [ID, ID, verified.user_code, verified.grpven])
+
+          const endereco = await Database.raw('select Contato, Fone_1, Fone_2, Email from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where L.Id = ? and A.GrpVen = ? and A.Ativo = 1',
+          [ID, verified.grpven])
 
           if (endereco.length > 0) {
-            await Database.insert({
-              LeadId: ID,
-              Filial: verified.user_code,
-              GrpVen: verified.grpven,
-            }).into("dbo.LeadsAttr");
-
             response.status(200).send(endereco);
           } else {
             throw new Error(409);

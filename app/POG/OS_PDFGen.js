@@ -80,7 +80,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
   ]);
   detalhes.push([
     { text: "Operadora do Chip da Telemetria: ", bold: true },
-    `${Solicitacao.Chip}`,
+    `${Solicitacao.Chip === '' ? 'Não especificado' : Solicitacao.Chip }`,
   ]);
 
   Solicitacao.Configuracao.map((bebida) => {

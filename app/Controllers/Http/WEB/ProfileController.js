@@ -28,40 +28,42 @@ class ProfileController {
     const token = request.header("authorization");
     const { password } = request.only(["password"]);
 
-    //Caso a senha nova não bater com a confirmação
-    if (password.nova !== password.confirmacao) response.status(409).send();
+    if (password.nova !== password.confirmacao) {
+      //Caso a senha nova não bater com a confirmação
+      response.status(409).send();
+    } else if (password.nova.length > 6) {
+      //Caso a senha nova exceder os 6 digitos
+      response.status(406).send();
+    } else {
+      try {
+        const verified = seeToken(token);
 
-    //Caso a senha nova exceder os 6 digitos
-    if (password.nova.length > 6) response.status(406).send();
+        //busca senha antiga
+        const oldPassword = await Database.select("Senha")
+          .from("dbo.FilialAcesso")
+          .where({
+            GrpVen: verified.grpven,
+          });
 
-    try {
-      const verified = seeToken(token);
+        //Caso a senha atual não ter sido corretamente digitada
+        if (oldPassword[0].Senha.trim() !== password.atual) {
+          response.status(405).send();
+        } else if (oldPassword[0].Senha.trim() === password.nova) {
+          //Caso da antiga senha ser igual à nova
+          response.status(304).send();
+        } else {
+          //atualiza senha no BD
+          await Database.table("dbo.FilialAcesso")
+            .where({
+              GrpVen: verified.grpven,
+            })
+            .update({ Senha: password.nova });
 
-      //busca senha antiga
-      const oldPassword = await Database.select("Senha")
-        .from("dbo.FilialAcesso")
-        .where({
-          GrpVen: verified.grpven,
-        });
-
-      //Caso a senha atual não ter sido corretamente digitada
-      if (oldPassword[0].Senha.trim() !== password.atual)
-        response.status(405).send();
-
-      //Caso da antiga senha ser igual à nova
-      if (oldPassword[0].Senha.trim() === password.nova)
-        response.status(304).send();
-
-      //atualiza senha no BD
-      await Database.table("dbo.FilialAcesso")
-        .where({
-          GrpVen: verified.grpven,
-        })
-        .update({ Senha: password.nova });
-
-      response.status(200).send();
-    } catch (err) {
-      response.status(400).send();
+          response.status(200).send();
+        }
+      } catch (err) {
+        response.status(400).send();
+      }
     }
   }
 

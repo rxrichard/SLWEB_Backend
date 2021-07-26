@@ -9,6 +9,8 @@ const PdfPrinter = require("pdfmake");
 const fs = require("fs");
 const { seeToken, dateCheck } = require("../../../POG/index");
 const { PDFGen } = require("../../../POG/OS_PDFGen");
+const moment = require("moment");
+moment.locale("pt-br");
 
 var fonts = {
   Roboto: {
@@ -44,11 +46,28 @@ class EquipRequestController {
         .where({ GrpVen: verified.grpven })
         .orderBy("Nome_Fantasia");
 
-        const MinDDL = await Database.select("ParamVlr")
+      //prazo minimo para recebimento das máquinas
+      const MinDDL = await Database.select("ParamVlr")
         .from("dbo.Parametros")
         .where({
-          ParamId: 'SolMaqDDL',
+          ParamId: "SolMaqDDL",
         });
+
+      //textos de ajuda
+      const Ajudas = await Database.raw(
+        "select * from dbo.Parametros where ParamId like 'ajuda%' order by ParamVlr ASC"
+      );
+
+      const newAjudas = [];
+
+      //formato as ajudas pra serem mais "maleaveis" pelo front-end
+      Ajudas.map((ajuda) => {
+        newAjudas.push({
+          name: ajuda.ParamId.replace("ajuda", ""),
+          text: ajuda.ParamTxt,
+          section: ajuda.ParamVlr,
+        });
+      });
 
       //busca tipos de máquina disponiveis para requisição
       const MaquinasDisponiveis = await Database.select("*")
@@ -79,6 +98,7 @@ class EquipRequestController {
       const BebidasNovo = [];
       let templateBebida = null;
 
+      //junta as bebidas iguais no mesmo objeto
       Bebidas.map((bebida) => {
         templateBebida = {
           Cod: bebida.Cod,
@@ -109,6 +129,7 @@ class EquipRequestController {
         }
       });
 
+      //organiza medidas em order crescente
       for (let i = 0; i < BebidasNovo.length; i++) {
         for (let j = 0; j < BebidasNovo[i].Qtd.length; j++) {
           if (BebidasNovo[i].Qtd[j] > BebidasNovo[i].Qtd[j + 1]) {
@@ -120,9 +141,13 @@ class EquipRequestController {
         }
       }
 
-      response
-        .status(200)
-        .send({ endereços, MaquinasDisponiveis, BebidasNovo, MinDDL: MinDDL[0].ParamVlr });
+      response.status(200).send({
+        endereços,
+        MaquinasDisponiveis,
+        BebidasNovo,
+        MinDDL: MinDDL[0].ParamVlr,
+        newAjudas,
+      });
     } catch (err) {
       response.status(400).send(err);
     }
@@ -160,12 +185,12 @@ class EquipRequestController {
       //formato/separo as configurações
       configPadrao.map((bebida) => {
         if (typeof configPadraoNovo[bebida.MaqConfigId] == "undefined") {
-          configPadraoNovo[bebida.MaqConfigId] = []
+          configPadraoNovo[bebida.MaqConfigId] = [];
           configPadraoNovo[bebida.MaqConfigId].push(bebida);
         } else {
           configPadraoNovo[bebida.MaqConfigId].push(bebida);
         }
-        return
+        return;
       });
 
       //removo qualquer indice do array que seja null
@@ -189,7 +214,8 @@ class EquipRequestController {
         verified.role === "Sistema" ||
         verified.role === "BackOffice" ||
         verified.role === "Técnica Pilão" ||
-        verified.role === "Técnica Bianchi"
+        verified.role === "Técnica Bianchi" ||
+        verified.role === "Expedição"
       ) {
         const requisicoes = await Database.select("*")
           .from("dbo.OSCtrl")
@@ -239,9 +265,9 @@ class EquipRequestController {
       OSTId: Solicitacao.Maquina === "" ? 2 : 1,
       OSCStatus: "Ativo",
       GrpVen: verified.grpven,
-      OSCDtSolicita: dateCheck(),
+      OSCDtSolicita: moment().subtract(3, "hours").toDate(),
       OSCDtPretendida: Solicitacao.Data_Entrega_Desejada,
-      OSCDtAceite: null,
+      OSCDtFechamento: null,
       OSCTecDtVisualizada: null,
       OSCTecDtValidação: null,
       OSCTecAceite: null,
@@ -262,7 +288,7 @@ class EquipRequestController {
     }).into("dbo.OSCtrl");
 
     //Salva as configurações de bebida da máquina
-    Solicitacao.Configuracao.map(async (bebida) => {
+    await Solicitacao.Configuracao.map(async (bebida) => {
       await Database.insert({
         OSCId: ID,
         Selecao: bebida.selecao,
@@ -270,7 +296,7 @@ class EquipRequestController {
         UnMedida: bebida.medida,
         GrpVen: verified.grpven,
         PrecoMaq: bebida.valor,
-        PrecoRep: typeof bebida.valor2 == 'undefined' ? '0' : bebida.valor2,
+        PrecoRep: bebida.valor2,
         TProduto: bebida.tipo,
         Ativa: bebida.configura,
       }).into("dbo.OSCtrlDet");
@@ -283,7 +309,11 @@ class EquipRequestController {
       MaqId: Solicitacao.MaquinaId,
       THidrico: Solicitacao.Abastecimento,
       InibCopos: Solicitacao.InibirCopos,
-      Gabinete: typeof Solicitacao.Gabinete == 'undefined' || Solicitacao.Gabinete === '' ? false : Solicitacao.Gabinete,
+      Gabinete:
+        typeof Solicitacao.Gabinete == "undefined" ||
+        Solicitacao.Gabinete === ""
+          ? false
+          : Solicitacao.Gabinete,
       SisPag: Solicitacao.Pagamento,
       TComunic: Solicitacao.Chip,
       Antena: Solicitacao.AntExt,
@@ -300,8 +330,8 @@ class EquipRequestController {
     pdfDoc.end();
 
     //enviar email de nova solicitação
-    await Mail.send(
-      "emails.newOS",
+    Mail.send(
+      "emails.OSnew",
       { verified, ID, Frontend: Env.get("CLIENT_URL") },
       (message) => {
         message
@@ -324,57 +354,6 @@ class EquipRequestController {
     response.status(201).send("ok");
   }
 
-  async Destroy({ request, response }) {
-    const token = request.header("authorization");
-    const { ID } = request.only(["ID"]);
-    const path = Helpers.publicPath(`/OS`);
-
-    try {
-      const verified = seeToken(token);
-      const PathWithName = `${path}/ORDEM-${
-        verified.grpven
-      }-${`000000${ID}`.slice(-6)}.pdf`;
-
-      // const orderDet = await Database.select("OSCEmail")
-      //   .from("dbo.OSCtrl")
-      //   .where({
-      //     OSCId: ID,
-      //     GrpVen: verified.grpven,
-      //   });
-
-      const updatedRows = await Database.table("dbo.OSCtrl")
-        .where({
-          OSCId: ID,
-          GrpVen: verified.grpven,
-          OSCStatus: "Ativo",
-        })
-        .update({
-          OSCStatus: "Cancelado",
-          OSCDtAceite: dateCheck(),
-        });
-
-      if (updatedRows.length < 1) throw Error;
-
-      Mail.send("emails.cancelOS", { verified, ID }, (message) => {
-        message
-          .to(Env.get("EMAIL_SUPORTE")) //não testei se esse argumento funciona
-          .cc([
-            Env.get("EMAIL_COMERCIAL_2"),
-            Env.get("EMAIL_TECNICA_1"),
-            Env.get("EMAIL_TECNICA_2"),
-            Env.get("EMAIL_TECNICA_3"),
-          ])
-          .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-          .subject("Cancelamento de OS")
-          .attach(PathWithName);
-      });
-
-      response.status(201).send("ok");
-    } catch (err) {
-      response.status(400).send();
-    }
-  }
-
   async RetriveOS({ request, response }) {
     const token = request.header("authorization");
     const { OSID } = request.only(["OSID"]);
@@ -387,7 +366,8 @@ class EquipRequestController {
         verified.role === "Sistema" ||
         verified.role === "BackOffice" ||
         verified.role === "Técnica Pilão" ||
-        verified.role === "Técnica Bianchi"
+        verified.role === "Técnica Bianchi" ||
+        verified.role === "Expedição"
       ) {
         pdfName = await Database.select("OSCPDF").from("dbo.OSCtrl").where({
           OSCId: OSID,
@@ -413,81 +393,33 @@ class EquipRequestController {
       const verified = seeToken(token);
 
       switch (verified.role) {
-        //Comercial
         case "BackOffice":
-          const ComercialCheck = await Database.select("OSCComDtVisualizada")
-            .from("dbo.OSCtrl")
-            .where({
-              OSCId: ID,
-            });
-
-          if (ComercialCheck[0].OSCComDtVisualizada === null) {
-            await Database.table("dbo.OSCtrl")
-              .where({
-                OSCId: ID,
-              })
-              .update({
-                OSCComDtVisualizada: dateCheck(),
-              });
-            response.status(200).send("ok");
-          } else {
-            response.status(200).send("nok");
-          }
+          await Database.raw(
+            "IF (select OSCComDtVisualizada from dbo.OSCtrl where OSCId = ?) IS NULL UPDATE dbo.OSCtrl SET OSCComDtVisualizada = CONVERT(datetime, ?, 121) where OSCId = ?",
+            [ID, moment().subtract(3, "hours").toDate(), ID]
+          );
 
           break;
 
-        //Expedição
-        case "Técnica Pilão":
-          const ExpediçãoCheck = await Database.select("OSCExpDtVisualizada")
-            .from("dbo.OSCtrl")
-            .where({
-              OSCId: ID,
-            });
-
-          if (ExpediçãoCheck[0].OSCExpDtVisualizada === null) {
-            await Database.table("dbo.OSCtrl")
-              .where({
-                OSCId: ID,
-              })
-              .update({
-                OSCExpDtVisualizada: dateCheck(),
-              });
-            response.status(200).send("ok");
-          } else {
-            response.status(200).send("nok");
-          }
+        case "Técnica Pilão" || "Técnica Bianchi":
+          await Database.raw(
+            "IF (select OSCTecDtVisualizada from dbo.OSCtrl where OSCId = ?) IS NULL UPDATE dbo.OSCtrl SET OSCTecDtVisualizada = CONVERT(datetime, ?, 121) where OSCId = ?",
+            [ID, moment().subtract(3, "hours").toDate(), ID]
+          );
           break;
 
-        //Fabrica de maquinas Bianchi
-        case "Técnica Bianchi":
-          const TecnicaCheck = await Database.select("OSCTecDtVisualizada")
-            .from("dbo.OSCtrl")
-            .where({
-              OSCId: ID,
-            });
-
-          if (TecnicaCheck[0].OSCTecDtVisualizada === null) {
-            await Database.table("dbo.OSCtrl")
-              .where({
-                OSCId: ID,
-              })
-              .update({
-                OSCTecDtVisualizada: dateCheck(),
-              });
-            response.status(200).send("ok");
-          } else {
-            response.status(200).send("nok");
-          }
-          break;
-
-        case "Sistema":
-          response.status(200).send("ok");
+        case "Expedição":
+          await Database.raw(
+            "IF (select OSCExpDtVisualizada from dbo.OSCtrl where OSCId = ?) IS NULL UPDATE dbo.OSCtrl SET OSCExpDtVisualizada = CONVERT(datetime, ?, 121) where OSCId = ?",
+            [ID, moment().subtract(3, "hours").toDate(), ID]
+          );
           break;
 
         default:
-          response.status(200).send("nok");
+          response.status(200).send("ok");
           break;
       }
+      response.status(200).send("ok");
     } catch (err) {
       response.status(400).send(err);
     }
@@ -513,38 +445,57 @@ class EquipRequestController {
               OSCId: OSID,
             })
             .update({
-              OSCComDtValidação: dateCheck(),
+              OSCComDtValidação: moment().subtract(3, "hours").toDate(),
               OSCComAceite: action === "accept" ? true : false,
               OSCComMotivo: reject,
-              OSCStatus: action === "accept" ? "Ativo" : "Cancelado",
             });
 
           dados = await Database.select("*")
             .from("dbo.OSCtrl")
             .where({ OSCId: OSID });
 
-          await Mail.send(
-            "emails.ComValidaOS",
-            {
-              ID: OSID,
-              Dt: dados[0].OSCDtPretendida,
-              Frontend: Env.get("CLIENT_URL"),
-            },
-            (message) => {
-              message
-                .to(Env.get("EMAIL_SUPORTE"))
-                .cc([
-                  Env.get("EMAIL_TECNICA_1"),
-                  Env.get("EMAIL_TECNICA_2"),
-                  Env.get("EMAIL_TECNICA_3"),
-                ])
-                .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-                .subject("OS Validada pela Pilão")
-                .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
-                  filename: dados[0].OSCPDF,
-                });
-            }
-          );
+          if (action === "accept") {
+            await Mail.send(
+              "emails.OSComValida",
+              {
+                ID: OSID,
+                Dt: moment(dados[0].OSCDtPretendida).format("LL"),
+                Frontend: Env.get("CLIENT_URL"),
+              },
+              (message) => {
+                message
+                  .to(Env.get("EMAIL_SUPORTE"))
+                  .cc([
+                    Env.get("EMAIL_TECNICA_1"),
+                    Env.get("EMAIL_TECNICA_2"),
+                    Env.get("EMAIL_TECNICA_3"),
+                  ])
+                  .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+                  .subject("OS Validada pela Pilão")
+                  .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
+                    filename: dados[0].OSCPDF,
+                  });
+              }
+            );
+          } else if (action === "reject") {
+            Mail.send(
+              "emails.OSRejeicao",
+              {
+                ID: OSID,
+                Dep: "Comercial",
+                Motivo: reject,
+              },
+              (message) => {
+                message
+                  .to(Env.get("EMAIL_SUPORTE"))
+                  .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+                  .subject("OS Rejeitada")
+                  .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
+                    filename: dados[0].OSCPDF,
+                  });
+              }
+            );
+          }
 
           response.status(200).send();
           break;
@@ -554,8 +505,60 @@ class EquipRequestController {
               OSCId: OSID,
             })
             .update({
-              OSCExpDtPrevisao: prev,
+              OSCTecDtValidação: moment().subtract(3, "hours").toDate(),
+              OSCTecAceite: action === "accept" ? true : false,
+              OSCTecMotivo: reject,
+              OSCTecDtPrevisao:
+                prev !== null
+                  ? moment(prev).subtract(3, "hours").toDate()
+                  : null,
             });
+
+          dados = await Database.select("*")
+            .from("dbo.OSCtrl")
+            .where({ OSCId: OSID });
+          if (action === "accept") {
+            Mail.send(
+              "emails.OSTecValida",
+              {
+                ID: OSID,
+                DtC: moment(dados[0].OSCDtPretendida).format("LL"),
+                DtT: moment(prev).format("LL"),
+                Frontend: Env.get("CLIENT_URL"),
+              },
+              (message) => {
+                message
+                  .to(Env.get("EMAIL_SUPORTE"))
+                  .cc([
+                    Env.get("EMAIL_EXPEDICAO_1"),
+                    Env.get("EMAIL_EXPEDICAO_2"),
+                  ])
+                  .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+                  .subject("OS Validada pela Técnica")
+                  .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
+                    filename: dados[0].OSCPDF,
+                  });
+              }
+            );
+          } else if (action === "reject") {
+            Mail.send(
+              "emails.OSRejeicao",
+              {
+                ID: OSID,
+                Dep: "Técnica",
+                Motivo: reject,
+              },
+              (message) => {
+                message
+                  .to(Env.get("EMAIL_SUPORTE"))
+                  .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+                  .subject("OS Rejeitada")
+                  .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
+                    filename: dados[0].OSCPDF,
+                  });
+              }
+            );
+          }
 
           response.status(200).send();
           break;
@@ -565,40 +568,98 @@ class EquipRequestController {
               OSCId: OSID,
             })
             .update({
-              OSCTecDtValidação: dateCheck(),
+              OSCTecDtValidação: moment().subtract(3, "hours").toDate(),
               OSCTecAceite: action === "accept" ? true : false,
               OSCTecMotivo: reject,
-              OSCTecDtPrevisao: prev,
-              OSCStatus: action === "accept" ? "Ativo" : "Cancelado",
+              OSCTecDtPrevisao:
+                prev !== null
+                  ? moment(prev).subtract(3, "hours").toDate()
+                  : null,
+            });
+
+          dados = await Database.select("*")
+            .from("dbo.OSCtrl")
+            .where({ OSCId: OSID });
+          if (action === "accept") {
+            Mail.send(
+              "emails.OSTecValida",
+              {
+                ID: OSID,
+                DtC: moment(dados[0].OSCDtPretendida).format("LL"),
+                DtT: moment(prev).format("LL"),
+                Frontend: Env.get("CLIENT_URL"),
+              },
+              (message) => {
+                message
+                  .to(Env.get("EMAIL_SUPORTE"))
+                  .cc([
+                    Env.get("EMAIL_EXPEDICAO_1"),
+                    Env.get("EMAIL_EXPEDICAO_2"),
+                  ])
+                  .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+                  .subject("OS Validada pela Técnica")
+                  .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
+                    filename: dados[0].OSCPDF,
+                  });
+              }
+            );
+          } else if (action === "reject") {
+            Mail.send(
+              "emails.OSRejeicao",
+              {
+                ID: OSID,
+                Dep: "Técnica",
+                Motivo: reject,
+              },
+              (message) => {
+                message
+                  .to(Env.get("EMAIL_SUPORTE"))
+                  .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+                  .subject("OS Rejeitada")
+                  .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
+                    filename: dados[0].OSCPDF,
+                  });
+              }
+            );
+          }
+
+          response.status(200).send();
+          break;
+        case "Expedição":
+          await Database.table("dbo.OSCtrl")
+            .where({
+              OSCId: OSID,
+            })
+            .update({
+              OSCExpDtPrevisao:
+                prev !== null
+                  ? moment(prev).subtract(3, "hours").toDate()
+                  : null,
             });
 
           dados = await Database.select("*")
             .from("dbo.OSCtrl")
             .where({ OSCId: OSID });
 
-          await Mail.send(
-            "emails.TecValidaOS",
+          Mail.send(
+            "emails.OSExpValida",
             {
               ID: OSID,
-              DtC: dados[0].OSCDtPretendida,
-              DtT: prev,
+              Dt: moment(prev).format("LL"),
+              Tel: dados[0].OSCTelCont,
               Frontend: Env.get("CLIENT_URL"),
             },
             (message) => {
               message
-                .to(Env.get("EMAIL_SUPORTE"))
-                .cc([
-                  Env.get("EMAIL_EXPEDICAO_1"),
-                  Env.get("EMAIL_EXPEDICAO_2"),
-                ])
+                .to(dados[0].OSCEmail)
+                .cc([Env.get("EMAIL_SUPORTE"), Env.get("EMAIL_COMERCIAL_2")])
                 .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-                .subject("OS Validada pela Técnica")
+                .subject("Previsão de entrega da OS")
                 .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
                   filename: dados[0].OSCPDF,
                 });
             }
           );
-
           response.status(200).send();
           break;
         case "Franquia":
@@ -609,9 +670,26 @@ class EquipRequestController {
               OSCStatus: "Ativo",
             })
             .update({
-              OSCStatus: "Concluido",
-              OSCDtAceite: dateCheck(),
+              OSCStatus: action === "accept" ? "Concluido" : "Cancelado",
+              OSCDtFechamento: moment().subtract(3, "hours").toDate(),
             });
+
+          dados = await Database.select("*")
+            .from("dbo.OSCtrl")
+            .where({ OSCId: OSID });
+
+          if (action === "reject") {
+            Mail.send("emails.OScancel", { verified, ID: OSID }, (message) => {
+              message
+                .to(Env.get("EMAIL_SUPORTE"))
+                .cc([Env.get("EMAIL_COMERCIAL_2")])
+                .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+                .subject("Cancelamento de OS")
+                .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
+                  filename: dados[0].OSCPDF,
+                });
+            });
+          }
           response.status(200).send();
           break;
       }
@@ -623,7 +701,7 @@ class EquipRequestController {
   async SistemOptions({ request, response }) {
     const token = request.header("authorization");
     const { action, OSID } = request.only(["action", "OSID"]);
-
+    let S;
     try {
       const verified = seeToken(token);
 
@@ -631,17 +709,44 @@ class EquipRequestController {
 
       switch (action) {
         case "Cancelar": //cancelar OS
-          const S = await Database.table("dbo.OSCtrl")
+          S = await Database.table("dbo.OSCtrl")
             .where({
               OSCId: OSID,
             })
             .update({
               OSCStatus: "Cancelado",
+              OSCDtFechamento: moment().subtract(3, "hours").toDate(),
             });
           if (S < 1) throw Error;
 
           response.status(200).send();
+          break;
+        case "Concluir": //concluir OS
+          S = await Database.table("dbo.OSCtrl")
+            .where({
+              OSCId: OSID,
+            })
+            .update({
+              OSCStatus: "Concluido",
+              OSCDtFechamento: moment().subtract(3, "hours").toDate(),
+            });
+          if (S < 1) throw Error;
 
+          response.status(200).send();
+          break;
+        case "Ativar": //Ativar OS
+          S = await Database.table("dbo.OSCtrl")
+            .where({
+              OSCId: OSID,
+            })
+            .update({
+              OSCStatus: "Ativo",
+              OSCDtFechamento: null,
+            });
+          if (S < 1) throw Error;
+
+          response.status(200).send();
+          break;
         case "RT": //retirar técnica
           const B = await Database.table("dbo.OSCtrl")
             .where({
@@ -656,6 +761,7 @@ class EquipRequestController {
           if (B < 1) throw Error;
 
           response.status(200).send();
+          break;
         case "RC": //retirar comercial
           const C = await Database.table("dbo.OSCtrl")
             .where({
@@ -669,7 +775,7 @@ class EquipRequestController {
           if (C < 1) throw Error;
 
           response.status(200).send();
-
+          break;
         case "RE": //retirar expedição
           const E = await Database.table("dbo.OSCtrl")
             .where({
@@ -681,22 +787,10 @@ class EquipRequestController {
           if (E < 1) throw Error;
 
           response.status(200).send();
+          break;
       }
     } catch (err) {
       response.status(400).send();
-    }
-  }
-
-  isNull(value) {
-    if (
-      value === "DESATIVADO" ||
-      value === "NULL" ||
-      value === "DESATIVADA" ||
-      value === "Preencher"
-    ) {
-      return null;
-    } else {
-      return value;
     }
   }
 }
