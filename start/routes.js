@@ -39,7 +39,13 @@ Route.post("/client/details", "WEB/ClientController.See"); //mostra contagem de 
 Route.get("/client", "WEB/ClientController.Show"); //retorna clientes
 Route.post("/client/new", "WEB/ClientController.Store"); //adicionar cliente
 Route.put("/client/update", "WEB/ClientController.Update"); //atualiza cliente
-Route.delete("/client/delete", "WEB/ClientController.Destroy");
+Route.delete("/client/delete", "WEB/ClientController.Destroy"); //apagar cliente?
+
+//Compras
+Route.get("/compras/produtos", "WEB/CompraController.Produtos"); //retorna lista de produtos compraveis
+Route.get("/compras/contas", "WEB/CompraController.Contas"); //retorna lista de produtos compraveis
+Route.get("/compras/pedidos", "WEB/CompraController.Pedidos"); //retorna pedidos atendidos e abertos do cliente
+Route.get("/compras/pedidos/detalhes/:ID/:STATUS", "WEB/CompraController.PedidoDet"); //retorna detalhes do pedido
 
 //Solicitação de equipamentos
 Route.get("/equip/adresses", "WEB/EquipRequestController.See"); //retorna endereços, máquinas, configurações
