@@ -14,7 +14,7 @@ class ProfileController {
       const verified = seeToken(token);
 
       const res = await Database.raw(
-        "select * from dbo.FilialEntidadeGrVenda as F inner join dbo.SIGAMAT as S on F.M0_FILIAL = S.M0_FILIAL inner join dbo.Parametros as P on P.GrpVen = F.A1_GRPVEN where P.GrpVen = ?",
+        "select * from dbo.FilialEntidadeGrVenda as F left join dbo.SIGAMAT as S on F.M0_CODFIL = S.M0_CODFIL inner join dbo.Parametros as P on P.GrpVen = F.A1_GRPVEN where P.GrpVen = ?",
         [verified.grpven]
       );
 

@@ -160,67 +160,81 @@ class CompraController {
       "FranqueadoRetira",
     ]);
 
-    // try{
-    //   const verified = seeToken(token);
+    try {
+      const verified = seeToken(token);
 
-    //   //testar se o cara tem limite
-    //   //verifico se o pedido tem pelo menos 1 item
-    //   //testo se o cara ta bloqueado
+      //verifico se o pedido tem pelo menos 1 item
+      if (Items.length === 0) throw Error;
 
-    //   const ProxPedidoID = null
+      //testar se o cara tem limite
+      const limite = await Database.raw(queryLimiteDisponivel, [
+        verified.grpven,
+      ]);
 
-    //   //salvo o pedido nas tabelas
-    //   await Database.insert({
-    //     GrpVen: verified.grpven,
-    //    PedidoID: ProxPedidoID,
-    //    STATUS: null,
-    //    Filial: '0201',
-    //    CpgId: '003',
-    //    DataCriacao: moment().format()
-    //   }).into('dbo.PedidosCompraCab')
+      //testo se o cara ta bloqueado
+      const bloqueado = await Database.raw(queryBloqueado, [verified.grpven]);
 
-    //   Items.forEach(async (item, i) =>
-    //     await Database.insert({
-    //       EMISS: '00',
-    //      SERIE: '1',
-    //      PedidoID: ProxPedidoID,
-    //      PedidoItemID: i+1,
-    //      CodigoCliente: ,
-    //      LojaCliente: ,
-    //      CodigoDL: null,
-    //      LojaDL: null,
-    //      Filial: '0201',
-    //      CodigoTabelaPreco: '462',
-    //      CodigoVendedor: '000026',
-    //      CodigoCondicaoPagto: '003',
-    //      TipoFrete: 'C',
-    //      MsgNotaFiscal: null,
-    //      MsgPadrao: null,
-    //      DataEntrega: null,
-    //      CodigoProduto: item.Cód,
-    //      QtdeVendida: item.QCompra * item.FatConversao,
-    //      PrecoUnitarioLiquido: item.VlrUn,
-    //      PrecoTotal: (item.QCompra * item.FatConversao) * item.VlrUn,
-    //      Limite: null,
-    //      CodigoTotvs: null,
-    //      DataCriacao: moment().format(),
-    //      DataIntegracao: null,
-    //      GrpVen: verified.grpven,
-    //      MsgBO: Obs,
-    //      NATUREZA: null,
-    //      TipOp: '01'
-    //     }).into('dbo.PedidosVenda')
-    //     )
+      //busco dados do franqueado
+      const Franqueado = await Database.select("A1_COD", "A1_LOJA")
+        .from("dbo.FilialEntidadeGrVenda")
+        .where({
+          A1_GRPVEN: verified.grpven,
+        });
 
-    // }catch(err){
+      //busco o número do último pedido
+      const UltPedidoID = await Database.raw(
+        "select MAX(PedidoID) as UltPedido from dbo.PedidosVenda",
+        []
+      );
 
-    // }
+      //salvo o pedido nas tabelas
+      await Database.insert({
+        GrpVen: verified.grpven,
+        PedidoID: Number(UltPedidoID[0]) + 1,
+        STATUS: null,
+        Filial: "0201",
+        CpgId: "003",
+        DataCriacao: moment().format(),
+      }).into("dbo.PedidosCompraCab");
 
-    response.status(200).send({
-      Items,
-      Obs,
-      FranqueadoRetira,
-    });
+      Items.forEach(
+        async (item, i) =>
+          await Database.insert({
+            EMISS: "00",
+            SERIE: "1",
+            PedidoID: Number(UltPedidoID[0]) + 1,
+            PedidoItemID: i + 1,
+            CodigoCliente: Franqueado[0].A1_COD,
+            LojaCliente: Franqueado[0].A1_LOJA,
+            CodigoDL: null,
+            LojaDL: null,
+            Filial: "0201",
+            CodigoTabelaPreco: "462",
+            CodigoVendedor: "000026",
+            CodigoCondicaoPagto: "003",
+            TipoFrete: "C",
+            MsgNotaFiscal: null,
+            MsgPadrao: null,
+            DataEntrega: null,
+            CodigoProduto: item.Cód,
+            QtdeVendida: item.QCompra * item.FatConversao,
+            PrecoUnitarioLiquido: item.VlrUn,
+            PrecoTotal: item.QCompra * item.FatConversao * item.VlrUn,
+            Limite: null,
+            CodigoTotvs: null,
+            DataCriacao: moment().format(),
+            DataIntegracao: null,
+            GrpVen: verified.grpven,
+            MsgBO: Obs,
+            NATUREZA: null,
+            TipOp: "01",
+          }).into("dbo.PedidosVenda")
+      );
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(200).send(err);
+    }
   }
 }
 
@@ -230,7 +244,7 @@ const queryProdutos =
   "SELECT dbo.PrecoCompra.ProdId AS Cód, dbo.PrecoCompra.Produto, dbo.Produtos.ProdQtMinCompra AS QtMin, dbo.Produtos.PrCompra AS VlrUn, [ProdQtMinCompra]*[PrCompra] AS Vlr, dbo.Produtos.FatConversao FROM dbo.PrecoCompra INNER JOIN dbo.Produtos ON dbo.PrecoCompra.ProdId = dbo.Produtos.ProdId WHERE dbo.Produtos.Compra = 'S' ORDER BY dbo.PrecoCompra.Produto";
 
 const queryGigante1 =
-  "SELECT dbo.FilialEntidadeGrVenda.LimiteCredito, dbo.FilialEntidadeGrVenda.LimExtraCredito, SE1_GrpVenT.Avencer, SE1_GrpVenT.Vencida, SE1_ComprasNVencidas.Compras, IIf([Compras]>0,[LimiteCredito]+[LimExtraCredito]-[Compras],[LimiteCredito]) AS LimiteAtual FROM ((dbo.FilialEntidadeGrVenda LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(IIf([SE1DtVencR] > GETDATE(), 0,[E1_SALDO])) AS Avencer, Sum(IIf([SE1DtVencR] < GETDATE(), [E1_SALDO],0)) AS Vencida FROM (dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO)) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_GrpVenT ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_GrpVenT.GrpVen) LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM (dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO)) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE (((SE1_Class.E1Desc)='Compra') AND ((IIf([SE1DtVenc] Is Null,[DtVenc],[SE1DtVencR]))>=GETDATE())) GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen) WHERE (((dbo.FilialEntidadeGrVenda.Inatv) Is Null) and dbo.FilialEntidadeGrVenda.A1_GRPVEN = ?)";
+  "SELECT dbo.FilialEntidadeGrVenda.LimiteCredito, dbo.FilialEntidadeGrVenda.LimExtraCredito, dbo.FilialEntidadeGrVenda.Retira, dbo.FilialEntidadeGrVenda.VlrMinCompra, SE1_GrpVenT.Avencer, SE1_GrpVenT.Vencida, SE1_ComprasNVencidas.Compras, IIf([Compras]>0,[LimiteCredito]+[LimExtraCredito]-[Compras],[LimiteCredito]) AS LimiteAtual FROM ((dbo.FilialEntidadeGrVenda LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(IIf([SE1DtVencR] > GETDATE(), 0,[E1_SALDO])) AS Avencer, Sum(IIf([SE1DtVencR] < GETDATE(), [E1_SALDO],0)) AS Vencida FROM (dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO)) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_GrpVenT ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_GrpVenT.GrpVen) LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM (dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO)) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE (((SE1_Class.E1Desc)='Compra') AND ((IIf([SE1DtVenc] Is Null,[DtVenc],[SE1DtVencR]))>=GETDATE())) GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen) WHERE (((dbo.FilialEntidadeGrVenda.Inatv) Is Null) and dbo.FilialEntidadeGrVenda.A1_GRPVEN = ?)";
 
 const queryBloqueado =
   "SELECT IIF(SUM(dbo.SE1_GrpVen.E1_VALOR) > 0, 'S', 'N') as Bloqueado FROM (dbo.SE1_GrpVen INNER JOIN SE1_Class  ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO))  LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc  where dbo.SE1_GrpVen.GrpVen = ? and DtVenc < GETDATE()";
@@ -249,3 +263,6 @@ const queryPedidosAtendidos =
 
 const queryPedidosAtendidosDet =
   "SELECT GRPVEN, D_EMISSAO, F_SERIE, DOC, Pedido, D_ITEM, ProdId, Produto, D_UM, D_QUANT, D_PRCVEN, D_TOTAL, DtEmissao AS Emissao, DEPDEST FROM dbo.SDBase WHERE (((GRPVEN)=?) AND ((D_FILIAL)<>?) AND ((M0_TIPO)='E')) AND ((Pedido) = ?) AND F_SERIE = '1' ORDER BY D_EMISSAO DESC";
+
+const queryLimiteDisponivel =
+  "SELECT IIf([Compras]>0,[LimiteCredito]+[LimExtraCredito]-[Compras],[LimiteCredito]) AS LimiteAtual FROM dbo.FilialEntidadeGrVenda LEFT JOIN (SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM (dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO)) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE (((SE1_Class.E1Desc)='Compra') AND ((IIf([SE1DtVenc] Is Null,[DtVenc],[SE1DtVencR]))>=GETDATE())) GROUP BY dbo.SE1_GrpVen.GrpVen) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVenWHERE (((dbo.FilialEntidadeGrVenda.Inatv) Is Null) and dbo.FilialEntidadeGrVenda.A1_GRPVEN = ?)";

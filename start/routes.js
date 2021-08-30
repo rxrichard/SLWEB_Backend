@@ -31,6 +31,7 @@ Route.put("profile/tax", "WEB/ProfileController.ChangeTax");
 
 //Leads
 Route.get("/leads", "WEB/LeadController.Show");
+Route.get("/leads/:lead", "WEB/LeadController.See");
 Route.put("/leads", "WEB/LeadController.Update");
 Route.post("/leads", "WEB/LeadController.Store");
 
