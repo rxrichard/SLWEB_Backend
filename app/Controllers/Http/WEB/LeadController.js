@@ -101,6 +101,22 @@ class LeadController {
           });
 
         response.status(200).send();
+      } else if (type === 'confirm'){
+        moment.locale("pt-br");
+        await Database.table("dbo.LeadsAttr")
+          .where({
+            GrpVen: verified.grpven,
+            LeadId: ID,
+          })
+          .update({
+            Ativo: false,
+            Desistiu: false,
+            Negociacao: true,
+            Motivo: motivo,
+            DataFechamento: moment().subtract(3, "hours").toDate(),
+          });
+
+        response.status(200).send();
       }
     } catch (err) {
       response.status(409).send();
