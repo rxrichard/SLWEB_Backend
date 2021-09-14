@@ -336,7 +336,7 @@ class EquipRequestController {
       (message) => {
         message
           .to(Solicitacao.Email_Acompanhamento)
-          .cc(Env.get("EMAIL_COMERCIAL_2"))
+          .cc([Env.get("EMAIL_SUPORTE"), Env.get("EMAIL_COMERCIAL_1"), Env.get("EMAIL_COMERCIAL_2")])
           .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
           .subject("Nova ordem de serviço")
           .attach(PathWithName);
@@ -652,7 +652,7 @@ class EquipRequestController {
             (message) => {
               message
                 .to(dados[0].OSCEmail)
-                .cc([Env.get("EMAIL_SUPORTE"), Env.get("EMAIL_COMERCIAL_2")])
+                .cc([Env.get("EMAIL_SUPORTE"), Env.get("EMAIL_COMERCIAL_1"), Env.get("EMAIL_COMERCIAL_2")])
                 .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
                 .subject("Previsão de entrega da OS")
                 .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {
@@ -682,7 +682,7 @@ class EquipRequestController {
             Mail.send("emails.OScancel", { verified, ID: OSID }, (message) => {
               message
                 .to(Env.get("EMAIL_SUPORTE"))
-                .cc([Env.get("EMAIL_COMERCIAL_2")])
+                .cc([Env.get("EMAIL_COMERCIAL_1"), Env.get("EMAIL_COMERCIAL_2")])
                 .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
                 .subject("Cancelamento de OS")
                 .attach(Helpers.publicPath(`OS/${dados[0].OSCPDF}`), {

@@ -12,13 +12,13 @@ class LeadController {
       const verified = seeToken(token);
 
       //da o vencimento aos contatos vencidos
-      await Database.raw(
-        "update dbo.LeadsAttr set Ativo = 0, Expirou = 1, DataFechamento = GETDATE() where GETDATE() > DATEADD(HH, (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras'), DataHora) AND Ativo = 1"
-      );
+      // await Database.raw(
+      //   "update dbo.LeadsAttr set Ativo = 0, Expirou = 1, DataFechamento = GETDATE() where GETDATE() > DATEADD(HH, (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras'), DataHora) AND Ativo = 1"
+      // );
 
       //busca leads disponiveis
       const LeadsGeral = await Database.raw(
-        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Insercao from (select * from dbo.Leads as L left join (select LeadId, COUNT(GrpVen) as Atribuicoes from dbo.LeadsAttr where Ativo = 1 group by LeadId) as C on L.Id = C.LeadId left join (select ParamVlr as MaxAtribuicoes from dbo.Parametros where ParamId = 'LeadMax') as P on P.MaxAtribuicoes <> 0 where Atribuicoes IS NULL OR Atribuicoes < MaxAtribuicoes and L.Disponivel = 1) as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.Id not in (select LeadId from dbo.LeadsAttr where GrpVen = ? group by LeadId) and L.Insercao <= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)) and F.UF = L.Estado order by L.Insercao DESC",
+        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Insercao from (select * from dbo.Leads as L left join (select LeadId, COUNT(GrpVen) as Atribuicoes from dbo.LeadsAttr where Ativo = 1 group by LeadId) as C on L.Id = C.LeadId left join (select ParamVlr as MaxAtribuicoes from dbo.Parametros where ParamId = 'LeadMax') as P on P.MaxAtribuicoes <> 0 where Atribuicoes IS NULL OR Atribuicoes < MaxAtribuicoes and L.Disponivel = 1) as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.Id not in (select LeadId from dbo.LeadsAttr where GrpVen = ? group by LeadId) and L.Insercao <= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)) and (F.UF = L.Estado OR F.M0_CODFIL = '0201' OR F.M0_CODFIL = '0203') order by L.Insercao DESC",
         [verified.grpven, verified.grpven]
       );
 

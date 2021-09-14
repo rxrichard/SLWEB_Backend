@@ -1,5 +1,6 @@
 'use strict'
 
+//Desativei isso porque tava me complicando com o controller de Compras
 class ConvertEmptyStringsToNull {
   async handle ({ request }, next) {
     if (Object.keys(request.body).length) {

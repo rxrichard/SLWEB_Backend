@@ -88,7 +88,42 @@ class CompraController {
 
       if (Status === "Faturado") {
         //busca nos pedidos atendidos
-        PedidoDet = await Database.raw(queryPedidosAtendidosDet, [
+        PedidoDet = await Database.raw(queryPedidosAtendidosDetPorPedidoID, [
+          verified.grpven,
+          verified.user_code,
+          PedidoID,
+        ]);
+
+        if (PedidoDet.length > 0) {
+          const transp = await Database.raw(
+            "execute ProcNotaTransportadora @Doc = ? , @Filial = '0201'",
+            [PedidoDet[0].DOC]
+          );
+
+          transp.length > 0
+            ? (Pedido.Transportadora = transp[0].A4_NOME)
+            : null;
+
+          Pedido.Data = PedidoDet[0].Emissao;
+        }
+
+        PedidoDet.map((det) => {
+          newPedDet.push({
+            id: det.ProdId,
+            Produto: det.Produto,
+            UN: det.D_UM,
+            Quantidade: det.D_QUANT,
+            VlrUn: det.D_PRCVEN,
+            VlrTotal: det.D_TOTAL,
+          });
+        });
+
+        Pedido.Detalhes = newPedDet;
+      }
+
+      if (Status === "DOC") {
+        //busca nos pedidos atendidos
+        PedidoDet = await Database.raw(queryPedidosAtendidosDetPorDocNum, [
           verified.grpven,
           verified.user_code,
           PedidoID,
@@ -146,6 +181,8 @@ class CompraController {
         Pedido.Detalhes = newPedDet;
       }
 
+      Pedido.PedidoId = PedidoID;
+
       response.status(200).send(Pedido);
     } catch (err) {
       response.status(400);
@@ -154,14 +191,14 @@ class CompraController {
 
   async Comprar({ request, response }) {
     const token = request.header("authorization");
-    const { Items, Obs } = request.only(["Items", "Obs"]);
+    const { Items, Obs, Retira } = request.only(["Items", "Obs", "Retira"]);
 
     try {
       const verified = seeToken(token);
 
       //verifico se o pedido tem pelo menos 1 item
       if (Items.length === 0) {
-        throw new Error;
+        throw new Error();
       }
 
       //testar se o cara tem limite
@@ -169,75 +206,125 @@ class CompraController {
         verified.grpven,
       ]);
       if (limite[0] && limite[0].LimiteAtual <= 0) {
-        throw new Error;
+        throw new Error();
       }
 
       //testo se o cara ta bloqueado
       const bloqueado = await Database.raw(queryBloqueado, [verified.grpven]);
-      if (bloqueado[0] && bloqueado[0].Bloqueado === "N") {
-        throw new Error;
+      if (bloqueado[0] && bloqueado[0].Bloqueado === "S") {
+        throw new Error();
       }
 
       //busco dados do franqueado
-      // const Franqueado = await Database.select("A1_COD", "A1_LOJA")
-      //   .from("dbo.FilialEntidadeGrVenda")
-      //   .where({
-      //     A1_GRPVEN: verified.grpven,
-      //   });
+      const Franqueado = await Database.select("A1_COD", "A1_LOJA")
+        .from("dbo.FilialEntidadeGrVenda")
+        .where({
+          A1_GRPVEN: verified.grpven,
+        });
 
       //busco o número do último pedido
-      // const UltPedidoID = await Database.raw(
-      //   "select MAX(PedidoID) as UltPedido from dbo.PedidosVenda",
-      //   []
-      // );
+      const UltPedidoID = await Database.raw(
+        "select MAX(PedidoID) as UltPedido from dbo.PedidosVenda",
+        []
+      );
+
+      const ProxId = Number(UltPedidoID[0].UltPedido) + 1;
 
       //salvo o pedido nas tabelas
-      // await Database.insert({
-      //   GrpVen: verified.grpven,
-      //   PedidoID: Number(UltPedidoID[0]) + 1,
-      //   STATUS: null,
-      //   Filial: "0201",
-      //   CpgId: "003",
-      //   DataCriacao: moment().format(),
-      // }).into("dbo.PedidosCompraCab");
+      await Database.insert({
+        GrpVen: verified.grpven,
+        PedidoId: ProxId,
+        STATUS: null,
+        Filial: "0201",
+        CpgId: "003",
+        DataCriacao: new Date(moment().subtract(3, "hours").format()),
+      }).into("dbo.PedidosCompraCab");
 
-      // Items.forEach(
-      //   async (item, i) =>
-      //     await Database.insert({
-      //       EMISS: "00",
-      //       SERIE: "1",
-      //       PedidoID: Number(UltPedidoID[0]) + 1,
-      //       PedidoItemID: i + 1,
-      //       CodigoCliente: Franqueado[0].A1_COD,
-      //       LojaCliente: Franqueado[0].A1_LOJA,
-      //       CodigoDL: " ",
-      //       LojaDL: " ",
-      //       Filial: "0201",
-      //       CodigoTabelaPreco: "462",
-      //       CodigoVendedor: "000026",
-      //       CodigoCondicaoPagto: "003",
-      //       TipoFrete: "C",
-      //       MsgNotaFiscal: null,
-      //       MsgPadrao: null,
-      //       DataEntrega: null,
-      //       CodigoProduto: item.Cód,
-      //       QtdeVendida: item.QCompra * item.FatConversao,
-      //       PrecoUnitarioLiquido: item.VlrUn,
-      //       PrecoTotal: item.QCompra * item.FatConversao * item.VlrUn,
-      //       Limite: null,
-      //       CodigoTotvs: null,
-      //       DataCriacao: moment().format(),
-      //       DataIntegracao: null,
-      //       GrpVen: verified.grpven,
-      //       MsgBO: Obs,
-      //       NATUREZA: null,
-      //       TipOp: "01",
-      //     }).into("dbo.PedidosVenda")
-      // );
+      Items.forEach(
+        async (item, i) =>
+          await Database.insert({
+            EMISS: "00",
+            SERIE: "1",
+            PedidoID: ProxId,
+            PedidoItemID: i + 1,
+            CodigoCliente: Franqueado[0].A1_COD,
+            LojaCliente: Franqueado[0].A1_LOJA,
+            CodigoDL: " ",
+            LojaDL: " ",
+            Filial: "0201",
+            CodigoTabelaPreco: "462",
+            CodigoVendedor: "000026",
+            CodigoCondicaoPagto: "003",
+            TipoFrete: "C",
+            MsgNotaFiscal: null,
+            MsgPadrao: null,
+            DataEntrega: null,
+            CodigoProduto: `00000${item.Cód}`.slice(-5),
+            QtdeVendida: item.QCompra * item.FatConversao,
+            PrecoUnitarioLiquido: item.VlrUn,
+            PrecoTotal: item.QCompra * item.FatConversao * item.VlrUn,
+            Limite: null,
+            CodigoTotvs: null,
+            DataCriacao: new Date(moment().subtract(3, "hours").format()),
+            DataIntegracao: null,
+            GrpVen: verified.grpven,
+            MsgBO: Retira ? Obs.concat("Franqueado retira") : Obs,
+            NATUREZA: 10117,
+            TipOp: "01",
+            TES: String(item.Cód) === "3994" ? "674" : null,
+          }).into("dbo.PedidosVenda")
+      );
 
-      response.status(200).send(bloqueado[0].Bloqueado);
+      response.status(200).send({ message: "ok" });
     } catch (err) {
-      response.status(200).send(err);
+      response.status(400).send(err);
+    }
+  }
+
+  async Cancelar({ request, response, params }) {
+    const token = request.header("authorization");
+    const PedidoId = params.ID;
+
+    try {
+      seeToken(token);
+
+      const pedidoCab = await Database.select("STATUS")
+        .from("dbo.PedidosCompraCab")
+        .where({
+          PedidoId: PedidoId,
+        });
+
+      const pedidoVenda = await Database.select("DataIntegracao")
+        .from("dbo.PedidosVenda")
+        .where({
+          PedidoID: PedidoId,
+        });
+
+      if (pedidoCab[0].STATUS === "C") {
+        response.status(400).send({ message: 'Pedido já cancelado' });
+      } else if (pedidoVenda[0].DataIntegracao !== null) {
+        response.status(400).send({ message: 'Pedido em processamento' });
+      } else {
+        await Database.table("dbo.PedidosCompraCab")
+          .where({
+            PedidoId: PedidoId,
+          })
+          .update({
+            STATUS: "C",
+          });
+
+        await Database.table("dbo.PedidosVenda")
+          .where({
+            PedidoID: PedidoId,
+          })
+          .update({
+            STATUS: "C",
+            DataIntegracao: new Date(moment().subtract(3, "hours").format()),
+          });
+          response.status(200).send({ message: 'ok' });
+      }
+    } catch (err) {
+      response.status(400).send(err);
     }
   }
 }
@@ -265,8 +352,11 @@ const queryPedidosNaoAtendidos =
 const queryPedidosAtendidos =
   "SELECT 'Faturado' as Status, S.DtEmissao as Faturado, S.Pedido as Pedido, S.DOC as NF, S.F_SERIE as Serie, SUM(S.D_TOTAL) as Total, COUNT(S.D_ITEM) as QtItems FROM dbo.SDBase as S WHERE S.GRPVEN = ? AND S.M0_TIPO='E' AND S.Pedido<>'0' AND S.F_SERIE = '1' GROUP BY S.D_FILIAL, S.Pedido, S.F_SERIE, S.DOC, S.DtEmissao ORDER BY S.Pedido DESC , S.DtEmissao DESC;";
 
-const queryPedidosAtendidosDet =
+const queryPedidosAtendidosDetPorPedidoID =
   "SELECT GRPVEN, D_EMISSAO, F_SERIE, DOC, Pedido, D_ITEM, ProdId, Produto, D_UM, D_QUANT, D_PRCVEN, D_TOTAL, DtEmissao AS Emissao, DEPDEST FROM dbo.SDBase WHERE (((GRPVEN)=?) AND ((D_FILIAL)<>?) AND ((M0_TIPO)='E')) AND ((Pedido) = ?) AND F_SERIE = '1' ORDER BY D_EMISSAO DESC";
+
+const queryPedidosAtendidosDetPorDocNum =
+  "SELECT GRPVEN, D_EMISSAO, F_SERIE, DOC, Pedido, D_ITEM, ProdId, Produto, D_UM, D_QUANT, D_PRCVEN, D_TOTAL, DtEmissao AS Emissao, DEPDEST FROM dbo.SDBase WHERE (((GRPVEN)=?) AND ((D_FILIAL)<>?) AND ((M0_TIPO)='E')) AND ((DOC) = ?) AND F_SERIE = '1' ORDER BY D_EMISSAO DESC";
 
 const queryLimiteDisponivel =
   "SELECT IIf([Compras]>0,[LimiteCredito]+[LimExtraCredito]-[Compras],[LimiteCredito]) AS LimiteAtual FROM dbo.FilialEntidadeGrVenda LEFT JOIN (SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM (dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO)) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE (((SE1_Class.E1Desc)='Compra') AND ((IIf([SE1DtVenc] Is Null,[DtVenc],[SE1DtVencR]))>=GETDATE())) GROUP BY dbo.SE1_GrpVen.GrpVen) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen WHERE (((dbo.FilialEntidadeGrVenda.Inatv) Is Null) and dbo.FilialEntidadeGrVenda.A1_GRPVEN = ?)";
