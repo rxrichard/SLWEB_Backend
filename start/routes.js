@@ -47,17 +47,12 @@ Route.get("/compras/produtos", "WEB/CompraController.Produtos"); //retorna lista
 Route.get("/compras/contas", "WEB/CompraController.Contas"); //retorna lista de produtos compraveis
 Route.get("/compras/pedidos", "WEB/CompraController.Pedidos"); //retorna pedidos atendidos e abertos do cliente
 Route.get("/compras/pedidos/detalhes/:ID/:STATUS", "WEB/CompraController.PedidoDet"); //retorna detalhes do pedido
-<<<<<<< HEAD
-Route.post("/compras/comprar", "WEB/CompraController.Comprar"); //retorna detalhes do pedido
-
-=======
 Route.delete("/compras/pedidos/cancelar/:ID", "WEB/CompraController.Cancelar"); //retorna detalhes do pedido
 Route.post("/compras/comprar", "WEB/CompraController.Comprar"); //retorna detalhes do pedido
 
 //Vendas
 Route.get("/vendas/produtos", "WEB/VendaController.Produtos"); //retorna lista de produtos compraveis
 
->>>>>>> 06e7de08b7eef7a0e6446204afd76773aa430790
 //Solicitação de equipamentos
 Route.get("/equip/adresses", "WEB/EquipRequestController.See"); //retorna endereços, máquinas, configurações
 Route.get("/equip/requests", "WEB/EquipRequestController.Show"); //retorna todas as requisições do grupo

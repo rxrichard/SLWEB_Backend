@@ -93,11 +93,7 @@ class LeadController {
           await Database.raw('IF NOT EXISTS (select * from dbo.LeadsAttr where LeadId = ? AND Ativo = 1) INSERT INTO dbo.LeadsAttr (LeadId, Filial, GrpVen) VALUES (?, ?, ?)', 
           [ID, ID, verified.user_code, verified.grpven])
 
-<<<<<<< HEAD
-          const endereco = await Database.raw('select Contato, Fone_1, Fone_2, Email, Mensagem from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where L.Id = ? and A.GrpVen = ? and A.Ativo = 1',
-=======
           const endereco = await Database.raw('select Contato, Fone_1, Fone_2, Email from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where L.Id = ? and A.GrpVen = ? and A.Ativo = 1',
->>>>>>> 06e7de08b7eef7a0e6446204afd76773aa430790
           [ID, verified.grpven])
 
           if (endereco.length > 0) {
@@ -163,10 +159,6 @@ class LeadController {
         Fone_2: lead.Fone2,
         Email: lead.Email,
         AtividadeDesc: lead.Desc,
-<<<<<<< HEAD
-        Mensagem: lead.Msg,
-=======
->>>>>>> 06e7de08b7eef7a0e6446204afd76773aa430790
         Disponivel: true,
       }).into("dbo.Leads");
 
