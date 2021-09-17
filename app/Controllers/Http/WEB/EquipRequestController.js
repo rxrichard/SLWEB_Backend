@@ -447,7 +447,7 @@ class EquipRequestController {
             .update({
               OSCComDtValidação: moment().subtract(3, "hours").toDate(),
               OSCComAceite: action === "accept" ? true : false,
-              OSCComMotivo: reject,
+              OSCComMotivo: action === "accept" ? '' : reject,
             });
 
           dados = await Database.select("*")
@@ -507,7 +507,7 @@ class EquipRequestController {
             .update({
               OSCTecDtValidação: moment().subtract(3, "hours").toDate(),
               OSCTecAceite: action === "accept" ? true : false,
-              OSCTecMotivo: reject,
+              OSCTecMotivo: action === "accept" ? '' : reject,
               OSCTecDtPrevisao:
                 prev !== null
                   ? moment(prev).subtract(3, "hours").toDate()
@@ -570,7 +570,7 @@ class EquipRequestController {
             .update({
               OSCTecDtValidação: moment().subtract(3, "hours").toDate(),
               OSCTecAceite: action === "accept" ? true : false,
-              OSCTecMotivo: reject,
+              OSCTecMotivo: action === "accept" ? '' :reject,
               OSCTecDtPrevisao:
                 prev !== null
                   ? moment(prev).subtract(3, "hours").toDate()

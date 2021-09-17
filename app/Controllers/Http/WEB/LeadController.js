@@ -13,20 +13,12 @@ class LeadController {
 
       //da o vencimento aos contatos vencidos
       // await Database.raw(
-<<<<<<< HEAD
-      //   "update dbo.LeadsAttr set Ativo = 0, Expirou = 1, Motivo = 'Expirou', DataFechamento = GETDATE() where GETDATE() > DATEADD(HH, (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras'), DataHora) AND Ativo = 1"
-=======
       //   "update dbo.LeadsAttr set Ativo = 0, Expirou = 1, DataFechamento = GETDATE() where GETDATE() > DATEADD(HH, (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras'), DataHora) AND Ativo = 1"
->>>>>>> 06e7de08b7eef7a0e6446204afd76773aa430790
       // );
 
       //busca leads disponiveis
       const LeadsGeral = await Database.raw(
-<<<<<<< HEAD
-        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Insercao from (select * from dbo.Leads as L left join (select LeadId, COUNT(GrpVen) as Atribuicoes from dbo.LeadsAttr where Ativo = 1 group by LeadId) as C on L.Id = C.LeadId left join (select ParamVlr as MaxAtribuicoes from dbo.Parametros where ParamId = 'LeadMax') as P on P.MaxAtribuicoes <> 0 where Atribuicoes IS NULL OR Atribuicoes < MaxAtribuicoes and L.Disponivel = 1) as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.Id not in (select LeadId from dbo.LeadsAttr where GrpVen = ? group by LeadId) and L.Insercao <= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)) and F.UF = L.Estado order by L.Insercao DESC",
-=======
         "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Insercao from (select * from dbo.Leads as L left join (select LeadId, COUNT(GrpVen) as Atribuicoes from dbo.LeadsAttr where Ativo = 1 group by LeadId) as C on L.Id = C.LeadId left join (select ParamVlr as MaxAtribuicoes from dbo.Parametros where ParamId = 'LeadMax') as P on P.MaxAtribuicoes <> 0 where Atribuicoes IS NULL OR Atribuicoes < MaxAtribuicoes and L.Disponivel = 1) as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.Id not in (select LeadId from dbo.LeadsAttr where GrpVen = ? group by LeadId) and L.Insercao <= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)) and (F.UF = L.Estado OR F.M0_CODFIL = '0201' OR F.M0_CODFIL = '0203') order by L.Insercao DESC",
->>>>>>> 06e7de08b7eef7a0e6446204afd76773aa430790
         [verified.grpven, verified.grpven]
       );
 
@@ -36,10 +28,6 @@ class LeadController {
         [verified.grpven]
       );
 
-<<<<<<< HEAD
-      //Busca quantas tentativar o cara ainda tem de assumir um lead
-=======
->>>>>>> 06e7de08b7eef7a0e6446204afd76773aa430790
       const Limites = await Database.raw(
         "select * from (select COUNT(GrpVen) as Tentativas from dbo.LeadsAttr where GrpVen = ? and (Ativo = 1 or (Ativo = 0 and DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000))))) as A join (select ParamVlr as MaxTentativas from dbo.Parametros where ParamId = 'LeadMaxFilial') as P on P.MaxTentativas >= 0 join (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras') as J on J.MaxHoras >= 0",
         [verified.grpven]
@@ -47,26 +35,22 @@ class LeadController {
 
       response.status(200).send({ LeadsGeral, LeadsFranqueado, Limites });
     } catch (err) {
-<<<<<<< HEAD
-      response.status(400).send();
-=======
       response.status(400).send("Erro");
->>>>>>> 06e7de08b7eef7a0e6446204afd76773aa430790
     }
   }
 
-  async See({ request, response, params }){
+  async See({ request, response, params }) {
     const token = request.header("authorization");
     const LeadId = params.lead
 
-    try{
+    try {
       const verified = seeToken(token);
 
       const historico = await Database.raw('select LeadId, Motivo, DataFechamento from dbo.LeadsAttr where Desistiu = 1 and LeadId = ? order by DataFechamento DESC', [LeadId])
-      
+
 
       response.status(200).send(historico)
-    }catch(err){
+    } catch (err) {
       response.status(400).send()
     }
   }
@@ -90,11 +74,11 @@ class LeadController {
         ) {
           response.status(401).send();
         } else {
-          await Database.raw('IF NOT EXISTS (select * from dbo.LeadsAttr where LeadId = ? AND Ativo = 1) INSERT INTO dbo.LeadsAttr (LeadId, Filial, GrpVen) VALUES (?, ?, ?)', 
-          [ID, ID, verified.user_code, verified.grpven])
+          await Database.raw('IF NOT EXISTS (select * from dbo.LeadsAttr where LeadId = ? AND Ativo = 1) INSERT INTO dbo.LeadsAttr (LeadId, Filial, GrpVen) VALUES (?, ?, ?)',
+            [ID, ID, verified.user_code, verified.grpven])
 
           const endereco = await Database.raw('select Contato, Fone_1, Fone_2, Email from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where L.Id = ? and A.GrpVen = ? and A.Ativo = 1',
-          [ID, verified.grpven])
+            [ID, verified.grpven])
 
           if (endereco.length > 0) {
             response.status(200).send(endereco);
@@ -117,7 +101,7 @@ class LeadController {
           });
 
         response.status(200).send();
-      } else if (type === 'confirm'){
+      } else if (type === 'confirm') {
         moment.locale("pt-br");
         await Database.table("dbo.LeadsAttr")
           .where({
