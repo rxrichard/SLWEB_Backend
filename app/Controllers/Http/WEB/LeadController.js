@@ -29,8 +29,8 @@ class LeadController {
       );
 
       const Limites = await Database.raw(
-        "select * from (select COUNT(GrpVen) as Tentativas from dbo.LeadsAttr where GrpVen = ? and (Ativo = 1 or (Ativo = 0 and DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000))))) as A join (select ParamVlr as MaxTentativas from dbo.Parametros where ParamId = 'LeadMaxFilial') as P on P.MaxTentativas >= 0 join (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras') as J on J.MaxHoras >= 0",
-        [verified.grpven]
+        "select * from (select COUNT(GrpVen) as Tentativas from dbo.LeadsAttr where GrpVen = ? and (Ativo = 1 or (Ativo = 0 and DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000))))) as A join (select MaxLeads as MaxTentativas from dbo.FilialEntidadeGrVenda where A1_GRPVEN = ?) as P on P.MaxTentativas >= 0 join (select ParamVlr as MaxHoras from dbo.Parametros where ParamId = 'LeadMaxHoras') as J on J.MaxHoras >= 0",
+        [verified.grpven, verified.grpven]
       );
 
       response.status(200).send({ LeadsGeral, LeadsFranqueado, Limites });
@@ -64,8 +64,8 @@ class LeadController {
 
       if (type === "hold") {
         const Limites = await Database.raw(
-          "select COUNT(L.GrpVen) as Tentativas, P.ParamVlr as MaxTentativas from dbo.LeadsAttr as L inner join dbo.Parametros as P on P.ParamId = 'LeadMaxFilial' where L.GrpVen = ? and (L.Ativo = 1 or (L.Ativo = 0 and L.DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)))) group by P.ParamVlr",
-          [verified.grpven]
+          "select COUNT(L.GrpVen) as Tentativas, F.MaxLeads as MaxTentativas from dbo.LeadsAttr as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.GrpVen = ? and (L.Ativo = 1 or (L.Ativo = 0 and L.DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)))) group by F.MaxLeads",
+          [verified.grpven, verified.grpven]
         );
 
         if (
@@ -143,6 +143,7 @@ class LeadController {
         Fone_2: lead.Fone2,
         Email: lead.Email,
         AtividadeDesc: lead.Desc,
+        Mensagem: lead.Msg,
         Disponivel: true,
       }).into("dbo.Leads");
 
