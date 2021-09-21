@@ -52,6 +52,8 @@ Route.post("/compras/comprar", "WEB/CompraController.Comprar"); //retorna detalh
 
 //Vendas
 Route.get("/vendas/produtos", "WEB/VendaController.Produtos"); //retorna lista de produtos compraveis
+Route.get("/vendas/pedidos", "WEB/VendaController.Show"); //retorna todos os pedidos de venda da filial
+Route.get("/vendas/pedidos/detalhes/:serie/:pvc", "WEB/VendaController.See"); //retorna os detalhes de dado pedido
 
 //Solicitação de equipamentos
 Route.get("/equip/adresses", "WEB/EquipRequestController.See"); //retorna endereços, máquinas, configurações
