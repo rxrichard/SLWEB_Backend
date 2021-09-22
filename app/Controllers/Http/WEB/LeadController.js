@@ -143,6 +143,7 @@ class LeadController {
         Fone_2: lead.Fone2,
         Email: lead.Email,
         AtividadeDesc: lead.Desc,
+        Mensagem: lead.Msg,
         Disponivel: true,
       }).into("dbo.Leads");
 

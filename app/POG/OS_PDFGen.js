@@ -143,13 +143,13 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
               { text: "Grupo: ", bold: true },
               `${
                 typeof Dados[0] != "undefined"
-                  ? Dados[0].Razão_Social.trim()
+                  ? Dados[0].GrupoVenda.trim()
                   : "Não encontrado"
               }`,
               { text: "CNPJ: ", bold: true },
               `${
                 typeof Dados[0] != "undefined"
-                  ? Dados[0].CNPJss.trim()
+                  ? Dados[0].M0_CGC.trim()
                   : "Não encontrado"
               }`,
             ],
