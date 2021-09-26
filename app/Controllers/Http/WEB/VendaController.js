@@ -1,8 +1,9 @@
 "use strict";
 const Database = use("Database");
+const Drive = use("Drive");
 const { seeToken } = require("../../../POG/index");
+const path = require('path');
 const moment = require("moment");
-
 class VendaController {
   async Produtos({ request, response }) {
     const token = request.header("authorization");
@@ -73,90 +74,90 @@ class VendaController {
     }
   }
 
-  async Store({ request, response }) {
-    const token = request.header("authorization");
-    const {
-      Carrinho,
-      Cliente,
-      OBS,
-      TipoVenda,
-      CondPag,
-      RemOrigem,
-      RemDestino,
-    } = request.only([
-      "Carrinho",
-      "Cliente",
-      "OBS",
-      "TipoVenda",
-      "CondPag",
-      "RemOrigem",
-      "RemDestino",
-    ]);
+  // async Store({ request, response }) {
+  //   const token = request.header("authorization");
+  //   const {
+  //     Carrinho,
+  //     Cliente,
+  //     OBS,
+  //     TipoVenda,
+  //     CondPag,
+  //     RemOrigem,
+  //     RemDestino,
+  //   } = request.only([
+  //     "Carrinho",
+  //     "Cliente",
+  //     "OBS",
+  //     "TipoVenda",
+  //     "CondPag",
+  //     "RemOrigem",
+  //     "RemDestino",
+  //   ]);
 
-    try {
-      const verified = seeToken(token);
+  //   try {
+  //     const verified = seeToken(token);
 
-      //verificar se o carrinho está vazio
-      //verificar se tem item com QTD zerada no carrinho
-      //verificar se o cliente foi definido
-      //verificar se o tipo de operação foi definido(venda/bonificação/remessa)
-      //verificar se o tipo de pagamento foi definido no caso venda
-      //verificar se os depósitos foram definidos no caso remessa
+  //     //verificar se o carrinho está vazio
+  //     //verificar se tem item com QTD zerada no carrinho
+  //     //verificar se o cliente foi definido
+  //     //verificar se o tipo de operação foi definido(venda/bonificação/remessa)
+  //     //verificar se o tipo de pagamento foi definido no caso venda
+  //     //verificar se os depósitos foram definidos no caso remessa
 
-      const ultPvcId = await Database.raw(
-        "select MAX(PvcID) as UltimoID from dbo.PedidosVendaCab where PvcSerie = 'F' and GrpVen = ?",
-        [verified.grpven]
-      );
+  //     const ultPvcId = await Database.raw(
+  //       "select MAX(PvcID) as UltimoID from dbo.PedidosVendaCab where PvcSerie = 'F' and GrpVen = ?",
+  //       [verified.grpven]
+  //     );
 
-      const newCab = await Database.insert({
-        GrpVen: ,
-        PvcSerie: ,
-        PvcID: ,
-        STATUS: ,
-        CNPJ: ,
-        Filial: ,
-        CpgId: ,
-        DataCriacao: ,
-        DataIntegracao: ,
-        DepId: ,
-        DepIdDest: ,
-        PvTipo: ,
-        DtEmissao: ,
-        F3_CODRSEF: ,
-        F3_DESCRET: ,
-        PedidoId: ,
-        PDF: ,
-        NroNF: ,
-        SerieNF: ,
-        DtEmissNF: ,
-        ChaveNF: ,
-        MsgNF: ,
-        PedidoN: 
-      }).into("dbo.PedidosVendaCab");
+  //     const newCab = await Database.insert({
+  //       GrpVen: ,
+  //       PvcSerie: ,
+  //       PvcID: ,
+  //       STATUS: ,
+  //       CNPJ: ,
+  //       Filial: ,
+  //       CpgId: ,
+  //       DataCriacao: ,
+  //       DataIntegracao: ,
+  //       DepId: ,
+  //       DepIdDest: ,
+  //       PvTipo: ,
+  //       DtEmissao: ,
+  //       F3_CODRSEF: ,
+  //       F3_DESCRET: ,
+  //       PedidoId: ,
+  //       PDF: ,
+  //       NroNF: ,
+  //       SerieNF: ,
+  //       DtEmissNF: ,
+  //       ChaveNF: ,
+  //       MsgNF: ,
+  //       PedidoN: 
+  //     }).into("dbo.PedidosVendaCab");
 
-      Carrinho.forEach((item) => {
-        const newDet = await Database.insert({
-          GrpVen: ,
-          PvcSerie: ,
-          PvcID: ,
-          PvdID: ,
-          ProdId: ,
-          PvdQtd: ,
-          PvdVlrUnit: ,
-          PvdVlrTotal: ,
-          DataCriacao: ,
-          PvdTES: ,
-          PvdTipOp: ,
-          PvdNatureza: ,
-          PdvVlrDesc:
-        }).into("dbo.PedidosVendaDet");
-      });
+  //     Carrinho.forEach((item) => {
+  //       const newDet = await Database.insert({
+  //         GrpVen: ,
+  //         PvcSerie: ,
+  //         PvcID: ,
+  //         PvdID: ,
+  //         ProdId: ,
+  //         PvdQtd: ,
+  //         PvdVlrUnit: ,
+  //         PvdVlrTotal: ,
+  //         DataCriacao: ,
+  //         PvdTES: ,
+  //         PvdTipOp: ,
+  //         PvdNatureza: ,
+  //         PdvVlrDesc:
+  //       }).into("dbo.PedidosVendaDet");
+  //     });
 
-      response.status(200).send({ message: "ok" });
-    } catch (err) {
-      response.status(200).send(err);
-    }
-  }
+  //     response.status(200).send({ message: "ok" });
+  //   } catch (err) {
+  //     response.status(200).send(err);
+  //   }
+  // }
 
   // async RequestNFeGeneration({ request, response, params }) {
   //   const token = request.header("authorization");
@@ -255,6 +256,66 @@ class VendaController {
   //     response.status(400).send(err);
   //   }
   // }
+
+  async RecoverDanfe({ request, response, params }) {
+    const token = request.header("authorization");
+    const serie = params.serie;
+    const pvc = params.pvc;
+
+
+    try {
+      const verified = seeToken(token);
+
+      const numeroExterno = await Database.select('PedidoId').from('dbo.PedidosVendaCab').where({
+        GrpVen: verified.grpven,
+        PvcSerie: serie,
+        PvcID: pvc
+      })
+
+      // numeroExterno[0].PedidoId
+
+      const chaveNe = await Database.connection('pg').select('num_pedido', 'chave_de_acesso').from('swvix.pedido').where({
+        num_externo: numeroExterno[0].PedidoId,
+        status: '1',
+        localestoque: verified.user_code
+      })
+
+      // const prefixoCancelamento = '110111'
+      // const prefixoCartaDeCorrecao = '110110'
+      /*o 01 é a ordem do evento, 
+      cancelamento(110111) sempre tem a ordem 01(não da pra cancelar duas vezes a mesma nota),
+      já carta de correcao pode ter 02, 03...
+      */
+      // const sulfixoComum = '01-procEventoNFe.xml'
+
+      const names = {
+        nomeDanfe: `000000000000000000000000000000${chaveNe[0].num_pedido}_nfe_-DANFE.pdf`.slice(-45),
+        // nomeXml: `000000000000000000000000000000${chaveNe[0].num_pedido}_nfe_.xml`.slice(-39),
+        // nomeCancelamento: `${prefixoCancelamento}${chaveNe[0].chave_de_acesso}${sulfixoComum}`,
+        // nomeCartaDeCorrecao: `${prefixoCartaDeCorrecao}${chaveNe[0].chave_de_acesso}${sulfixoComum}`,
+      }
+      //pegar nota de devolucao tambem?
+
+      const paths = {
+        toDANFE: `\\\\192.168.1.104\\Integratto2\\Xml\\Emissao\\Resposta\\${names.nomeDanfe}`,
+        // toXML: `\\\\192.168.1.104\\Integratto2\\Xml\\Emissao\\Resposta\\${names.nomeXml}`,
+        // toCancelamento: `\\\\192.168.1.104\\Integratto2\\Docs\\${names.nomeCancelamento}`,
+        // toCCorrecao: `\\\\192.168.1.104\\Integratto2\\Docs\\${names.nomeCartaDeCorrecao}`
+      }
+
+
+
+      const DANFE = await Drive.exists(paths.toDANFE) && await Drive.get(paths.toDANFE)
+      // const XML = await Drive.exists(paths.toXML) && await Drive.get(paths.toXML)
+      // const Cancelamento = await Drive.exists(paths.toCancelamento) && await Drive.get(paths.toCancelamento)
+      // const CartaCorrecao = await Drive.exists(paths.toCCorrecao) && await Drive.get(paths.toCCorrecao)
+
+      // response.status(200).send({ DANFE: DANFE, XML: [XML, Cancelamento] })
+      response.status(200).send(DANFE)
+    } catch (err) {
+      response.status(400).send(err)
+    }
+  }
 }
 
 module.exports = VendaController;
