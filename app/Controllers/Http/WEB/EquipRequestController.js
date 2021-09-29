@@ -255,7 +255,7 @@ class EquipRequestController {
       verified.grpven
     }-${`000000${ID}`.slice(-6)}.pdf`;
 
-    const Dados = await Database.select("GrupoVenda", "M0_CGC")
+    const Dados = await Database.select("GrupoVenda", "M0_CGC", 'Email')
       .from("dbo.FilialEntidadeGrVenda")
       .where({ A1_GRPVEN: verified.grpven });
 
@@ -281,7 +281,7 @@ class EquipRequestController {
       OSCnpjDest: Solicitacao.CNPJ_Destino,
       OSCDestino: Solicitacao.Endereço_Entrega,
       OSCPDF: `ORDEM-${verified.grpven}-${`000000${ID}`.slice(-6)}.pdf`,
-      OSCEmail: Solicitacao.Email_Acompanhamento,
+      OSCEmail: Dados[0].Email,
       OSCTelCont: Solicitacao.Telefone_Contato,
       OSCcontato: Solicitacao.Contato,
     }).into("dbo.OSCtrl");
@@ -334,7 +334,7 @@ class EquipRequestController {
       { verified, ID, Frontend: Env.get("CLIENT_URL") },
       (message) => {
         message
-          .to(Solicitacao.Email_Acompanhamento)
+          .to(Dados[0].Email)
           .cc([
             Env.get("EMAIL_SUPORTE"),
             Env.get("EMAIL_COMERCIAL_1"),

@@ -243,7 +243,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
           body: [
             [
               { text: "Email: ", bold: true },
-              `${Solicitacao.Email_Acompanhamento}`,
+              `${Dados[0].Email}`,
             ],
           ],
         },

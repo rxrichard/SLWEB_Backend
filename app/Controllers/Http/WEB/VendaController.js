@@ -2,7 +2,7 @@
 const Database = use("Database");
 const Drive = use("Drive");
 const { seeToken } = require("../../../POG/index");
-const path = require('path');
+const path = require("path");
 const moment = require("moment");
 class VendaController {
   async Produtos({ request, response }) {
@@ -132,7 +132,7 @@ class VendaController {
   //       DtEmissNF: ,
   //       ChaveNF: ,
   //       MsgNF: ,
-  //       PedidoN: 
+  //       PedidoN:
   //     }).into("dbo.PedidosVendaCab");
 
   //     Carrinho.forEach((item) => {
@@ -261,59 +261,83 @@ class VendaController {
     const token = request.header("authorization");
     const serie = params.serie;
     const pvc = params.pvc;
-
+    const doctype = params.doctype;
+    let retorno = { message: "Vazio" };
 
     try {
       const verified = seeToken(token);
 
-      const numeroExterno = await Database.select('PedidoId').from('dbo.PedidosVendaCab').where({
-        GrpVen: verified.grpven,
-        PvcSerie: serie,
-        PvcID: pvc
-      })
+      const numeroExterno = await Database.select("PedidoId")
+        .from("dbo.PedidosVendaCab")
+        .where({
+          GrpVen: verified.grpven,
+          PvcSerie: serie,
+          PvcID: pvc,
+        });
 
-      // numeroExterno[0].PedidoId
+      const NFe = await Database.connection("pg")
+        .select("num_pedido", "chave_de_acesso")
+        .from("swvix.pedido")
+        .where({
+          num_externo: numeroExterno[0].PedidoId,
+          status: "1",
+          localestoque: verified.user_code,
+        });
 
-      const chaveNe = await Database.connection('pg').select('num_pedido', 'chave_de_acesso').from('swvix.pedido').where({
-        num_externo: numeroExterno[0].PedidoId,
-        status: '1',
-        localestoque: verified.user_code
-      })
-
-      // const prefixoCancelamento = '110111'
-      // const prefixoCartaDeCorrecao = '110110'
+      const prefixoCancelamento = "110111";
+      const prefixoCartaDeCorrecao = "110110";
       /*o 01 é a ordem do evento, 
       cancelamento(110111) sempre tem a ordem 01(não da pra cancelar duas vezes a mesma nota),
       já carta de correcao pode ter 02, 03...
       */
-      // const sulfixoComum = '01-procEventoNFe.xml'
+      const sulfixoComum = "01-procEventoNFe.xml";
 
       const names = {
-        nomeDanfe: `000000000000000000000000000000${chaveNe[0].num_pedido}_nfe_-DANFE.pdf`.slice(-45),
-        // nomeXml: `000000000000000000000000000000${chaveNe[0].num_pedido}_nfe_.xml`.slice(-39),
-        // nomeCancelamento: `${prefixoCancelamento}${chaveNe[0].chave_de_acesso}${sulfixoComum}`,
-        // nomeCartaDeCorrecao: `${prefixoCartaDeCorrecao}${chaveNe[0].chave_de_acesso}${sulfixoComum}`,
-      }
+        nomeDanfe:
+          `000000000000000000000000000000${NFe[0].num_pedido}_nfe_-DANFE.pdf`.slice(
+            -45
+          ),
+        nomeXml:
+          `000000000000000000000000000000${NFe[0].num_pedido}_nfe_.xml`.slice(
+            -39
+          ),
+        nomeCancelamento: `${prefixoCancelamento}${NFe[0].chave_de_acesso}${sulfixoComum}`,
+        nomeCartaDeCorrecao: `${prefixoCartaDeCorrecao}${NFe[0].chave_de_acesso}${sulfixoComum}`,
+      };
       //pegar nota de devolucao tambem?
 
       const paths = {
         toDANFE: `\\\\192.168.1.104\\Integratto2\\Xml\\Emissao\\Resposta\\${names.nomeDanfe}`,
-        // toXML: `\\\\192.168.1.104\\Integratto2\\Xml\\Emissao\\Resposta\\${names.nomeXml}`,
-        // toCancelamento: `\\\\192.168.1.104\\Integratto2\\Docs\\${names.nomeCancelamento}`,
-        // toCCorrecao: `\\\\192.168.1.104\\Integratto2\\Docs\\${names.nomeCartaDeCorrecao}`
+        toXML: `\\\\192.168.1.104\\Integratto2\\Xml\\Emissao\\Resposta\\${names.nomeXml}`,
+        toCancelamento: `\\\\192.168.1.104\\Integratto2\\Docs\\${names.nomeCancelamento}`,
+        toCCorrecao: `\\\\192.168.1.104\\Integratto2\\Docs\\${names.nomeCartaDeCorrecao}`,
+      };
+
+      switch (doctype) {
+        case "DANFE":
+          retorno =
+            (await Drive.exists(paths.toDANFE)) &&
+            (await Drive.get(paths.toDANFE));
+          break;
+        case "XML":
+          retorno =
+            (await Drive.exists(paths.toXML)) && (await Drive.get(paths.toXML));
+          break;
+        case "CANCELAMENTO":
+          retorno =
+            (await Drive.exists(paths.toCancelamento)) &&
+            (await Drive.get(paths.toCancelamento));
+          break;
+        case "CC":
+          retorno =
+            (await Drive.exists(paths.toCCorrecao)) &&
+            (await Drive.get(paths.toCCorrecao));
+          break;
       }
 
-
-
-      const DANFE = await Drive.exists(paths.toDANFE) && await Drive.get(paths.toDANFE)
-      // const XML = await Drive.exists(paths.toXML) && await Drive.get(paths.toXML)
-      // const Cancelamento = await Drive.exists(paths.toCancelamento) && await Drive.get(paths.toCancelamento)
-      // const CartaCorrecao = await Drive.exists(paths.toCCorrecao) && await Drive.get(paths.toCCorrecao)
-
-      // response.status(200).send({ DANFE: DANFE, XML: [XML, Cancelamento] })
-      response.status(200).send(DANFE)
+      response.status(200).send(retorno);
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send(err);
     }
   }
 }
