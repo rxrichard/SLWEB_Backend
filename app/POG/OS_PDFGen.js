@@ -103,7 +103,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
   var docDefinition = {
     // watermark: Helpers.resourcesPath("logo/Exemplo logo pilao - Danfe.bmp"),
     content: [
-      { text: "Order de Serviço", style: "header" },
+      { text: "Ordem de Serviço", style: "header" },
 
       {
         image: Helpers.resourcesPath("logo/Exemplo logo pilao - Danfe.bmp"),

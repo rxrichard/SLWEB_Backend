@@ -37,6 +37,11 @@ class CompraController {
         verified.grpven
       );
 
+      const PedidosNaoFaturados = await Database.raw(
+        "SELECT Sum(dbo.PedidosVenda.PrecoTotal) AS TotalFROM dbo.PedidosVenda INNER JOIN dbo.PedidosCompraCab ON ( dbo.PedidosVenda.Filial = dbo.PedidosCompraCab.Filial ) AND ( dbo.PedidosVenda.PedidoID = dbo.PedidosCompraCab.PedidoId )WHERE ( ((dbo.PedidosCompraCab.NroNF) Is Null) AND ((dbo.PedidosCompraCab.GrpVen) = ?) AND ( (dbo.PedidosVenda.STATUS) <> 'C' Or (dbo.PedidosVenda.STATUS) Is Null ) )",
+        [verified.grpven]
+      );
+
       const ComprasAoAno = await Database.raw(queryComprasAno, verified.grpven);
 
       response.status(200).send({
@@ -260,9 +265,9 @@ class CompraController {
             MsgPadrao: null,
             DataEntrega: null,
             CodigoProduto: `00000${item.Cód}`.slice(-5),
-            QtdeVendida: item.QCompra * item.FatConversao,
+            QtdeVendida: item.QCompra * item.QtMin,
             PrecoUnitarioLiquido: item.VlrUn,
-            PrecoTotal: item.QCompra * item.FatConversao * item.VlrUn,
+            PrecoTotal: item.QCompra * (item.QtMin * item.VlrUn),
             Limite: null,
             CodigoTotvs: null,
             DataCriacao: new Date(moment().subtract(3, "hours").format()),
@@ -301,9 +306,9 @@ class CompraController {
         });
 
       if (pedidoCab[0].STATUS === "C") {
-        response.status(400).send({ message: 'Pedido já cancelado' });
+        response.status(400).send({ message: "Pedido já cancelado" });
       } else if (pedidoVenda[0].DataIntegracao !== null) {
-        response.status(400).send({ message: 'Pedido em processamento' });
+        response.status(400).send({ message: "Pedido em processamento" });
       } else {
         await Database.table("dbo.PedidosCompraCab")
           .where({
@@ -321,7 +326,7 @@ class CompraController {
             STATUS: "C",
             DataIntegracao: new Date(moment().subtract(3, "hours").format()),
           });
-          response.status(200).send({ message: 'ok' });
+        response.status(200).send({ message: "ok" });
       }
     } catch (err) {
       response.status(400).send(err);
