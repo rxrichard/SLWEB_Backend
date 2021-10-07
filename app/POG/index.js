@@ -17,7 +17,7 @@ exports.genToken = async (user_code, password) => {
       //login franqueado
       const user = await Database.select("*")
         .from("dbo.FilialAcesso")
-        .where({ M0_CODFIL: String(user_code), Senha: password });
+        .where({ M0_CODFIL: String(user_code), Senha: String(password) });
 
       if (user.length > 0) {
         const name = await Database.select("*")
@@ -36,10 +36,10 @@ exports.genToken = async (user_code, password) => {
         );
         return { nome: name[0].GrupoVenda, token, role: "Franquia" };
       } else {
-        throw Error;
+        throw new Error('credenciais inválidas');
     }
   } catch (err) {
-    return "Falha ao gerar token";
+    return err.message;
   }
 };
 

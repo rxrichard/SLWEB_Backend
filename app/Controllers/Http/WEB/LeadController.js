@@ -39,18 +39,18 @@ class LeadController {
     }
   }
 
-  async See({ request, response, params }){
+  async See({ request, response, params }) {
     const token = request.header("authorization");
     const LeadId = params.lead
 
-    try{
+    try {
       const verified = seeToken(token);
 
       const historico = await Database.raw('select LeadId, Motivo, DataFechamento from dbo.LeadsAttr where Desistiu = 1 and LeadId = ? order by DataFechamento DESC', [LeadId])
-      
+
 
       response.status(200).send(historico)
-    }catch(err){
+    } catch (err) {
       response.status(400).send()
     }
   }
@@ -74,11 +74,11 @@ class LeadController {
         ) {
           response.status(401).send();
         } else {
-          await Database.raw('IF NOT EXISTS (select * from dbo.LeadsAttr where LeadId = ? AND Ativo = 1) INSERT INTO dbo.LeadsAttr (LeadId, Filial, GrpVen) VALUES (?, ?, ?)', 
-          [ID, ID, verified.user_code, verified.grpven])
+          await Database.raw('IF NOT EXISTS (select * from dbo.LeadsAttr where LeadId = ? AND Ativo = 1) INSERT INTO dbo.LeadsAttr (LeadId, Filial, GrpVen) VALUES (?, ?, ?)',
+            [ID, ID, verified.user_code, verified.grpven])
 
           const endereco = await Database.raw('select Contato, Fone_1, Fone_2, Email from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where L.Id = ? and A.GrpVen = ? and A.Ativo = 1',
-          [ID, verified.grpven])
+            [ID, verified.grpven])
 
           if (endereco.length > 0) {
             response.status(200).send(endereco);
@@ -101,7 +101,7 @@ class LeadController {
           });
 
         response.status(200).send();
-      } else if (type === 'confirm'){
+      } else if (type === 'confirm') {
         moment.locale("pt-br");
         await Database.table("dbo.LeadsAttr")
           .where({
