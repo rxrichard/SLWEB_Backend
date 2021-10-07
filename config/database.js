@@ -16,7 +16,7 @@ module.exports = {
   | interacting with SQL databases.
   |
   */
-  connection: Env.get('DB_CONNECTION', 'mssql'),
+  connection: Env.get('DEFAULT_DB_CONNECTION', 'mssql'),
 
   /*
   |--------------------------------------------------------------------------
@@ -73,11 +73,11 @@ module.exports = {
   pg: {
     client: 'pg',
     connection: {
-      host: Env.get('DB_HOST', 'localhost'),
-      port: Env.get('DB_PORT', ''),
-      user: Env.get('DB_USER', 'root'),
-      password: Env.get('DB_PASSWORD', ''),
-      database: Env.get('DB_DATABASE', 'adonis')
+      host: Env.get('PG_DB_HOST', 'localhost'),
+      port: Env.get('PG_DB_PORT', ''),
+      user: Env.get('PG_DB_USER', 'root'),
+      password: Env.get('PG_DB_PASSWORD', ''),
+      database: Env.get('PG_DB_DATABASE', 'adonis')
     },
     debug: Env.get('DB_DEBUG', false)
   },
@@ -85,11 +85,11 @@ module.exports = {
   mssql: {
     client: 'mssql',
     connection: {
-      host: Env.get('DB_HOST'),
-      port: '',
-      user: Env.get('DB_USER'),
-      password: Env.get('DB_PASSWORD'),
-      database: Env.get('DB_DATABASE')
+      host: Env.get('SQL_DB_HOST'),
+      port: Env.get('SQL_DB_PORT'),
+      user: Env.get('SQL_DB_USER'),
+      password: Env.get('SQL_DB_PASSWORD'),
+      database: Env.get('SQL_DB_DATABASE')
     }
   }
 }
