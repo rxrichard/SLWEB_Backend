@@ -48,6 +48,7 @@ Route.get("/compras/contas", "WEB/CompraController.Contas"); //retorna lista de 
 Route.get("/compras/pedidos", "WEB/CompraController.Pedidos"); //retorna pedidos atendidos e abertos do cliente
 Route.get("/compras/pedidos/detalhes/:ID/:STATUS", "WEB/CompraController.PedidoDet"); //retorna detalhes do pedido
 Route.delete("/compras/pedidos/cancelar/:ID", "WEB/CompraController.Cancelar"); //retorna detalhes do pedido
+Route.get("/compras/retrivepdf/:ID", "WEB/CompraController.RetrivePDF"); //retorna o pdf do pedido
 Route.post("/compras/comprar", "WEB/CompraController.Comprar"); //retorna detalhes do pedido
 
 //Vendas
