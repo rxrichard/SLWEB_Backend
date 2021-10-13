@@ -217,9 +217,7 @@ class EquipRequestController {
         verified.role === "Técnica Bianchi" ||
         verified.role === "Expedição"
       ) {
-        const requisicoes = await Database.select("*")
-          .from("dbo.OSCtrl")
-          .orderBy("OSCId", "DESC");
+        const requisicoes = await Database.raw("select F.M0_CODFIL , O.* from dbo.OSCtrl as O inner join dbo.FilialEntidadeGrVenda as F on O.GrpVen = F.A1_GRPVEN order by OSCId DESC", [])
 
         response.status(200).send(requisicoes);
       } else {
@@ -251,9 +249,8 @@ class EquipRequestController {
     }
 
     //crio variavel com o endereço completo do PDF
-    const PathWithName = `${path}/ORDEM-${
-      verified.grpven
-    }-${`000000${ID}`.slice(-6)}.pdf`;
+    const PathWithName = `${path}/ORDEM-${verified.grpven
+      }-${`000000${ID}`.slice(-6)}.pdf`;
 
     const Dados = await Database.select("GrupoVenda", "M0_CGC", 'Email')
       .from("dbo.FilialEntidadeGrVenda")
@@ -310,7 +307,7 @@ class EquipRequestController {
       InibCopos: Solicitacao.InibirCopos,
       Gabinete:
         typeof Solicitacao.Gabinete == "undefined" ||
-        Solicitacao.Gabinete === ""
+          Solicitacao.Gabinete === ""
           ? false
           : Solicitacao.Gabinete,
       SisPag: Solicitacao.Pagamento,
@@ -348,8 +345,7 @@ class EquipRequestController {
 
     const file = await Drive.get(`${PathWithName}`);
     Drive.put(
-      `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\OS\\ORDEM-${
-        verified.grpven
+      `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\OS\\ORDEM-${verified.grpven
       }-${`000000${ID}`.slice(-6)}.pdf`,
       file
     );
@@ -573,7 +569,7 @@ class EquipRequestController {
             .update({
               OSCTecDtValidação: moment().subtract(3, "hours").toDate(),
               OSCTecAceite: action === "accept" ? true : false,
-              OSCTecMotivo: action === "accept" ? '' :reject,
+              OSCTecMotivo: action === "accept" ? '' : reject,
               OSCTecDtPrevisao:
                 prev !== null
                   ? moment(prev).subtract(3, "hours").toDate()
