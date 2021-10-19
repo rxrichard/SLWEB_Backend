@@ -454,7 +454,7 @@ class EquipRequestController {
             .where({ OSCId: OSID });
 
           if (action === "accept") {
-            await Mail.send(
+            Mail.send(
               "emails.OSComValida",
               {
                 ID: OSID,

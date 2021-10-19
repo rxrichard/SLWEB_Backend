@@ -18,6 +18,7 @@ class UserController {
       response.status(401).send();
     }
   }
+  
   async Forgot({ request, response }) {
     const { user_code } = request.only(["user_code"]);
 
@@ -59,6 +60,7 @@ class UserController {
       response.status(400).send();
     }
   }
+
   async AdmAtempt({ request, response }) {
     const { admin_code, admin_password } = request.only([
       "admin_code",
@@ -120,7 +122,7 @@ class UserController {
         })
         .orderBy("DtSolicita", "Desc");
 
-      if (tentativa.length < 1) throw Error;
+      if (tentativa.length < 1) throw new Error('Cross login não registrado pelo SLAplic');
 
       const HorarioMaximo = new Date(
         new Date(tentativa[0].DtSolicita).getFullYear(),
@@ -139,12 +141,8 @@ class UserController {
         new Date().getMinutes(),
         new Date().getSeconds()
       );
-
-      HorarioMaximo.toISOString();
-      HorarioAtual.toISOString();
-
+      
       //data criação <= data de criação + 1min
-
       if (HorarioAtual < HorarioMaximo) {
         const updatedRows = await Database.table("dbo.CrossLogin")
           .where({
@@ -156,13 +154,13 @@ class UserController {
           });
 
         if (updatedRows.length < 1) {
-          throw Error;
+          throw new Error('Tentativa de login não registrada corretamente');
         }
 
         const token = await genTokenExternal(code);
         response.status(201).send(token);
       }else{
-        response.status(200).send('no token');
+        throw new Error('Mais de 1 minuto de redirecionamento');
       }
     } catch (err) {
       response.status(401).send(err);
