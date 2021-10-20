@@ -15,7 +15,7 @@ class VendaController {
 
       const Clientes = await Database.select("*").from("dbo.Cliente").where({
         GrpVen: verified.grpven,
-      });
+      }).orderBy('Nome_Fantasia', 'ASC');
 
       const CodPag = await Database.select("CpgDesc", "CpgId")
         .from("dbo.CondicaoPagamento")
@@ -74,90 +74,54 @@ class VendaController {
     }
   }
 
-  // async Store({ request, response }) {
-  //   const token = request.header("authorization");
-  //   const {
-  //     Carrinho,
-  //     Cliente,
-  //     OBS,
-  //     TipoVenda,
-  //     CondPag,
-  //     RemOrigem,
-  //     RemDestino,
-  //   } = request.only([
-  //     "Carrinho",
-  //     "Cliente",
-  //     "OBS",
-  //     "TipoVenda",
-  //     "CondPag",
-  //     "RemOrigem",
-  //     "RemDestino",
-  //   ]);
+  async Store({ request, response }) {
+    const token = request.header("authorization");
 
-  //   try {
-  //     const verified = seeToken(token);
+    const { Pedido } = request.only([ "Pedido" ]);
 
-  //     //verificar se o carrinho está vazio
-  //     //verificar se tem item com QTD zerada no carrinho
-  //     //verificar se o cliente foi definido
-  //     //verificar se o tipo de operação foi definido(venda/bonificação/remessa)
-  //     //verificar se o tipo de pagamento foi definido no caso venda
-  //     //verificar se os depósitos foram definidos no caso remessa
+    try {
+      const verified = seeToken(token);
 
-  //     const ultPvcId = await Database.raw(
-  //       "select MAX(PvcID) as UltimoID from dbo.PedidosVendaCab where PvcSerie = 'F' and GrpVen = ?",
-  //       [verified.grpven]
-  //     );
+      const ultPvcId = await Database.raw( "select MAX(PvcID) as UltimoID from dbo.PedidosVendaCab where PvcSerie = 'F' and GrpVen = ?", [verified.grpven] );
 
-  //     const newCab = await Database.insert({
-  //       GrpVen: ,
-  //       PvcSerie: ,
-  //       PvcID: ,
-  //       STATUS: ,
-  //       CNPJ: ,
-  //       Filial: ,
-  //       CpgId: ,
-  //       DataCriacao: ,
-  //       DataIntegracao: ,
-  //       DepId: ,
-  //       DepIdDest: ,
-  //       PvTipo: ,
-  //       DtEmissao: ,
-  //       F3_CODRSEF: ,
-  //       F3_DESCRET: ,
-  //       PedidoId: ,
-  //       PDF: ,
-  //       NroNF: ,
-  //       SerieNF: ,
-  //       DtEmissNF: ,
-  //       ChaveNF: ,
-  //       MsgNF: ,
-  //       PedidoN:
-  //     }).into("dbo.PedidosVendaCab");
+      const actualDate = new Date(moment().format())
 
-  //     Carrinho.forEach((item) => {
-  //       const newDet = await Database.insert({
-  //         GrpVen: ,
-  //         PvcSerie: ,
-  //         PvcID: ,
-  //         PvdID: ,
-  //         ProdId: ,
-  //         PvdQtd: ,
-  //         PvdVlrUnit: ,
-  //         PvdVlrTotal: ,
-  //         DataCriacao: ,
-  //         PvdTES: ,
-  //         PvdTipOp: ,
-  //         PvdNatureza: ,
-  //         PdvVlrDesc:
-  //       }).into("dbo.PedidosVendaDet");
-  //     });
+      await Database.insert({
+        GrpVen: verified.grpven,
+        PvcSerie: 'F',
+        PvcID: Number(ultPvcId[0].UltimoID) + 1,
+        CNPJ: Pedido.Cliente.CNPJ,
+        Filial: verified.user_code,
+        CpgId: Pedido.CondPag,
+        DataCriacao: actualDate,
+        DataIntegracao: null,
+        DepId: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 1 : Pedido.RemOrigem : 0,
+        DepIdDest: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
+        PvTipo: Pedido.TipoVenda,
+        STATUS: 'P',
+        MsgNF: Pedido.OBS
+      }).into("dbo.PedidosVendaCab");
 
-  //     response.status(200).send({ message: "ok" });
-  //   } catch (err) {
-  //     response.status(200).send(err);
-  //   }
-  // }
+      Pedido.Carrinho.forEach(async (item, i) => {
+        await Database.insert({
+          GrpVen: verified.grpven,
+          PvcSerie: 'F',
+          PvcID: Number(ultPvcId[0].UltimoID) + 1,
+          PvdID: i + 1,
+          ProdId: item.ProdId[0],
+          PvdQtd: item.QVenda,
+          PvdVlrUnit: item.VVenda,
+          PvdVlrTotal: item.QVenda * item.VVenda,
+          DataCriacao: actualDate,
+          PdvVlrDesc: Number(0).toFixed(4)
+        }).into("dbo.PedidosVendaDet");
+      });
+
+      response.status(200).send({ message: "ok" });
+    } catch (err) {
+      response.status(200).send(err);
+    }
+  }
 
   // async RequestNFeGeneration({ request, response, params }) {
   //   const token = request.header("authorization");
@@ -257,7 +221,7 @@ class VendaController {
   //   }
   // }
 
-  async RecoverDanfe({ request, response, params }) {
+  async RecoverDocs({ request, response, params }) {
     const token = request.header("authorization");
     const serie = params.serie;
     const pvc = params.pvc;
