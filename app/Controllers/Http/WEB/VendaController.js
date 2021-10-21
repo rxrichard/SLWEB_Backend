@@ -77,12 +77,12 @@ class VendaController {
   async Store({ request, response }) {
     const token = request.header("authorization");
 
-    const { Pedido } = request.only([ "Pedido" ]);
+    const { Pedido } = request.only(["Pedido"]);
 
     try {
       const verified = seeToken(token);
 
-      const ultPvcId = await Database.raw( "select MAX(PvcID) as UltimoID from dbo.PedidosVendaCab where PvcSerie = 'F' and GrpVen = ?", [verified.grpven] );
+      const ultPvcId = await Database.raw("select MAX(PvcID) as UltimoID from dbo.PedidosVendaCab where PvcSerie = 'F' and GrpVen = ?", [verified.grpven]);
 
       const actualDate = new Date(moment().format())
 
@@ -120,6 +120,31 @@ class VendaController {
       response.status(200).send({ message: "ok" });
     } catch (err) {
       response.status(200).send(err);
+    }
+  }
+
+  async CancelVenda({ request, response, params }) {
+    const token = request.header("authorization");
+    const serie = params.serie;
+    const pvc = params.pvc;
+
+    try {
+      const verified = seeToken(token);
+
+      await Database.table('dbo.PedidosVendaCab')
+        .where({
+          PvcID: pvc,
+          PvcSerie: serie,
+          GrpVen: verified.grpven,
+          STATUS: 'P'
+        })
+        .update({
+          STATUS: 'C'
+        });
+
+      response.status(200).send({ message: 'ok' })
+    } catch (err) {
+      response.status(400).send(err)
     }
   }
 

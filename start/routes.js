@@ -57,6 +57,7 @@ Route.get("/vendas/pedidos", "WEB/VendaController.Show"); //retorna todos os ped
 Route.get("/vendas/pedidos/detalhes/:serie/:pvc", "WEB/VendaController.See"); //retorna os detalhes de dado pedido
 Route.get("/vendas/pedidos/detalhes/DOCS/:doctype/:serie/:pvc", "WEB/VendaController.RecoverDocs"); //retorna a DANFE solicitada
 Route.post("/vendas/vender", "WEB/VendaController.Store"); //registra a venda
+Route.put("/vendas/pedidos/cancelar/:serie/:pvc", "WEB/VendaController.CancelVenda"); //Cancela pedido de venda
 
 //Solicitação de equipamentos
 Route.get("/equip/adresses", "WEB/EquipRequestController.See"); //retorna endereços, máquinas, configurações
