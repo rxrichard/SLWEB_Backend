@@ -2,7 +2,6 @@
 const Database = use("Database");
 const Drive = use("Drive");
 const { seeToken } = require("../../../POG/index");
-const path = require("path");
 const moment = require("moment");
 class VendaController {
   async Produtos({ request, response }) {
@@ -192,10 +191,10 @@ class VendaController {
       if (NotaGerada[0].PvTipo === "R") {
         //update o pedido de bonificacao com o CNPJ do próprio franqueado
         await Database.raw(
-          "UPDATE dbo.PedidosVendaCab set CNPJ = (select top(1) M0_CGC from dbo.FilialEntidadeGrVenda where A1_GRPVEN = ?) WHERE GrpVen = ? AND P.PvcSerie= ? AND P.PvcID = ?",
+          "UPDATE dbo.PedidosVendaCab SET CNPJ = (select top(1) M0_CGC from dbo.FilialEntidadeGrVenda where A1_GRPVEN = ?) WHERE GrpVen = ? AND P.PvcSerie= ? AND P.PvcID = ?",
           [verified.grpven, verified.grpven, PvcSerie, PvcID]
         );
-        
+
         //update de tes no pedido
         await Database.raw(
           "UPDATE dbo.PedidosVendaDet SET PvdTES = '979' WHERE GrpVen = ? AND PvcSerie = ? AND PvcID = ?",
@@ -203,57 +202,73 @@ class VendaController {
         );
       }
 
-      if (NotaGerada[0].PvTipo === "V") {
-        const V1 = await Database.raw(
-          "UPDATE (dbo_FilialEntidadeGrVenda_srv AS F INNER JOIN dbo_FilialTES_srv AS T ON F.M0_CODFIL = T.FILIAL) INNER JOIN dbo_PedidosVendaDet_srv AS P ON F.A1_GRPVEN = P.GrpVen SET P.PvdTES = [TES] WHERE P.PvcSerie='F' AND P.PvdTES Is Null",
-          []
-        );
+      await Database.raw(
+        "UPDATE P SET P.PvdTES = [TES] FROM ( dbo.FilialEntidadeGrVenda AS F INNER JOIN dbo.FilialTES AS T ON F.M0_CODFIL = T.FILIAL ) INNER JOIN dbo.PedidosVendaDet AS P ON F.A1_GRPVEN = P.GrpVen WHERE P.PvcSerie = 'F' AND P.PvdTES Is Null",
+        []
+      );
 
-        const V2 = await Database.raw(
-          "UPDATE (dbo_FilialEntidadeGrVenda_srv AS F INNER JOIN dbo_PedidosVendaDet_srv AS P ON F.A1_GRPVEN = P.GrpVen) INNER JOIN dbo_FilialProdIdTES_srv AS T ON (P.ProdId = T.ProdId) AND (F.M0_CODFIL = T.FILIAL) SET P.PvdTES = [TES] WHERE (((P.PvdTES) Is Null) AND ((P.PvcSerie)='F'))",
-          []
-        );
+      await Database.raw(
+        "UPDATE P SET P.PvdTES = [TES] FROM ( dbo.FilialEntidadeGrVenda AS F INNER JOIN dbo.PedidosVendaDet AS P ON F.A1_GRPVEN = P.GrpVen ) INNER JOIN dbo.FilialProdIdTES AS T ON (P.ProdId = T.ProdId) AND (F.M0_CODFIL = T.FILIAL) WHERE ( ((P.PvdTES) Is Null) AND ((P.PvcSerie) = 'F') )",
+        []
+      );
 
-        const V3 = await Database.raw(
-          "UPDATE dbo_PedidosVendaDet_srv AS P INNER JOIN dbo_ProdIdTES_srv AS T ON P.ProdId = T.ProdId SET P.PvdTES = [TES] WHERE (((P.PvcSerie)='F') AND ((P.PvdTES) Is Null))",
-          []
-        );
+      await Database.raw(
+        "UPDATE P SET P.PvdTES = [TES] FROM dbo.PedidosVendaDet AS P INNER JOIN dbo.ProdIdTES AS T ON P.ProdId = T.ProdId WHERE ( ((P.PvcSerie) = 'F') AND ((P.PvdTES) Is Null) )",
+        []
+      );
 
-        const V4 = await Database.raw(
-          "UPDATE (dbo_PedidosVendaDet_srv AS P INNER JOIN dbo_FilialEntidadeGrVenda_srv AS F ON P.GrpVen = F.A1_GRPVEN) INNER JOIN FilialProdIdNatureza AS N ON (P.ProdId = N.ProdId) AND (F.M0_CODFIL = N.FILIAL) SET P.PvdNatureza = [NATUREZA] WHERE P.PvdNatureza Is Null AND P.PvcSerie='F'",
-          []
-        );
+      await Database.raw(
+        "UPDATE P SET P.PvdNatureza = [NATUREZA] FROM ( dbo.PedidosVendaDet AS P INNER JOIN dbo.FilialEntidadeGrVenda AS F ON P.GrpVen = F.A1_GRPVEN ) INNER JOIN FilialProdIdNatureza AS N ON (P.ProdId = N.ProdId) AND (F.M0_CODFIL = N.FILIAL) WHERE P.PvdNatureza Is Null AND P.PvcSerie = 'F'",
+        []
+      );
 
-        const V5 = await Database.raw(
-          "UPDATE dbo_PedidosVendaDet_srv AS P INNER JOIN ProdIdNatureza AS N ON P.ProdId = N.ProdId SET P.PvdNatureza = [NATUREZA] WHERE P.PvdNatureza Is Null AND P.PvcSerie='F'",
-          []
-        );
+      await Database.raw(
+        "UPDATE P SET P.PvdNatureza = [NATUREZA] FROM dbo.PedidosVendaDet AS P INNER JOIN ProdIdNatureza AS N ON P.ProdId = N.ProdId WHERE P.PvdNatureza Is Null AND P.PvcSerie = 'F'",
+        []
+      );
 
-        const NovoIDPedido = await Database.raw('select MAX(PedidoID) as UltimoID from dbo.PedidosVenda', [])
+      const UltimoIDPedido = await Database.raw('select MAX(PedidoID) as UltimoID from dbo.PedidosVenda', [])
+      const NovoIDPedido = Number(UltimoIDPedido[0].UltimoID) + 1
 
-        const newRow = await Database.insert({
+      const PedidoParaFaturar = await Database.raw(queryPedidosParaFaturar, [NovoIDPedido, verified.grpven, PvcID])
+
+      PedidoParaFaturar.forEach((item, i) => {
+        await Database.insert({
           GrpVen: verified.grpven,
           Filial: verified.user_code,
-          PedidoId: Number(NovoIDPedido[0].UltimoID) + 1,
-          PedidoItemID: ,
-          CodigoCliente: ,
-          LojaCliente: ,
-          CodigoTabelaPreco: '002',
-          CodigoVendedor: '000026',
-          CodigoCondicaoPagto: ,
-          TipoFrete: ,
-          CodigoProduto: ,
-          QtdeVendida: ,
-          PrecoUnitarioLiquido: ,
-          PrecoTotal: ,
-          DataCriacao: ,
-          TipOp: ,
-          TES: ,
-          NATUREZA: ,
-          MsgNotaFiscal: ,
-          VlrDesconto:
-        }).into('dbo_PedidosVenda_srv')
-      }
+          PedidoId: NovoIDPedido,
+          PedidoItemID: i + 1,
+          CodigoCliente: item.A1_COD,
+          LojaCliente: item.A1_LOJA,
+          CodigoTabelaPreco: item.TNF_TblPreco,
+          CodigoVendedor: item.TNF_CodVnd,
+          CodigoCondicaoPagto: item.CPag,
+          TipoFrete: item.TNF_Frete,
+          CodigoProduto: item.CodFab,
+          QtdeVendida: item.PvdQtd,
+          PrecoUnitarioLiquido: item.PvdVlrUnit,
+          PrecoTotal: item.PvdVlrTotal,
+          DataCriacao: item.DataCriacao,
+          TipOp: item.TNF_TipOp,
+          TES: item.PvdTES,
+          NATUREZA: item.TNF_NATUREZA,
+          MsgNotaFiscal: item.MsgNF,
+          VlrDesconto: item.PdvVlrDesc
+        }).into('dbo.PedidosVenda')
+      })
+
+      await Database.table('dbo.PedidosVendaCab')
+        .where({
+          GrpVen: verified.grpven,
+          PvcSerie: PvcSerie,
+          PvcID: PvcID
+        })
+        .update({
+          STATUS: 'S',
+          PedidoId: NovoIDPedido
+        });
+
+      response.status(200).send({ message: 'ok' });
     } catch (err) {
       response.status(400).send(err);
     }
@@ -348,3 +363,5 @@ module.exports = VendaController;
 
 const queryListaDeProdutos =
   "select * from dbo.PrecoVenda as PV inner join dbo.Produtos as Pr on PV.ProdId = Pr.ProdId where Pr.Venda = 'S' and PV.GrpVen = '000000' and PV.AnxId = 0 and PV.PdvId = 0 and Pr.Atv2Inat1 = 2 order by Pr.Produto";
+
+const queryPedidosParaFaturar = "SELECT dbo.PedidosVendaCab.GrpVen, dbo.FilialEntidadeGrVenda.M0_CODFIL, ? AS PedidoId, dbo.PedidosVendaDet.PvdID, dbo.Cliente.A1_COD, dbo.Cliente.A1_LOJA, dbo.TipoNF.TNF_TblPreco, dbo.TipoNF.TNF_CodVnd, dbo.CondicaoPagamento.E4_CODIGO AS CPag, dbo.TipoNF.TNF_Frete, dbo.Produtos.CodFab, dbo.PedidosVendaDet.PvdQtd, dbo.PedidosVendaDet.PvdVlrUnit, dbo.PedidosVendaDet.PvdVlrTotal, dbo.PedidosVendaCab.DataCriacao, dbo.TipoNF.TNF_TipOp, dbo.PedidosVendaDet.PvdTES, dbo.TipoNF.TNF_NATUREZA, dbo.PedidosVendaCab.MsgNF, dbo.PedidosVendaDet.PdvVlrDesc FROM ( ( ( ( dbo.Cliente INNER JOIN ( dbo.PedidosVendaCab INNER JOIN dbo.PedidosVendaDet ON ( dbo.PedidosVendaCab.PvcID = dbo.PedidosVendaDet.PvcID ) AND ( dbo.PedidosVendaCab.PvcSerie = dbo.PedidosVendaDet.PvcSerie ) AND ( dbo.PedidosVendaCab.GrpVen = dbo.PedidosVendaDet.GrpVen ) ) ON ( dbo.Cliente.GrpVen = dbo.PedidosVendaCab.GrpVen ) AND ( dbo.Cliente.CNPJ = dbo.PedidosVendaCab.CNPJ ) ) INNER JOIN dbo.FilialEntidadeGrVenda ON dbo.PedidosVendaCab.GrpVen = dbo.FilialEntidadeGrVenda.A1_GRPVEN ) INNER JOIN dbo.CondicaoPagamento ON dbo.PedidosVendaCab.CpgId = dbo.CondicaoPagamento.CpgId ) INNER JOIN dbo.Produtos ON dbo.PedidosVendaDet.ProdId = dbo.Produtos.ProdId ) INNER JOIN dbo.TipoNF ON dbo.PedidosVendaCab.PvTipo = dbo.TipoNF.TNFCod WHERE ( ((dbo.PedidosVendaCab.GrpVen) = ?) AND ((dbo.CondicaoPagamento.GrpVen) = '000000') AND ((dbo.PedidosVendaCab.PvcID) = ?) AND ((dbo.PedidosVendaCab.PvcSerie) = 'F'));"
