@@ -148,103 +148,116 @@ class VendaController {
     }
   }
 
-  // async RequestNFeGeneration({ request, response, params }) {
-  //   const token = request.header("authorization");
-  //   const PVCID = params.PvcID;
+  async RequestNFeGeneration({ request, response, params }) {
+    const token = request.header("authorization");
+    const PvcID = params.pvc;
+    const PvcSerie = params.serie;
 
-  //   try {
-  //     const verified = seeToken(token);
+    try {
+      const verified = seeToken(token);
 
-  //     //verificar no sigamat se o cara pode faturar
-  //     const Sigamat = await Database.select("M0_EmiteNF")
-  //       .from("dbo.SIGAMAT")
-  //       .where({
-  //         M0_CODFIL: verified.user_code,
-  //       });
-  //     if (Sigamat[0].M0_EmiteNF === "N") throw new Error();
+      //verificar no sigamat se o cara pode faturar
+      const Sigamat = await Database.select("M0_EmiteNF")
+        .from("dbo.SIGAMAT")
+        .where({
+          M0_CODFIL: verified.user_code,
+        });
+      if (Sigamat[0].M0_EmiteNF === "N") throw new Error();
 
-  //     //verifico se a nota já foi gerada, foi cancelada ou já foi solicitada.
-  //     const NotaGerada = await Database.select("*")
-  //       .from("dbo.PedidosVendaCab")
-  //       .where({
-  //         PvcID: PVCID,
-  //       });
-  //     if (
-  //       NotaGerada[0].PvcSerie == "1" ||
-  //       NotaGerada[0].STATUS === "C" ||
-  //       NotaGerada[0].STATUS === "S"
-  //     )
-  //       throw new Error();
+      //verifico se a nota já foi gerada, foi cancelada ou já foi solicitada.
+      const NotaGerada = await Database.select("*")
+        .from("dbo.PedidosVendaCab")
+        .where({
+          PvcID: PvcID,
+        });
+      if (
+        NotaGerada[0].STATUS === "C" ||
+        NotaGerada[0].STATUS === "S" ||
+        NotaGerada[0].STATUS == "F"
+      )
+        throw new Error();
 
-  //     if (NotaGerada[0].PvTipo === "B") {
-  //       const B = await Database.raw(
-  //         "UPDATE dbo_PedidosVendaDet_srv SET PvdTES = '511' WHERE GrpVen= ? AND PvcSerie='F' AND PvcID= ?",
-  //         [verified.grpven, PVCID]
-  //       );
-  //     } else if (NotaGerada[0].PvTipo === "R") {
-  //       const R0 = await Database.raw(
-  //         "UPDATE dbo_PedidosVendaCab_srv AS P INNER JOIN dbo_FilialEntidadeGrVenda_srv AS F ON P.GrpVen = F.A1_GRPVEN SET P.CNPJ = [M0_CGC] WHERE P.GrpVen = ? AND P.PvcSerie='F' AND P.PvcID = ?",
-  //         [verified.grpven, PVCID]
-  //       );
-  //       const R1 = await Database.raw(
-  //         "UPDATE dbo_PedidosVendaDet_srv SET PvdTES = '979' WHERE GrpVen = ? AND PvcSerie = 'F' AND PvcID = ?",
-  //         [verified.grpven, PVCID]
-  //       );
-  //     } else if (NotaGerada[0].PvTipo === "V") {
-  //       const V1 = await Database.raw(
-  //         "UPDATE (dbo_FilialEntidadeGrVenda_srv AS F INNER JOIN dbo_FilialTES_srv AS T ON F.M0_CODFIL = T.FILIAL) INNER JOIN dbo_PedidosVendaDet_srv AS P ON F.A1_GRPVEN = P.GrpVen SET P.PvdTES = [TES] WHERE P.PvcSerie='F' AND P.PvdTES Is Null",
-  //         []
-  //       );
+      if (NotaGerada[0].PvTipo === "B") {
+        await Database.table('dbo.PedidosVendaDet')
+          .where({
+            GrpVen: verified.grpven,
+            PvcSerie: PvcSerie,
+            PvcID: PvcID
+          })
+          .update({
+            PvdTES: '511'
+          });
+      }
 
-  //       const V2 = await Database.raw(
-  //         "UPDATE (dbo_FilialEntidadeGrVenda_srv AS F INNER JOIN dbo_PedidosVendaDet_srv AS P ON F.A1_GRPVEN = P.GrpVen) INNER JOIN dbo_FilialProdIdTES_srv AS T ON (P.ProdId = T.ProdId) AND (F.M0_CODFIL = T.FILIAL) SET P.PvdTES = [TES] WHERE (((P.PvdTES) Is Null) AND ((P.PvcSerie)='F'))",
-  //         []
-  //       );
+      if (NotaGerada[0].PvTipo === "R") {
+        //update o pedido de bonificacao com o CNPJ do próprio franqueado
+        await Database.raw(
+          "UPDATE dbo.PedidosVendaCab set CNPJ = (select top(1) M0_CGC from dbo.FilialEntidadeGrVenda where A1_GRPVEN = ?) WHERE GrpVen = ? AND P.PvcSerie= ? AND P.PvcID = ?",
+          [verified.grpven, verified.grpven, PvcSerie, PvcID]
+        );
+        
+        //update de tes no pedido
+        await Database.raw(
+          "UPDATE dbo.PedidosVendaDet SET PvdTES = '979' WHERE GrpVen = ? AND PvcSerie = ? AND PvcID = ?",
+          [verified.grpven, PvcSerie, PvcID]
+        );
+      }
 
-  //       const V3 = await Database.raw(
-  //         "UPDATE dbo_PedidosVendaDet_srv AS P INNER JOIN dbo_ProdIdTES_srv AS T ON P.ProdId = T.ProdId SET P.PvdTES = [TES] WHERE (((P.PvcSerie)='F') AND ((P.PvdTES) Is Null))",
-  //         []
-  //       );
+      if (NotaGerada[0].PvTipo === "V") {
+        const V1 = await Database.raw(
+          "UPDATE (dbo_FilialEntidadeGrVenda_srv AS F INNER JOIN dbo_FilialTES_srv AS T ON F.M0_CODFIL = T.FILIAL) INNER JOIN dbo_PedidosVendaDet_srv AS P ON F.A1_GRPVEN = P.GrpVen SET P.PvdTES = [TES] WHERE P.PvcSerie='F' AND P.PvdTES Is Null",
+          []
+        );
 
-  //       const V4 = await Database.raw(
-  //         "UPDATE (dbo_PedidosVendaDet_srv AS P INNER JOIN dbo_FilialEntidadeGrVenda_srv AS F ON P.GrpVen = F.A1_GRPVEN) INNER JOIN FilialProdIdNatureza AS N ON (P.ProdId = N.ProdId) AND (F.M0_CODFIL = N.FILIAL) SET P.PvdNatureza = [NATUREZA] WHERE P.PvdNatureza Is Null AND P.PvcSerie='F'",
-  //         []
-  //       );
+        const V2 = await Database.raw(
+          "UPDATE (dbo_FilialEntidadeGrVenda_srv AS F INNER JOIN dbo_PedidosVendaDet_srv AS P ON F.A1_GRPVEN = P.GrpVen) INNER JOIN dbo_FilialProdIdTES_srv AS T ON (P.ProdId = T.ProdId) AND (F.M0_CODFIL = T.FILIAL) SET P.PvdTES = [TES] WHERE (((P.PvdTES) Is Null) AND ((P.PvcSerie)='F'))",
+          []
+        );
 
-  //       const V5 = await Database.raw(
-  //         "UPDATE dbo_PedidosVendaDet_srv AS P INNER JOIN ProdIdNatureza AS N ON P.ProdId = N.ProdId SET P.PvdNatureza = [NATUREZA] WHERE P.PvdNatureza Is Null AND P.PvcSerie='F'",
-  //         []
-  //       );
+        const V3 = await Database.raw(
+          "UPDATE dbo_PedidosVendaDet_srv AS P INNER JOIN dbo_ProdIdTES_srv AS T ON P.ProdId = T.ProdId SET P.PvdTES = [TES] WHERE (((P.PvcSerie)='F') AND ((P.PvdTES) Is Null))",
+          []
+        );
 
-  //       const NovoIDPedido = await Database.raw('select MAX(PedidoID) as UltimoID from dbo.PedidosVenda', [])
+        const V4 = await Database.raw(
+          "UPDATE (dbo_PedidosVendaDet_srv AS P INNER JOIN dbo_FilialEntidadeGrVenda_srv AS F ON P.GrpVen = F.A1_GRPVEN) INNER JOIN FilialProdIdNatureza AS N ON (P.ProdId = N.ProdId) AND (F.M0_CODFIL = N.FILIAL) SET P.PvdNatureza = [NATUREZA] WHERE P.PvdNatureza Is Null AND P.PvcSerie='F'",
+          []
+        );
 
-  //       const newRow = await Database.insert({
-  //         GrpVen: verified.grpven,
-  //         Filial: verified.user_code,
-  //         PedidoId: Number(NovoIDPedido[0].UltimoID) + 1,
-  //         PedidoItemID: ,
-  //         CodigoCliente: ,
-  //         LojaCliente: ,
-  //         CodigoTabelaPreco: '002',
-  //         CodigoVendedor: '000026',
-  //         CodigoCondicaoPagto: ,
-  //         TipoFrete: ,
-  //         CodigoProduto: ,
-  //         QtdeVendida: ,
-  //         PrecoUnitarioLiquido: ,
-  //         PrecoTotal: ,
-  //         DataCriacao: ,
-  //         TipOp: ,
-  //         TES: ,
-  //         NATUREZA: ,
-  //         MsgNotaFiscal: ,
-  //         VlrDesconto:
-  //       }).into('dbo_PedidosVenda_srv')
-  //     }
-  //   } catch (err) {
-  //     response.status(400).send(err);
-  //   }
-  // }
+        const V5 = await Database.raw(
+          "UPDATE dbo_PedidosVendaDet_srv AS P INNER JOIN ProdIdNatureza AS N ON P.ProdId = N.ProdId SET P.PvdNatureza = [NATUREZA] WHERE P.PvdNatureza Is Null AND P.PvcSerie='F'",
+          []
+        );
+
+        const NovoIDPedido = await Database.raw('select MAX(PedidoID) as UltimoID from dbo.PedidosVenda', [])
+
+        const newRow = await Database.insert({
+          GrpVen: verified.grpven,
+          Filial: verified.user_code,
+          PedidoId: Number(NovoIDPedido[0].UltimoID) + 1,
+          PedidoItemID: ,
+          CodigoCliente: ,
+          LojaCliente: ,
+          CodigoTabelaPreco: '002',
+          CodigoVendedor: '000026',
+          CodigoCondicaoPagto: ,
+          TipoFrete: ,
+          CodigoProduto: ,
+          QtdeVendida: ,
+          PrecoUnitarioLiquido: ,
+          PrecoTotal: ,
+          DataCriacao: ,
+          TipOp: ,
+          TES: ,
+          NATUREZA: ,
+          MsgNotaFiscal: ,
+          VlrDesconto:
+        }).into('dbo_PedidosVenda_srv')
+      }
+    } catch (err) {
+      response.status(400).send(err);
+    }
+  }
 
   async RecoverDocs({ request, response, params }) {
     const token = request.header("authorization");
