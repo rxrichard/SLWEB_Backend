@@ -119,7 +119,7 @@ class LeadController {
         response.status(200).send();
       }
     } catch (err) {
-      response.status(409).send();
+      response.status(400).send();
     }
   }
 

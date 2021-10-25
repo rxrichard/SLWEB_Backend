@@ -232,11 +232,11 @@ class VendaController {
 
       const PedidoParaFaturar = await Database.raw(queryPedidosParaFaturar, [NovoIDPedido, verified.grpven, PvcID])
 
-      PedidoParaFaturar.forEach((item, i) => {
+      PedidoParaFaturar.forEach(async (item, i) => {
         await Database.insert({
           GrpVen: verified.grpven,
           Filial: verified.user_code,
-          PedidoId: NovoIDPedido,
+          PedidoID: NovoIDPedido,
           PedidoItemID: i + 1,
           CodigoCliente: item.A1_COD,
           LojaCliente: item.A1_LOJA,
@@ -268,7 +268,7 @@ class VendaController {
           PedidoId: NovoIDPedido
         });
 
-      response.status(200).send({ message: 'ok' });
+      response.status(200).send({ message: 'ok', pedido: NovoIDPedido });
     } catch (err) {
       response.status(400).send(err);
     }
