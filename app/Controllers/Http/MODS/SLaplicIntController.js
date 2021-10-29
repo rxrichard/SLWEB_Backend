@@ -9,8 +9,8 @@ class SLaplicIntController {
           const formulario = await Drive.get(
             `\\\\192.168.1.250\\dados\\Franqueado\\SLAPLIC\\SL_APLIC.accdb`
           );
+          
           response.status(200).send(formulario);
-    
         } catch (err) {
           response.status(400).send(err);
         }

@@ -28,7 +28,7 @@ class VendaController {
       let aux = [];
 
       Produtos.map((element) =>
-        aux.push({ ...element, QVenda: 0, VVenda: element.PrVenda })
+        aux.push({ ...element, QVenda: 0, VVenda: element.PrVenda, DVenda: 0 })
       );
 
       response.status(200).send({ Produtos: aux, Clientes, CodPag, Depositos });
@@ -108,11 +108,11 @@ class VendaController {
           PvcID: Number(ultPvcId[0].UltimoID) + 1,
           PvdID: i + 1,
           ProdId: item.ProdId[0],
-          PvdQtd: item.QVenda,
+          PvdQtd: item.QVenda * item.FatConversao,
           PvdVlrUnit: item.VVenda,
-          PvdVlrTotal: item.QVenda * item.VVenda,
+          PvdVlrTotal: (item.QVenda * item.FatConversao) * (item.VVenda - item.DVenda),
           DataCriacao: actualDate,
-          PdvVlrDesc: Number(0).toFixed(4)
+          PdvVlrDesc: item.DVenda
         }).into("dbo.PedidosVendaDet");
       });
 
