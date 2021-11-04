@@ -108,9 +108,9 @@ class VendaController {
           PvcID: Number(ultPvcId[0].UltimoID) + 1,
           PvdID: i + 1,
           ProdId: item.ProdId[0],
-          PvdQtd: item.QVenda * item.FatConversao,
+          PvdQtd: item.FatConversao !== null ? item.QVenda * item.FatConversao : item.QVenda,
           PvdVlrUnit: item.VVenda,
-          PvdVlrTotal: (item.QVenda * item.FatConversao) * (item.VVenda - item.DVenda),
+          PvdVlrTotal: item.FatConversao !== null ? (item.QVenda * item.FatConversao) * (item.VVenda - item.DVenda) : item.QVenda * (item.VVenda - item.DVenda),
           DataCriacao: actualDate,
           PdvVlrDesc: item.DVenda
         }).into("dbo.PedidosVendaDet");
