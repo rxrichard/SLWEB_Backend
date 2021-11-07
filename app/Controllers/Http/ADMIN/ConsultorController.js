@@ -5,15 +5,18 @@ const Database = use("Database");
 const GerarExcel = require("../../../POG/excelExportService");
 
 class ConsultoreController {
-  async Teste({ response }) {
+  async GeraTabelaExcel({ response }) {
     const Consultor = "ALESSANDRO";
     const Meses = [
       { Inicio: "2021-04-01 00:00:00", Fim: "2021-04-30 00:00:00" },
       { Inicio: "2021-05-01 00:00:00", Fim: "2021-05-31 00:00:00" },
       { Inicio: "2021-06-01 00:00:00", Fim: "2021-06-30 00:00:00" },
     ];
+
     const workSheetName = ["Alessandro"];
+
     const filePath = Helpers.publicPath(`/Endereços Alessandro 16.06.xlsx`);
+
     const workSheetColumnNames = [
       "Filial",
       "Franqueado(a)",
@@ -82,6 +85,7 @@ class ConsultoreController {
       min = "2021-12-31T23:59:59.999Z";
       Valmax = 0;
       Valmin = 0;
+
       Gambiarra1.map((leitura) => {
         if (Linha[2] === leitura.Matricula.trim()) {
           if (new Date(leitura.DtLeit) > new Date(max)) {
@@ -96,6 +100,7 @@ class ConsultoreController {
         }
         Linha[13] = Valmax - Valmin < 0 ? 0 : Valmax - Valmin;
       });
+
       max = "2021-04-01T00:00:00.000Z";
       min = "2021-12-31T23:59:59.999Z";
       Valmax = 0;
@@ -107,6 +112,7 @@ class ConsultoreController {
       min = "2021-12-31T23:59:59.999Z";
       Valmax = 0;
       Valmin = 0;
+
       Gambiarra2.map((leitura) => {
         if (Linha[2] === leitura.Matricula.trim()) {
           if (new Date(leitura.DtLeit) > new Date(max)) {
@@ -121,6 +127,7 @@ class ConsultoreController {
         }
         Linha[14] = Valmax - Valmin < 0 ? 0 : Valmax - Valmin;
       });
+
       max = "2021-05-01T00:00:00.000Z";
       min = "2021-12-31T23:59:59.999Z";
       Valmax = 0;
@@ -132,6 +139,7 @@ class ConsultoreController {
       min = "2021-12-31T23:59:59.999Z";
       Valmax = 0;
       Valmin = 0;
+
       Gambiarra3.map((leitura) => {
         if (Linha[2] === leitura.Matricula.trim()) {
           if (new Date(leitura.DtLeit) > new Date(max)) {
@@ -146,6 +154,7 @@ class ConsultoreController {
         }
         Linha[15] = Valmax - Valmin < 0 ? 0 : Valmax - Valmin;
       });
+      
       max = "2021-06-01T00:00:00.000Z";
       min = "2021-12-31T23:59:59.999Z";
       Valmax = 0;

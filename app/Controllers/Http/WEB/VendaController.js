@@ -122,6 +122,76 @@ class VendaController {
     }
   }
 
+  async Update({ request, response, params }) {
+    const token = request.header("authorization");
+    const pvc = params.pvc;
+    const { Pedido } = request.only(["Pedido"]);
+
+    try {
+      const verified = seeToken(token);
+
+      const actualDate = new Date(moment().format())
+      const ultPvcId = await Database.raw("select MAX(PvcID) as UltimoID from dbo.PedidosVendaCab where PvcSerie = 'F' and GrpVen = ?", [verified.grpven]);
+
+      await Database.table('dbo.PedidosVendaCab')
+        .where({
+          PvcID: pvc,
+          PvcSerie: 'F',
+          GrpVen: verified.grpven,
+          STATUS: 'P'
+        })
+        .update({
+          STATUS: 'C',
+          PvcSerie: 'A'
+        });
+
+      await Database.table('dbo.PedidosVendaDet')
+        .where({
+          PvcID: pvc,
+          PvcSerie: 'F',
+          GrpVen: verified.grpven,
+        })
+        .update({
+          PvcSerie: 'A'
+        });
+
+      await Database.insert({
+        GrpVen: verified.grpven,
+        PvcSerie: 'F',
+        PvcID: Number(ultPvcId[0].UltimoID) + 1,
+        CNPJ: Pedido.Cliente.CNPJ,
+        Filial: verified.user_code,
+        CpgId: Pedido.CondPag,
+        DataCriacao: actualDate,
+        DataIntegracao: null,
+        DepId: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 1 : Pedido.RemOrigem : 0,
+        DepIdDest: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
+        PvTipo: Pedido.TipoVenda,
+        STATUS: 'P',
+        MsgNF: Pedido.OBS
+      }).into("dbo.PedidosVendaCab");
+
+      Pedido.Carrinho.forEach(async (item, i) => {
+        await Database.insert({
+          GrpVen: verified.grpven,
+          PvcSerie: 'F',
+          PvcID: Number(ultPvcId[0].UltimoID) + 1,
+          PvdID: i + 1,
+          ProdId: item.ProdId[0],
+          PvdQtd: item.FatConversao !== null ? item.QVenda * item.FatConversao : item.QVenda,
+          PvdVlrUnit: item.VVenda,
+          PvdVlrTotal: item.FatConversao !== null ? (item.QVenda * item.FatConversao) * (item.VVenda - item.DVenda) : item.QVenda * (item.VVenda - item.DVenda),
+          DataCriacao: actualDate,
+          PdvVlrDesc: item.DVenda
+        }).into("dbo.PedidosVendaDet");
+      });
+
+      response.status(200).send({ message: "ok" });
+    } catch (err) {
+      response.status(400).send(err);
+    }
+  }
+
   async CancelVenda({ request, response, params }) {
     const token = request.header("authorization");
     const serie = params.serie;

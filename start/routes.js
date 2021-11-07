@@ -57,16 +57,14 @@ Route.get("/vendas/pedidos", "WEB/VendaController.Show"); //retorna todos os ped
 Route.get("/vendas/pedidos/detalhes/:serie/:pvc", "WEB/VendaController.See"); //retorna os detalhes de dado pedido
 Route.get("/vendas/pedidos/detalhes/DOCS/:doctype/:serie/:pvc", "WEB/VendaController.RecoverDocs"); //retorna a DANFE solicitada
 Route.post("/vendas/vender", "WEB/VendaController.Store"); //registra a venda
+Route.put("/vendas/pedidos/atualizar/:pvc", "WEB/VendaController.Update"); //Cancela pedido de venda
 Route.put("/vendas/pedidos/cancelar/:serie/:pvc", "WEB/VendaController.CancelVenda"); //Cancela pedido de venda
 Route.put("/vendas/pedidos/faturar/:serie/:pvc", "WEB/VendaController.RequestNFeGeneration"); //Cancela pedido de venda
 
 //Solicitação de equipamentos
 Route.get("/equip/adresses", "WEB/EquipRequestController.See"); //retorna endereços, máquinas, configurações
 Route.get("/equip/requests", "WEB/EquipRequestController.Show"); //retorna todas as requisições do grupo
-Route.get(
-  "/equip/default/:id",
-  "WEB/EquipRequestController.SearchDefaultConfig"
-); //busca as configurações padrão da máquina
+Route.get("/equip/default/:id","WEB/EquipRequestController.SearchDefaultConfig"); //busca as configurações padrão da máquina
 Route.get("/equip/requests/retrive", "WEB/EquipRequestController.RetriveOS"); //retorna o PDF da OS
 Route.post("/equip", "WEB/EquipRequestController.Store"); //Solicita maquina
 
@@ -81,11 +79,11 @@ Route.get("/administrar/franquia", "ADMIN/FranquiasController.Show");
 
 //Formulário de futuros franqueados
 Route.get("/form", "ADMIN/FuturoFranqueadoController.FutureCod"); //checa se o número do futuro franqueado existe no DB
-Route.post("/form/solicitacao", "ADMIN/FuturoFranqueadoController.RequestCod"); //faz upload de arquivos
+Route.post("/form/solicitacao", "ADMIN/FuturoFranqueadoController.RequestCod"); //solicita código de acesso
 Route.post("/form/upload", "ADMIN/FuturoFranqueadoController.FileUpload"); //faz upload de arquivos
 Route.post("/form", "ADMIN/FuturoFranqueadoController.FormUpload"); //faz upload do formulario
 Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM"); //baixa o formulario .doc
 Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show"); //retorna todos os formulários
 
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
-Route.get("/testar", "ADMIN/ConsultoreController.Teste");
+Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel");
