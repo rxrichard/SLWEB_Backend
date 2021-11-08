@@ -6,7 +6,7 @@ const Drive = use("Drive");
 const Mail = use("Mail");
 const Env = use("Env");
 
-const { seeToken, dateCheck } = require("../../../POG/index");
+const { seeToken, dateCheck } = require("../../../POG/jwt");
 
 class FuturoFranqueadoController {
   async Show({ request, response }) {

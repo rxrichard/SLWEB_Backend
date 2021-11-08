@@ -3,7 +3,7 @@
 const Database = use("Database");
 const Mail = use("Mail");
 const Env = use("Env");
-const { genToken, genTokenADM, genTokenExternal } = require("../../POG/index");
+const { genToken, genTokenADM, genTokenExternal } = require("../../POG/jwt");
 
 class UserController {
   async Login({ request, response }) {

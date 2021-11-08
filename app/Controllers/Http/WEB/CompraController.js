@@ -1,7 +1,7 @@
 "use strict";
 const Database = use("Database");
 const Drive = use("Drive");
-const { seeToken } = require("../../../POG/index");
+const { seeToken } = require("../../../POG/jwt");
 const moment = require("moment");
 
 class CompraController {

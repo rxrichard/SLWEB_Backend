@@ -6,15 +6,15 @@ const Route = use("Route");
 //TESTE
 Route.get("/", function () {
   return { message: "API Funcionando!" };
-});
+})
 
 //Integração com API TOTVS
 Route.get("/tel/update/:filial/:equicod", "MODS/Sl2TelController.Update");
 Route.get("/mifix/consulta/ativo/:ativo", "MODS/Sl2TelController.Show");
 
 //Disparar Emails
-Route.get("/emails/history", "ADMIN/MailerController.Show");
-Route.get("/emails/recipients/:model", "ADMIN/MailerController.See");
+Route.get("/emails/history", "ADMIN/MailerController.Show")
+Route.get("/emails/recipients/:model", "ADMIN/MailerController.See")
 
 //Sessão
 Route.post("/auth", "UserController.Login");
@@ -62,11 +62,11 @@ Route.put("/vendas/pedidos/cancelar/:serie/:pvc", "WEB/VendaController.CancelVen
 Route.put("/vendas/pedidos/faturar/:serie/:pvc", "WEB/VendaController.RequestNFeGeneration"); //Cancela pedido de venda
 
 //Solicitação de equipamentos
-Route.get("/equip/adresses", "WEB/EquipRequestController.See"); //retorna endereços, máquinas, configurações
-Route.get("/equip/requests", "WEB/EquipRequestController.Show"); //retorna todas as requisições do grupo
-Route.get("/equip/default/:id","WEB/EquipRequestController.SearchDefaultConfig"); //busca as configurações padrão da máquina
-Route.get("/equip/requests/retrive", "WEB/EquipRequestController.RetriveOS"); //retorna o PDF da OS
-Route.post("/equip", "WEB/EquipRequestController.Store"); //Solicita maquina
+Route.get("/equip/adresses", "WEB/EquipRequestController.See").middleware('jwt'); //retorna endereços, máquinas, configurações
+Route.get("/equip/requests", "WEB/EquipRequestController.Show").middleware('jwt'); //retorna todas as requisições do grupo
+Route.get("/equip/default/:id", "WEB/EquipRequestController.SearchDefaultConfig").middleware('jwt'); //busca as configurações padrão da máquina
+Route.get("/equip/requests/retrive", "WEB/EquipRequestController.RetriveOS").middleware('jwt'); //retorna o PDF da OS
+Route.post("/equip", "WEB/EquipRequestController.Store").middleware('jwt'); //Solicita maquina
 
 //Administração das Solicitações de Equipamento
 Route.get("/equip/requests/all", "WEB/EquipRequestController.All"); //retorna todas as requisições do grupo

@@ -1,6 +1,6 @@
 "use strict";
 
-const { seeToken } = require("../../../POG/index");
+const { seeToken } = require("../../../POG/jwt");
 const Database = use("Database");
 
 class ProfileController {

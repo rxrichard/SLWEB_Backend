@@ -7,7 +7,7 @@ const Env = use("Env");
 const Drive = use("Drive");
 const PdfPrinter = require("pdfmake");
 const fs = require("fs");
-const { seeToken, dateCheck } = require("../../../POG/index");
+const { seeToken, dateCheck } = require("../../../POG/jwt");
 const { PDFGen } = require("../../../POG/OS_PDFGen");
 const moment = require("moment");
 moment.locale("pt-br");
