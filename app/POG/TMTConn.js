@@ -1,10 +1,13 @@
 const axios = require("axios");
 const Env = use("Env");
+const https = require('https');
 
+//faz a autenticacao e devolve um token de acesso ao TMT
 exports.GenTokenTMT = async (filial) => {
   const con = PureConnection();
 
   const Formulario = new URLSearchParams();
+
   Formulario.append("grant_type", "password");
   Formulario.append("username", Env.get("TMT_USER"));
   Formulario.append("password", Env.get("TMT_PASSWORD"));
@@ -13,6 +16,7 @@ exports.GenTokenTMT = async (filial) => {
   return await con.post("/Token", Formulario);
 };
 
+//lista todos os clientes da filial no token
 exports.ListClients = async (token) => {
   const con = AuthConnection(token);
 
@@ -20,8 +24,8 @@ exports.ListClients = async (token) => {
   if (result.data.TotalResults > result.data.PageSize) {
     result = await con.get(`/api/v1/cliente?ps=${result.data.TotalResults}`);
   }
-
-  return result;
+  
+  return result.data.List;
 };
 
 exports.FindUltimaInstalacao = async (token, ativo) => {
@@ -77,6 +81,7 @@ exports.FindEnderecoPorInstalacaoCliente = async (token, instalacao) => {
   return await con.get(`/api/v1/cliente/${instalacao.ClienteId}`);
 };
 
+//conexão não autenticada
 const PureConnection = () =>
   axios.create({
     baseURL: `${Env.get("TMT_URL")}`,
@@ -85,8 +90,12 @@ const PureConnection = () =>
       "Content-Type": "application/x-www-form-urlencoded",
     },
     crossDomain: true,
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false,
+    }),
   });
 
+  //conexão autenticada 
 const AuthConnection = (token) =>
   axios.create({
     baseURL: `${Env.get("TMT_URL")}`,
@@ -95,4 +104,7 @@ const AuthConnection = (token) =>
       Authorization: "Bearer " + token,
     },
     crossDomain: true,
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false,
+    }),
   });
