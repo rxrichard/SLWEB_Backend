@@ -2,7 +2,7 @@ const axios = require("axios");
 const Env = use("Env");
 const https = require('https');
 
-//faz a autenticacao e devolve um token de acesso ao TMT
+//faz a autenticacao e devolve um token de acesso ao TMT junto com outras informacoes
 exports.GenTokenTMT = async (filial) => {
   const con = PureConnection();
 
@@ -13,20 +13,188 @@ exports.GenTokenTMT = async (filial) => {
   Formulario.append("password", Env.get("TMT_PASSWORD"));
   Formulario.append("filial", filial);
 
-  return await con.post("/Token", Formulario);
+  try {
+    return await con.post("/Token", Formulario);
+  } catch (err) {
+    console.log(err)
+  }
 };
 
-//lista todos os clientes da filial no token
 exports.ListClients = async (token) => {
   const con = AuthConnection(token);
 
-  let result = await con.get("/api/v1/cliente?ps=10");
-  if (result.data.TotalResults > result.data.PageSize) {
-    result = await con.get(`/api/v1/cliente?ps=${result.data.TotalResults}`);
+  try {
+    let result = await con.get("api/v1/cliente?ps=10");
+    if (result.data.TotalResults > result.data.PageSize) {
+      result = await con.get(`api/v1/cliente?ps=${result.data.TotalResults}`);
+    }
+
+    return result.data.List;
+  } catch (err) {
+    console.log(err)
   }
-  
-  return result.data.List;
 };
+
+exports.ListCidades = async (token) => {
+  const con = AuthConnection(token);
+
+  try {
+    let result = await con.get("api/v1/cidade?ps=10");
+    if (result.data.TotalResults > result.data.PageSize) {
+      result = await con.get(`api/v1/cidade?ps=${result.data.TotalResults}`);
+    }
+
+    return result.data.List;
+  } catch (err) {
+    console.log(err)
+  }
+};
+
+exports.ListInstalacoes = async (token) => {
+  const con = AuthConnection(token);
+
+  try {
+    let result = await con.get("api/v1/instalacao?ps=10");
+    if (result.data.TotalResults > result.data.PageSize) {
+      result = await con.get(`api/v1/instalacao?ps=${result.data.TotalResults}`);
+    }
+
+    return result.data.List;
+  } catch (err) {
+    console.log(err)
+  }
+};
+
+exports.ListMaquinas = async (token) => {
+  const con = AuthConnection(token);
+
+  try {
+    let result = await con.get("api/v1/maquina?ps=10");
+    if (result.data.TotalResults > result.data.PageSize) {
+      result = await con.get(`api/v1/maquina?ps=${result.data.TotalResults}`);
+    }
+
+    return result.data.List;
+  } catch (err) {
+    console.log(err)
+  }
+};
+
+exports.ListSegmentos = async (token) => {
+  const con = AuthConnection(token);
+
+  try {
+    let result = await con.get("api/v1/segmento?ps=10");
+    if (result.data.TotalResults > result.data.PageSize) {
+      result = await con.get(`api/v1/segmento?ps=${result.data.TotalResults}`);
+    }
+
+    return result.data.List;
+  } catch (err) {
+    console.log(err)
+  }
+};
+
+exports.StoreClient = async (token, cliente, cidade, empresaID, segmento) => {
+  const con = AuthConnection(token);
+  const DTO = {
+    EntidadeId: empresaID,
+    Codigo: cliente.A1_COD,
+    Tipo: cliente.TPessoa,
+    Cnpj: cliente.CNPJ[0],
+    Nome: cliente.Razão_Social,
+    NomeFantasia: cliente.Nome_Fantasia,
+    SegmentoId: segmento,
+    CidadeId: cidade.Id,
+    Logradouro: cliente.PdvLogradouroPV,
+    Numero: cliente.PdvNumeroPV,
+    Complemento: cliente.PdvComplementoPV,
+    Bairro: cliente.PdvBairroPV,
+    CEP: cliente.PdvCEP,
+    Celular: `${cliente.DDD}${cliente.Fone}`,
+    Telefone: '',
+    Email: cliente.Email,
+    NomeContato: cliente.Contato_Empresa
+  }
+
+  try {
+    await con.post("/api/v1/cliente", DTO);
+  } catch (err) {
+    console.log(err)
+  }
+
+  return
+}
+
+exports.StoreInstalacao = async (token, empresaID, maquinaID, clienteID) => {
+  const con = AuthConnection(token);
+  const DTO = {
+    EntidadeId: empresaID,
+    MaquinaId: maquinaID,
+    ClienteId: clienteID,
+    DataDeInstalacao: new Date()
+  }
+
+  try {
+    await con.post("api/v1/instalacao", DTO);
+  } catch (err) {
+    console.log(err)
+  }
+
+  return
+}
+
+exports.UpdateClient = async (token, ID, cliente, cidade, empresaID, segmento) => {
+  const con = AuthConnection(token);
+  const DTO = {
+    Id: ID,
+    EntidadeId: empresaID,
+    Codigo: cliente.A1_COD,
+    Tipo: cliente.TPessoa,
+    Cnpj: cliente.CNPJ[0],
+    Nome: cliente.Razão_Social,
+    NomeFantasia: cliente.Nome_Fantasia,
+    SegmentoId: segmento,
+    CidadeId: cidade.Id,
+    Logradouro: cliente.PdvLogradouroPV,
+    Numero: cliente.PdvNumeroPV,
+    Complemento: cliente.PdvComplementoPV,
+    Bairro: cliente.PdvBairroPV,
+    CEP: cliente.PdvCEP,
+    Celular: `${cliente.DDD}${cliente.Fone}`,
+    Telefone: '',
+    Email: cliente.Email,
+    NomeContato: cliente.Contato_Empresa
+  }
+
+  try {
+    await con.put("/api/v1/cliente", DTO);
+  } catch (err) {
+    console.log(err)
+  }
+
+  return
+}
+
+exports.FecharInstalacoes = async (token, instalacao) => {
+  const con = AuthConnection(token);
+  const DTO = {
+    Id: instalacao.Id,
+    EntidadeId: instalacao.EntidadeId,
+    MaquinaId: instalacao.MaquinaId,
+    ClienteId: instalacao.ClienteId,
+    DataDeInstalacao: instalacao.DataDeInstalacao,
+    DataDeRemocao: new Date()
+  }
+
+  try {
+    await con.put("api/v1/instalacao", DTO);
+  } catch (err) {
+    console.log(err)
+  }
+
+  return
+}
 
 exports.FindUltimaInstalacao = async (token, ativo) => {
   const con = AuthConnection(token);
@@ -74,11 +242,15 @@ exports.FindUltimaInstalacao = async (token, ativo) => {
 
 exports.FindEnderecoPorInstalacaoCliente = async (token, instalacao) => {
   if (instalacao === null) {
-    return {data: "Localização não encontrada"};
+    return { data: "Localização não encontrada" };
   }
   const con = AuthConnection(token);
 
-  return await con.get(`/api/v1/cliente/${instalacao.ClienteId}`);
+  try {
+    return await con.get(`/api/v1/cliente/${instalacao.ClienteId}`);
+  } catch (err) {
+    console.log(err)
+  }
 };
 
 //conexão não autenticada
@@ -95,7 +267,7 @@ const PureConnection = () =>
     }),
   });
 
-  //conexão autenticada 
+//conexão autenticada 
 const AuthConnection = (token) =>
   axios.create({
     baseURL: `${Env.get("TMT_URL")}`,
