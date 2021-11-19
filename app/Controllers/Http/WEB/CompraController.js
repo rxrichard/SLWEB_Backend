@@ -52,7 +52,7 @@ class CompraController {
       };
 
       response.status(200).send({
-        Geral,
+        Geral: Geral,
         Duplicatas: DuplicatasAberto,
         ComprasAno: ComprasAoAno,
         AFaturar: PedidosNaoFaturados,

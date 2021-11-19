@@ -61,12 +61,18 @@ Route.put("/vendas/pedidos/atualizar/:pvc", "WEB/VendaController.Update").middle
 Route.put("/vendas/pedidos/cancelar/:serie/:pvc", "WEB/VendaController.CancelVenda").middleware('jwt'); //Cancela pedido de venda
 Route.put("/vendas/pedidos/faturar/:serie/:pvc", "WEB/VendaController.RequestNFeGeneration").middleware('jwt'); //Cancela pedido de venda
 
+//Equipamentos
+Route.get("/equip", "WEB/EquipController.Show").middleware('jwt'); //retorna máquinas do franqueado
+Route.get("/equip/reports", "WEB/EquipController.See").middleware('jwt'); //retorna reports do franqueado
+Route.post("/equip/reports", "WEB/EquipController.StoreReport").middleware('jwt'); //cria report do franqueado
+Route.put("/equip/reports", "WEB/EquipController.DeleteReport").middleware('jwt'); //fecha report do franqueado
+
 //Solicitação de equipamentos
-Route.get("/equip/adresses", "WEB/EquipRequestController.See").middleware('jwt'); //retorna endereços, máquinas, configurações
-Route.get("/equip/requests", "WEB/EquipRequestController.Show").middleware('jwt'); //retorna todas as requisições do grupo
-Route.get("/equip/default/:id", "WEB/EquipRequestController.SearchDefaultConfig").middleware('jwt'); //busca as configurações padrão da máquina
+Route.get("/equip/requests/own", "WEB/EquipRequestController.Show").middleware('jwt'); //retorna todas as requisições do grupo
+Route.get("/equip/requests/adresses", "WEB/EquipRequestController.See").middleware('jwt'); //retorna endereços, máquinas, configurações
+Route.get("/equip/requests/default/:id", "WEB/EquipRequestController.SearchDefaultConfig").middleware('jwt'); //busca as configurações padrão da máquina
 Route.get("/equip/requests/retrive", "WEB/EquipRequestController.RetriveOS").middleware('jwt'); //retorna o PDF da OS
-Route.post("/equip", "WEB/EquipRequestController.Store").middleware('jwt'); //Solicita maquina
+Route.post("/equip/requests", "WEB/EquipRequestController.Store").middleware('jwt'); //Solicita maquina
 
 //Administração das Solicitações de Equipamento
 Route.get("/equip/requests/all", "WEB/EquipRequestController.All").middleware('jwt'); //retorna todas as requisições do grupo

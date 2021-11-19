@@ -31,7 +31,7 @@ class UserController {
 
       if (checkUser.length < 1) {
         //se não encontrar o codigo do franqueado
-        response.status(204).send();
+        response.status(400).send();
       } else {
         //se encontrar o codigo do franqueado
 
