@@ -63,6 +63,7 @@ Route.put("/vendas/pedidos/faturar/:serie/:pvc", "WEB/VendaController.RequestNFe
 
 //Equipamentos
 Route.get("/equip", "WEB/EquipController.Show").middleware('jwt'); //retorna máquinas do franqueado
+Route.put("/equip", "WEB/EquipController.Update").middleware('jwt'); //atualiza cliente da máquina
 Route.get("/equip/reports", "WEB/EquipController.See").middleware('jwt'); //retorna reports do franqueado
 Route.post("/equip/reports", "WEB/EquipController.StoreReport").middleware('jwt'); //cria report do franqueado
 Route.put("/equip/reports", "WEB/EquipController.DeleteReport").middleware('jwt'); //fecha report do franqueado

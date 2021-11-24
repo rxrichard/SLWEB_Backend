@@ -1,6 +1,6 @@
 const Helpers = use("Helpers");
 
-exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
+exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
   //Coloco a configuração das bebibas nesse array aqui em cima porque no meio do obj do pdf fica uma bagunça
   const configArray = [
     [
@@ -25,7 +25,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
 
   detalhes.push([
     { text: "Máquina Corporativa: ", bold: true },
-    `${Solicitacao.Corporativa ? "Sim" : "Não"}`,
+    `${Solicitacao.Corporativa === true || Solicitacao.Corporativa === '1' ? "Sim" : "Não"}`,
   ]);
 
   if (Solicitacao.Maquina !== "LEI SA") {
@@ -37,7 +37,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
 
   detalhes.push([
     { text: "Acompanha Gabinete: ", bold: true },
-    `${typeof Solicitacao.Gabinete == 'undefined' || Solicitacao.Gabinete === ''|| Solicitacao.Gabinete === false ? "Não" : "Sim"}`,
+    `${typeof Solicitacao.Gabinete == 'undefined' || Solicitacao.Gabinete === ''|| Solicitacao.Gabinete === false || Solicitacao.Gabinete === '0'? "Não" : "Sim"}`,
   ]);
   detalhes.push([
     { text: "Abastecimento: ", bold: true },
@@ -76,7 +76,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
   }
   detalhes.push([
     { text: "Antena Externa: ", bold: true },
-    `${Solicitacao.AntExt ? "Sim" : "Não"}`,
+    `${Solicitacao.AntExt === true || Solicitacao.AntExt === '1' ? "Sim" : "Não"}`,
   ]);
   detalhes.push([
     { text: "Operadora do Chip da Telemetria: ", bold: true },
@@ -194,7 +194,13 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified) => {
           body: [
             [
               { text: "Data Solicitada: ", bold: true },
-              `${new Date()
+              `${typeof solicitacao == 'undefined' ? new Date()
+                .toISOString()
+                .split("T")[0]
+                .replace(/-/g, "/")
+                .split("/")
+                .reverse()
+                .join("/") : new Date(solicitacao)
                 .toISOString()
                 .split("T")[0]
                 .replace(/-/g, "/")

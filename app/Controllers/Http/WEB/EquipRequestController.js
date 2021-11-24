@@ -7,7 +7,8 @@ const Env = use("Env");
 const Drive = use("Drive");
 const PdfPrinter = require("pdfmake");
 const fs = require("fs");
-const { seeToken, dateCheck } = require("../../../POG/jwt");
+const toArray = require('stream-to-array')
+const { seeToken } = require("../../../POG/jwt");
 const { PDFGen } = require("../../../POG/OS_PDFGen");
 const moment = require("moment");
 moment.locale("pt-br");
@@ -235,150 +236,177 @@ class EquipRequestController {
 
     const verified = seeToken(token);
 
-    //buscando ultima id de OS
-    const OSCID = await Database.select("OSCId")
-      .from("dbo.OSCtrl")
-      .orderBy("OSCId", "DESC");
+    try {
+      //buscando ultima id de OS
+      const OSCID = await Database.select("OSCId")
+        .from("dbo.OSCtrl")
+        .orderBy("OSCId", "DESC");
 
-    let ID = 0;
+      let ID = 0;
 
-    if (OSCID.length > 0) {
-      ID = parseFloat(OSCID[0].OSCId) + 1;
-    } else {
-      ID = 1;
-    }
+      if (OSCID.length > 0) {
+        ID = parseFloat(OSCID[0].OSCId) + 1;
+      } else {
+        ID = 1;
+      }
 
-    //crio variavel com o endereço completo do PDF
-    const PathWithName = `${path}/ORDEM-${verified.grpven
-      }-${`000000${ID}`.slice(-6)}.pdf`;
+      //crio variavel com o endereço completo do PDF
+      const PathWithName = `${path}/ORDEM-${verified.grpven
+        }-${`000000${ID}`.slice(-6)}.pdf`;
 
-    const Dados = await Database.select("GrupoVenda", "M0_CGC", 'Email')
-      .from("dbo.FilialEntidadeGrVenda")
-      .where({ A1_GRPVEN: verified.grpven });
+      const Dados = await Database.select("GrupoVenda", "M0_CGC", 'Email')
+        .from("dbo.FilialEntidadeGrVenda")
+        .where({ A1_GRPVEN: verified.grpven });
 
-    // Salva as informações cabeçalho da OS
-    await Database.insert({
-      OSTId: Solicitacao.Maquina === "" ? 2 : 1,
-      OSCStatus: "Ativo",
-      GrpVen: verified.grpven,
-      OSCDtSolicita: moment().subtract(3, "hours").toDate(),
-      OSCDtPretendida: Solicitacao.Data_Entrega_Desejada,
-      OSCDtFechamento: null,
-      OSCTecDtVisualizada: null,
-      OSCTecDtValidação: null,
-      OSCTecAceite: null,
-      OSCTecMotivo: null,
-      OSCTecDtPrevisao: null,
-      OSCComDtVisualizada: null,
-      OSCComDtValidação: null,
-      OSCComAceite: null,
-      OSCComMotivo: null,
-      OSCExpDtVisualizada: null,
-      OSCExpDtPrevisao: null,
-      OSCnpjDest: Solicitacao.CNPJ_Destino,
-      OSCDestino: Solicitacao.Endereço_Entrega,
-      OSCPDF: `ORDEM-${verified.grpven}-${`000000${ID}`.slice(-6)}.pdf`,
-      OSCEmail: Dados[0].Email,
-      OSCTelCont: Solicitacao.Telefone_Contato,
-      OSCcontato: Solicitacao.Contato,
-    }).into("dbo.OSCtrl");
+      // Salva as informações cabeçalho da OS
+      await Database.insert({
+        OSTId: Solicitacao.Maquina === "" ? 2 : 1,
+        OSCStatus: "Ativo",
+        GrpVen: verified.grpven,
+        OSCDtSolicita: moment().subtract(3, "hours").toDate(),
+        OSCDtPretendida: Solicitacao.Data_Entrega_Desejada,
+        OSCDtFechamento: null,
+        OSCTecDtVisualizada: null,
+        OSCTecDtValidação: null,
+        OSCTecAceite: null,
+        OSCTecMotivo: null,
+        OSCTecDtPrevisao: null,
+        OSCComDtVisualizada: null,
+        OSCComDtValidação: null,
+        OSCComAceite: null,
+        OSCComMotivo: null,
+        OSCExpDtVisualizada: null,
+        OSCExpDtPrevisao: null,
+        OSCnpjDest: Solicitacao.CNPJ_Destino,
+        OSCDestino: Solicitacao.Endereço_Entrega,
+        OSCPDF: `ORDEM-${verified.grpven}-${`000000${ID}`.slice(-6)}.pdf`,
+        OSCEmail: Dados[0].Email,
+        OSCTelCont: Solicitacao.Telefone_Contato,
+        OSCcontato: Solicitacao.Contato,
+      }).into("dbo.OSCtrl");
 
-    //Salva as configurações de bebida da máquina
-    await Solicitacao.Configuracao.map(async (bebida) => {
+      //Salva as configurações de bebida da máquina
+      await Solicitacao.Configuracao.map(async (bebida) => {
+        await Database.insert({
+          OSCId: ID,
+          Selecao: bebida.selecao,
+          BebidaId: bebida.id,
+          UnMedida: bebida.medida,
+          GrpVen: verified.grpven,
+          PrecoMaq: bebida.valor,
+          PrecoRep: bebida.valor2,
+          TProduto: bebida.tipo,
+          Ativa: bebida.configura,
+        }).into("dbo.OSCtrlDet");
+      });
+
+      //salva as especificações da máquina
       await Database.insert({
         OSCId: ID,
-        Selecao: bebida.selecao,
-        BebidaId: bebida.id,
-        UnMedida: bebida.medida,
         GrpVen: verified.grpven,
-        PrecoMaq: bebida.valor,
-        PrecoRep: bebida.valor2,
-        TProduto: bebida.tipo,
-        Ativa: bebida.configura,
-      }).into("dbo.OSCtrlDet");
-    });
+        MaqId: Solicitacao.MaquinaId,
+        THidrico: Solicitacao.Abastecimento,
+        InibCopos: Solicitacao.InibirCopos,
+        Gabinete:
+          typeof Solicitacao.Gabinete == "undefined" ||
+            Solicitacao.Gabinete === ""
+            ? false
+            : Solicitacao.Gabinete,
+        SisPag: Solicitacao.Pagamento,
+        TComunic: Solicitacao.Chip,
+        Antena: Solicitacao.AntExt,
+        ValidadorCond: Solicitacao.TipoValidador,
+        ValidadorVal: Solicitacao.Validador.toString(),
+        MaqCorp: Solicitacao.Corporativa,
+        OSObs: Solicitacao.Observacao,
+      }).into("dbo.OSCtrlSpec");
 
-    //salva as especificações da máquina
-    await Database.insert({
-      OSCId: ID,
-      GrpVen: verified.grpven,
-      MaqId: Solicitacao.MaquinaId,
-      THidrico: Solicitacao.Abastecimento,
-      InibCopos: Solicitacao.InibirCopos,
-      Gabinete:
-        typeof Solicitacao.Gabinete == "undefined" ||
-          Solicitacao.Gabinete === ""
-          ? false
-          : Solicitacao.Gabinete,
-      SisPag: Solicitacao.Pagamento,
-      TComunic: Solicitacao.Chip,
-      Antena: Solicitacao.AntExt,
-      ValidadorCond: Solicitacao.TipoValidador,
-      ValidadorVal: Solicitacao.Validador.toString(),
-      MaqCorp: Solicitacao.Corporativa,
-      OSObs: Solicitacao.Observacao,
-    }).into("dbo.OSCtrlSpec");
+      const PDFModel = PDFGen(Solicitacao, ID, Dados, verified);
 
-    const PDFModel = PDFGen(Solicitacao, ID, Dados, verified);
+      var pdfDoc = printer.createPdfKitDocument(PDFModel);
+      pdfDoc.pipe(fs.createWriteStream(PathWithName));
+      pdfDoc.end();
 
-    var pdfDoc = printer.createPdfKitDocument(PDFModel);
-    pdfDoc.pipe(fs.createWriteStream(PathWithName));
-    pdfDoc.end();
+      //enviar email de nova solicitação
+      Mail.send(
+        "emails.OSnew",
+        { verified, ID, Frontend: Env.get("CLIENT_URL") },
+        (message) => {
+          message
+            .to(Dados[0].Email)
+            .cc([
+              Env.get("EMAIL_SUPORTE"),
+              Env.get("EMAIL_COMERCIAL_1"),
+              Env.get("EMAIL_COMERCIAL_2"),
+            ])
+            .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+            .subject("Nova ordem de serviço")
+            .attach(PathWithName);
+        }
+      );
 
-    //enviar email de nova solicitação
-    Mail.send(
-      "emails.OSnew",
-      { verified, ID, Frontend: Env.get("CLIENT_URL") },
-      (message) => {
-        message
-          .to(Dados[0].Email)
-          .cc([
-            Env.get("EMAIL_SUPORTE"),
-            Env.get("EMAIL_COMERCIAL_1"),
-            Env.get("EMAIL_COMERCIAL_2"),
-          ])
-          .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-          .subject("Nova ordem de serviço")
-          .attach(PathWithName);
-      }
-    );
+      const file = await Drive.get(`${PathWithName}`);
+      Drive.put(
+        `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\OS\\ORDEM-${verified.grpven
+        }-${`000000${ID}`.slice(-6)}.pdf`,
+        file
+      );
 
-    const file = await Drive.get(`${PathWithName}`);
-    Drive.put(
-      `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\OS\\ORDEM-${verified.grpven
-      }-${`000000${ID}`.slice(-6)}.pdf`,
-      file
-    );
+      response.status(201).send("ok");
+    } catch (err) {
+      response.status(400).send(err);
+    }
 
-    response.status(201).send("ok");
   }
 
   async RetriveOS({ request, response }) {
     const token = request.header("authorization");
     const { OSID } = request.only(["OSID"]);
-    let pdfName = [];
+    const path = Helpers.publicPath(`/OS`);
+
+    let PathWithName = ''
+
+    let cab
+    let contenedores
+    let det
+    let Dados
 
     try {
       const verified = seeToken(token);
 
-      if (
-        verified.role === "Sistema" ||
-        verified.role === "BackOffice" ||
-        verified.role === "Técnica Pilão" ||
-        verified.role === "Técnica Bianchi" ||
-        verified.role === "Expedição"
-      ) {
-        pdfName = await Database.select("OSCPDF").from("dbo.OSCtrl").where({
-          OSCId: OSID,
-        });
-      } else {
-        pdfName = await Database.select("OSCPDF").from("dbo.OSCtrl").where({
-          GrpVen: verified.grpven,
-          OSCId: OSID,
-        });
+      cab = await Database.raw(CabeçalhoDaOS, [OSID])
+      contenedores = await Database.raw(ContenedoresDaOS, [OSID])
+      det = await Database.raw(DetalhesDaOS, [OSID])
+      Dados = await Database.select("GrupoVenda", "M0_CGC", 'Email', 'M0_CODFIL')
+        .from("dbo.FilialEntidadeGrVenda")
+        .where({ A1_GRPVEN: cab[0].GrpVen });
+      PathWithName = `${path}/${cab[0].OSCPDF}`
+
+      const Solicitacao = {
+        ...cab[0],
+        Contenedor: ContenedoresDB2PDF(contenedores),
+        Validador: String(cab[0].Validador).split(','),
+          Configuracao: [...det],
+        }
+
+        
+        const ModVerified = {
+          ...verified,
+          user_name: Dados[0].GrupoVenda,
+        user_code: Dados[0].M0_CODFIL
       }
 
-      response.attachment(`${Helpers.publicPath(`/OS`)}/${pdfName[0].OSCPDF}`);
+      const PDFModel = PDFGen(Solicitacao, OSID, Dados, ModVerified, cab[0].DataSolicitada);
+
+      var pdfDoc = printer.createPdfKitDocument(PDFModel);
+      pdfDoc.pipe(fs.createWriteStream(PathWithName));
+      pdfDoc.end();
+
+      const enviarDaMemóriaSemEsperarSalvarNoFS = await toArray(pdfDoc).then(parts => {
+        return Buffer.concat(parts);
+      })
+
+      response.status(201).send(enviarDaMemóriaSemEsperarSalvarNoFS);
     } catch (err) {
       response.status(400).send(err);
     }
@@ -802,3 +830,29 @@ class EquipRequestController {
 }
 
 module.exports = EquipRequestController;
+
+const CabeçalhoDaOS = "select OC.GrpVen, OS.MaqId as MaquinaId, OSC.MaqModelo as Maquina, OC.OSCDtSolicita as DataSolicitada, OS.SisPag as Pagamento, OS.ValidadorVal as Validador, OS.ValidadorCond as TipoValidador, OS.InibCopos as InibirCopos, OS.MaqCorp as Corporativa, OS.Gabinete as Gabinete, OS.THidrico as Abastecimento, OS.TComunic as Chip, OS.Antena as AntExt, C.Nome_Fantasia as Cliente_Destino, OC.OSCnpjDest as CNPJ_Destino, OC.OSCDestino as Endereço_Entrega, OC.OSCDtPretendida as Data_Entrega_Desejada, OC.OSCcontato as Contato, OC.OSCEmail as Email_Acompanhamento, OC.OSCTelCont as Telefone_Contato, OS.OSObs as Observacao, OC.OSCPDF from dbo.OSCtrl as OC inner join dbo.OSCtrlSpec as OS on OC.OSCId = OS.OSCId left join dbo.OSConfigMaq as OSC on OS.MaqId = OSC.MaqModId left join dbo.Cliente as C on C.CNPJss = OC.OSCnpjDest and C.GrpVen = OC.GrpVen where OC.OSCId = ?"
+
+const ContenedoresDaOS = "select distinct IIF(OD.TProduto = 'Pronto', OB.ContPronto, OB.ContMist) as Contenedor from dbo.OSCtrlDet as OD inner join dbo.OSBebidas as OB on OD.BebidaId = OB.Cod where OD.OSCId = ?"
+
+const DetalhesDaOS = "select OD.BebidaId as id, OD.Selecao as selecao, OB.Bebida as bebida, TRIM(OD.UnMedida) as medida, OD.TProduto as tipo, IIF(OD.TProduto = 'Pronto', OB.ContPronto, OB.ContMist) as contenedor, OD.Ativa as configura, OD.PrecoMaq as valor, OD.PrecoRep as valor2 from dbo.OSCtrlDet as OD left join dbo.OSBebidas as OB on OD.BebidaId = OB.Cod where OSCId = ? order by OD.Selecao ASC"
+
+const ContenedoresDB2PDF = (contenedoresFromDB) => {
+  let newContenedores = []
+
+  contenedoresFromDB.forEach((contenedor) => {
+    if (contenedor.Contenedor !== null) {
+      newContenedores = [...newContenedores, ...JSON.parse(
+        "[" +
+        String(contenedor.Contenedor).replace(/0/g, ",") +
+        "]"
+      )]
+    }
+  })
+
+  const newContenedoresSemRepeticao = newContenedores.filter((item, index) => {
+    return (newContenedores.indexOf(item) == index)
+  })
+
+  return newContenedoresSemRepeticao
+}
