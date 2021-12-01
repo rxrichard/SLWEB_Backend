@@ -238,13 +238,15 @@ class VendaController {
         .from("dbo.PedidosVendaCab")
         .where({
           PvcID: PvcID,
+          GrpVen: verified.grpven,
         });
       if (
         NotaGerada[0].STATUS === "C" ||
         NotaGerada[0].STATUS === "S" ||
-        NotaGerada[0].STATUS == "F"
-      )
+        NotaGerada[0].STATUS === "F"
+      ) {
         throw new Error();
+      }
 
       if (NotaGerada[0].PvTipo === "B") {
         await Database.table('dbo.PedidosVendaDet')
