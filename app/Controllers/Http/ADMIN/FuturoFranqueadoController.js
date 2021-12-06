@@ -17,7 +17,7 @@ class FuturoFranqueadoController {
 
       if (verified.role === "Franquia") throw Error;
 
-      const formularios = await Database.select("*").from("dbo.FuturaFranquia");
+      const formularios = await Database.select("*").from("dbo.FuturaFranquia").orderBy('DtSolicitacao', 'desc');
 
       response.status(200).send(formularios);
     } catch (err) {
