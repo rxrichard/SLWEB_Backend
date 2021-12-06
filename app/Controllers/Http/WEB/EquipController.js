@@ -103,7 +103,7 @@ class EquipController {
           ConId: ConId,
         })
 
-      let newAnxId = 1
+      let newAnxId = Anexo.length > 0 ? Anexo[0].AnxId : 1;
 
       if (Anexo.length === 0) {
         const lastAnxId = await Database.raw('SELECT MAX(AnxId) AS AnxId FROM dbo.Anexos WHERE GrpVen = ?', [verified.grpven])
@@ -169,9 +169,8 @@ class EquipController {
           PdvStatus: 'A'
         });
 
-        console.log('não achou nenhum pdv e vai criar um novo')
       } else {
-        console.log('achou um pdv e não vai criar um novo')
+        console.log(`Esse trecho não deve executar nunca, mas vou deixar esse log aqui só pra monitorar... Máquina ${oldPdv.EquiCod}, ClienteNovo ${newCliente.CNPJ}`)
       }
 
       await Database.table("dbo.PVPROD")
@@ -185,7 +184,7 @@ class EquipController {
       await Database.raw(updateFirstConfigToPdv, [newAnxId, newPdvId, verified.grpven])
 
       response.status(200).send({
-        message: 'ok'
+        NewAnxId: newAnxId, NewPdvId: newPdvId, 
       })
     } catch (err) {
       response.status(400).send(err)

@@ -18,7 +18,7 @@ class UserController {
       response.status(401).send();
     }
   }
-  
+
   async Forgot({ request, response }) {
     const { user_code } = request.only(["user_code"]);
 
@@ -141,10 +141,10 @@ class UserController {
         new Date().getMinutes(),
         new Date().getSeconds()
       );
-      
+
       //data criação <= data de criação + 1min
       if (HorarioAtual < HorarioMaximo) {
-        const updatedRows = await Database.table("dbo.CrossLogin")
+        await Database.table("dbo.CrossLogin")
           .where({
             M0_CODFIL: code,
             Logou: false,
@@ -153,15 +153,13 @@ class UserController {
             Logou: true,
           });
 
-        if (updatedRows.length < 1) {
-          throw new Error('Tentativa de login não registrada corretamente');
-        }
-
         const token = await genTokenExternal(code);
+
         response.status(201).send(token);
-      }else{
+      } else {
         throw new Error('Mais de 1 minuto de redirecionamento');
       }
+
     } catch (err) {
       response.status(401).send(err);
     }
