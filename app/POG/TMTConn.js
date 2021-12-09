@@ -97,6 +97,7 @@ exports.ListSegmentos = async (token) => {
 
 exports.StoreClient = async (token, cliente, cidade, empresaID, segmento) => {
   const con = AuthConnection(token);
+  
   const DTO = {
     EntidadeId: empresaID,
     Codigo: cliente.A1_COD,

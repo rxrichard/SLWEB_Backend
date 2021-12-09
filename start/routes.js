@@ -11,6 +11,7 @@ Route.get("/", function () {
 //Integração com API TOTVS
 Route.get("/tel/update/:filial/:equicod", "MODS/Sl2TelController.Update");
 Route.get("/mifix/consulta/ativo/:ativo", "MODS/Sl2TelController.Show");
+Route.get("/ativo/qrcode/:ativo", "MODS/SLaplicIntController.ReturnQRCode");
 
 //Disparar Emails
 Route.get("/emails/history", "ADMIN/MailerController.Show").middleware('jwt')
@@ -67,6 +68,8 @@ Route.put("/equip", "WEB/EquipController.Update").middleware('jwt'); //atualiza 
 Route.get("/equip/reports", "WEB/EquipController.See").middleware('jwt'); //retorna reports do franqueado
 Route.post("/equip/reports", "WEB/EquipController.StoreReport").middleware('jwt'); //cria report do franqueado
 Route.put("/equip/reports", "WEB/EquipController.DeleteReport").middleware('jwt'); //fecha report do franqueado
+Route.get("/equip/confirm/", "WEB/EquipController.SeeConfirmInfo").middleware('jwt'); // retorna a lista de endereços a serem confirmados
+Route.post("/equip/confirm/", "WEB/EquipController.ConfirmAddresses").middleware('jwt'); // grava o cnpj dos clientes com as máquinas
 
 //Solicitação de equipamentos
 Route.get("/equip/requests/own", "WEB/EquipRequestController.Show").middleware('jwt'); //retorna todas as requisições do grupo

@@ -1,6 +1,7 @@
 "use strict";
 
 const Database = use("Database");
+const moment = require("moment");
 const { seeToken } = require("../../../POG/jwt");
 
 class EquipController {
@@ -16,7 +17,23 @@ class EquipController {
         GrpVen: verified.grpven
       }).orderBy('Nome_Fantasia', 'ASC')
 
-      response.status(200).send({ Ativos: ativos, Clientes: clientes });
+      const confirmPeriod = await Database.raw(confirmEquipPeriod, []);
+
+      const jaReportou = await Database
+        .select('*')
+        .from('dbo.RepoEquip')
+        .where({
+          GrpVen: verified.grpven,
+          RepoAno: moment().get('year'),
+          RepoMes: moment().get('month') + 1,
+        })
+
+      response.status(200).send({
+        Ativos: ativos,
+        Clientes: clientes,
+        ConfirmEqPeriod: confirmPeriod,
+        JaReportou: jaReportou.length > 0 ? true : false,
+      });
     } catch (err) {
       response.status(400).send(err)
     }
@@ -184,7 +201,7 @@ class EquipController {
       await Database.raw(updateFirstConfigToPdv, [newAnxId, newPdvId, verified.grpven])
 
       response.status(200).send({
-        NewAnxId: newAnxId, NewPdvId: newPdvId, 
+        NewAnxId: newAnxId, NewPdvId: newPdvId,
       })
     } catch (err) {
       response.status(400).send(err)
@@ -236,6 +253,44 @@ class EquipController {
       response.status(400).send(err)
     }
   }
+
+  async SeeConfirmInfo({ request, response }) {
+    const token = request.header("authorization");
+
+    try {
+      const verified = seeToken(token);
+
+      const enderecos = await Database.raw(endConfirm, [verified.grpven])
+
+      response.status(200).send({ Enderecos: enderecos });
+    } catch (err) {
+      response.status(400).send()
+    }
+  }
+
+  async ConfirmAddresses({ request, response }) {
+    const token = request.header("authorization");
+    const { Addresses } = request.only("Addresses");
+
+    try {
+      const verified = seeToken(token);
+
+      Addresses.forEach(async (address) => {
+        await Database.insert({
+          RepoAno: moment().get('year'),
+          RepoMes: moment().get('month') + 1,
+          GrpVen: verified.grpven,
+          EquiCod: address.EquiCod,
+          CNPJn: Number(address.CNPJ),
+          RepoTMS: moment().format('YYYY-MM-DD HH:mm:ss'),
+        }).into("dbo.RepoEquip");
+      })
+
+      response.status(200).send()
+    } catch (err) {
+      response.status(400).send(err)
+    }
+  }
 }
 
 module.exports = EquipController;
@@ -243,3 +298,7 @@ module.exports = EquipController;
 const ShowAllAtivosFilial = "select E.*, P.Nome_Fantasia, P.CNPJss, P.AnxId, P.PdvId, P.CNPJn from dbo.Equipamento as E left join (SELECT dbo.PontoVenda.EquiCod, dbo.Cliente.Nome_Fantasia, dbo.Cliente.CNPJss, dbo.PontoVenda.AnxId, dbo.PontoVenda.PdvId, dbo.Cliente.CNPJn FROM ( ( dbo.Cliente INNER JOIN dbo.Contrato ON (dbo.Cliente.CNPJ = dbo.Contrato.CNPJ) AND (dbo.Cliente.GrpVen = dbo.Contrato.GrpVen) ) INNER JOIN dbo.Anexos ON (dbo.Contrato.CNPJ = dbo.Anexos.CNPJ) AND (dbo.Contrato.ConId = dbo.Anexos.ConId) AND (dbo.Contrato.GrpVen = dbo.Anexos.GrpVen) ) INNER JOIN dbo.PontoVenda ON (dbo.Anexos.AnxId = dbo.PontoVenda.AnxId) AND ( dbo.Anexos.GrpVen = dbo.PontoVenda.GrpVen ) WHERE ( ((dbo.Cliente.GrpVen) = ?) AND ((dbo.PontoVenda.PdvStatus) = 'A') )) as P on E.EquiCod = P.EquiCod where E.GrpVen = ?"
 
 const updateFirstConfigToPdv = "INSERT INTO dbo.PVPROD ( GrpVen, AnxId, PdvId, PvpSel, ProdId, TveId, PvpVvn1, PvpVvn2, FlgAlt, RecId ) SELECT C.GrpVen,  ? ,  ? , C.PvpSel, C.ProdId, C.TveId, 0 AS PvpVvn1, 0 AS PvpVvn2, 'N', P.RecId FROM dbo.CfgDet AS C INNER JOIN dbo.Produtos AS P ON C.ProdId = P.ProdId WHERE C.CfgId=1 AND C.GrpVen=?"
+
+const confirmEquipPeriod = "SELECT ParametrosOpcoes1.ParamId, ParametrosOpcoes1.ParamDate AS de, dbo_ParametrosOpcoes_srv2.ParamDate AS ate, DateDiff(D, [ParametrosOpcoes1].[ParamDate], GETDATE()) AS di FROM dbo.ParametrosOpcoes AS ParametrosOpcoes1 INNER JOIN dbo.ParametrosOpcoes AS dbo_ParametrosOpcoes_srv2 ON ParametrosOpcoes1.ParamId = dbo_ParametrosOpcoes_srv2.ParamId WHERE ( ((ParametrosOpcoes1.ParamId) = 'equip') AND ( ( DateDiff(D, [ParametrosOpcoes1].[ParamDate], GETDATE()) ) >= -7 And ( DateDiff(D, [ParametrosOpcoes1].[ParamDate], GETDATE()) ) <= 45 ) AND ((ParametrosOpcoes1.ParOId) = 1) AND ((dbo_ParametrosOpcoes_srv2.ParOId) = 2) )"
+
+const endConfirm = "select P.AnxDesc, P.CNPJ, P.EquiCod, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvBairroPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP, P.PdvComplementoPV from dbo.Equipamento as E left join dbo.PontoVenda as P on E.EquiCod = P.EquiCod where E.GrpVen = ? and P.PdvStatus = 'A'"

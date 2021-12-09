@@ -1,5 +1,6 @@
 "use strict";
 const Database = use("Database");
+const { seeToken } = require('../../../POG/jwt')
 const {
   GenTokenTMT,
   ListClients,
@@ -17,9 +18,15 @@ const {
 
 class Sl2TelController {
   //atualizar posse da máquina no totvs
-  async Update({ response, params }) {
+  async Update({ request, response, params }) {
     const EquiCod = params.equicod;
-    const filial = params.filial;
+    let filial = params.filial;
+
+    if (String(filial) === 'WYSI') {
+      let token = request.header("authorization");
+      let verified = seeToken(token);
+      filial = verified.user_code
+    }
 
     try {
       //gero token tmt
@@ -30,10 +37,10 @@ class Sl2TelController {
         Database.raw("select * from dbo.PontoVenda as P inner join dbo.Cliente as C on P.CNPJ = C.CNPJ  where P.EquiCod = ? and P.PdvStatus = ?", [EquiCod, "A"]),
         ListClients(tokenTMT.data.access_token),
       ]);
-
+      
       // testo pra ver se o cliente já existe na tmt
       let IdGeral = returnClientID(clientes, PDV[0].CNPJ[0])
-
+      
       //trago todas as cidades e segmentos do tmt para usar seus IDs
       let [cidades, segmentos] = await Promise.all([
         ListCidades(tokenTMT.data.access_token),
@@ -41,23 +48,22 @@ class Sl2TelController {
       ])
 
       //filtro pra trazer só a cidade e segmento que preciso
-      let cidadeCorreta = cidades.filter(cidade => String(cidade.Nome).normalize("NFD").toUpperCase().trim() === String(PDV[0].PdvCidadePV).normalize("NFD").toUpperCase().trim())[0];
-      let segmentoCorreto = segmentos.filter(segmento => String(segmento.Codigo) === String(PDV[0].A1_SATIV1))
+      let cidadeCorreta = cidades.filter(cidade => String(cidade.Nome).replace(/\p{Diacritic}/gu, "").toUpperCase().trim() === String(PDV[0].PdvCidadePV).normalize("NFD").replace(/\p{Diacritic}/gu, "").toUpperCase().trim())[0];
+      let segmentoCorreto = segmentos.filter(segmento => String(segmento.Codigo) === String(PDV[0].A1_SATIV1))[0]
 
       //se o cliente não existir no tmt, crio um novo, sejá existir atualizo
       if (IdGeral === null) {
-        await StoreClient(tokenTMT.data.access_token, PDV[0], cidadeCorreta, tokenTMT.data.empresaId, segmentoCorreto.length > 0 ? segmentoCorreto[0].Id : 269)
-
+        await StoreClient(tokenTMT.data.access_token, PDV[0], cidadeCorreta ? cidadeCorreta : 1, tokenTMT.data.empresaId, segmentoCorreto.length > 0 ? segmentoCorreto[0].Id : 1)
         /* preciso carregar todos os cliente do tmt novamente 
         e filtrar a lista mais uma vez para encontrar o ID 
         do cliente recem criado */
         clientes = await ListClients(tokenTMT.data.access_token)
         IdGeral = returnClientID(clientes, PDV[0].CNPJ[0])
-
+        
       } else {
         await UpdateClient(tokenTMT.data.access_token, IdGeral, PDV[0], cidadeCorreta, tokenTMT.data.empresaId, segmentoCorreto.length > 0 ? segmentoCorreto[0].Id : 269)
       }
-
+      
       //trago todas as máquinas e instalacoes de máquinas da filial no tmt
       let [maquinas, instalacoes] = await Promise.all([
         ListMaquinas(tokenTMT.data.access_token),
@@ -68,7 +74,7 @@ class Sl2TelController {
       filtro se existe alguma instalacao com data de encerramento 'null'*/
       let ativoCorreto = maquinas.filter(maquina => String(maquina.NumeroDeSerie) === String(EquiCod))[0]
       let instalacoesAtivo = instalacoes.filter(inst => String(inst.Matricula).trim() === String(EquiCod).trim() && inst.DataDeRemocao === null)
-      
+
       //vou usar essa variavel pra verificar se preciso criar uma nova instalação
       let alreadyLinkedToClient = false
 
@@ -86,8 +92,6 @@ class Sl2TelController {
       //se eu não encontrar nenhuma instalacao, crio uma nova, se sim, ignoro
       if (!alreadyLinkedToClient) {
         await StoreInstalacao(tokenTMT.data.access_token, tokenTMT.data.empresaId, ativoCorreto.Id, IdGeral)
-      } else {
-        console.log("Instalação já está ativa no cliente")
       }
 
       response.status(200).send({ message: "Atualizado com sucesso" });
