@@ -1,10 +1,14 @@
 "use strict";
 const Database = use("Database");
 const Drive = use("Drive");
+const Helpers = use("Helpers");
 const { seeToken } = require("../../../POG/jwt");
 const moment = require("moment");
 
 class CompraController {
+  /** @param {object} ctx
+   * @param {import('@adonisjs/framework/src/Request')} ctx.request
+   */
   async Produtos({ request, response }) {
     const token = request.header("authorization");
     try {
@@ -227,8 +231,8 @@ class CompraController {
       let TotalDoPedido = 0;
       Items.map(
         (item) =>
-          (TotalDoPedido +=
-            Number(item.QCompra) * (Number(item.QtMin) * Number(item.VlrUn)))
+        (TotalDoPedido +=
+          Number(item.QCompra) * (Number(item.QtMin) * Number(item.VlrUn)))
       );
 
       if (
@@ -369,6 +373,96 @@ class CompraController {
       const Imagem = await Drive.exists(path) ? await Drive.get(path) : { message: 'File not found' };
 
       response.status(200).send(Imagem);
+    } catch (err) {
+      response.status(400).send(err);
+    }
+  }
+
+  async CompensarDuplicata({ request, response, }) {
+    const token = request.header("authorization");
+    const { serie, nf } = request.only(['serie', 'nf']);
+
+    try {
+      seeToken(token);
+
+      const exists = await Database.select("*").from('dbo.SE1_exc').where({
+        E1Prefixo: serie,
+        E1Num: nf,
+      })
+
+      if (exists.length > 0) {
+        throw new Error('Duplicata já compensada')
+      }
+
+      await Database.insert({
+        E1Prefixo: serie,
+        E1Num: nf,
+      }).into('dbo.SE1_exc')
+
+      response.status(200).send()
+    } catch (err) {
+      response.status(400).send(err)
+    }
+  }
+
+  async FileUpload({ request, response, params }) {
+    const compensar = params.compensar
+    const multiples = params.multiples
+    const token = request.header("authorization");
+    const formData = request.file("formData", {
+      types: ["image", "pdf"],
+      size: "10mb",
+    });
+    const verified = seeToken(token);
+    let path = Helpers.publicPath(`/COMPROVANTES/${verified.user_code}/${compensar}`);
+    let newFileName = ''
+    let filenames = []
+    let file = null
+
+    try {
+      if (multiples === 'N') {
+
+        newFileName = `comprovante-1.${formData.subtype}`;
+
+        await formData.move(path, {
+          name: newFileName,
+          overwrite: true,
+        });
+
+        if (!formData.moved()) {
+          return formData.errors();
+        }
+
+        file = await Drive.get(`${path}/${newFileName}`);
+        Drive.put(
+          `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\COMPROVANTES\\${verified.user_code}\\${compensar}\\${newFileName}`,
+          file
+        );
+      } else {
+        await formData.moveAll(path, (file, i) => {
+          newFileName = `comprovante-${i + 1}.${file.subtype}`;
+          filenames.push(newFileName);
+
+          return {
+            name: newFileName,
+            overwrite: true,
+          };
+        });
+
+        if (!formData.movedAll()) {
+          return formData.errors();
+        }
+
+        filenames.map(async (name) => {
+          file = await Drive.get(`${path}/${name}`);
+          Drive.put(
+            `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\COMPROVANTES\\${verified.user_code}\\${compensar}\\${name}`,
+            file
+          );
+        });
+      }
+
+      response.status(200).send("Arquivos Salvos");
     } catch (err) {
       response.status(400).send(err);
     }

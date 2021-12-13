@@ -238,6 +238,7 @@ class VendaController {
         .from("dbo.PedidosVendaCab")
         .where({
           PvcID: PvcID,
+          PvcSerie: PvcSerie,
           GrpVen: verified.grpven,
         });
       if (
