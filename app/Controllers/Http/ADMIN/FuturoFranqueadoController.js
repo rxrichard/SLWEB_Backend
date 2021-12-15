@@ -5,8 +5,23 @@ const Helpers = use("Helpers");
 const Drive = use("Drive");
 const Mail = use("Mail");
 const Env = use("Env");
+const PdfPrinter = require("pdfmake");
+const fs = require("fs");
+const toArray = require('stream-to-array')
 
 const { seeToken, dateCheck } = require("../../../POG/jwt");
+const { PDFGen } = require("../../../POG/Form_PDFGen");
+
+var fonts = {
+  Roboto: {
+    normal: Helpers.resourcesPath("fonts/OpenSans-Regular.ttf"),
+    bold: Helpers.resourcesPath("fonts/OpenSans-Bold.ttf"),
+    italics: Helpers.resourcesPath("fonts/OpenSans-RegularItalic.ttf"),
+    bolditalics: Helpers.resourcesPath("fonts/OpenSans-BoldItalic.ttf"),
+  },
+};
+
+const printer = new PdfPrinter(fonts);
 
 class FuturoFranqueadoController {
   async Show({ request, response }) {
@@ -22,6 +37,37 @@ class FuturoFranqueadoController {
       response.status(200).send(formularios);
     } catch (err) {
       response.status(400).send();
+    }
+  }
+
+  async GeneratePDF({ request, response, params }) {
+    const token = request.header("authorization");
+    const formcod = params.formcod;
+    const path = Helpers.publicPath(`/Forms`);
+    const PathWithName = `${path}/${formcod}-${new Date().getTime()}.pdf`;
+
+    try {
+      const verified = await seeToken(token);
+
+      if (verified.role === "Franquia") throw Error;
+
+      const Form = await Database.select("*").from("dbo.FuturaFranquia").where({
+        CodCandidato: formcod,
+      })
+
+      const PDFModel = PDFGen(Form[0]);
+
+      var pdfDoc = printer.createPdfKitDocument(PDFModel);
+      pdfDoc.pipe(fs.createWriteStream(PathWithName));
+      pdfDoc.end();
+
+      const enviarDaMemóriaSemEsperarSalvarNoFS = await toArray(pdfDoc).then(parts => {
+        return Buffer.concat(parts);
+      })
+
+      response.status(200).send(enviarDaMemóriaSemEsperarSalvarNoFS);
+    } catch (err) {
+      response.status(400).send(err);
     }
   }
 
@@ -60,16 +106,16 @@ class FuturoFranqueadoController {
       }).into('dbo.FuturaFranquia')
 
       await Mail.send(
-          "emails.CodForm",
-          { Codigo: cod, FRONTEND: Env.get('CLIENT_URL') },
-          (message) => {
-            message
-              .to(email.trim())
-              .cc(Env.get("suporte3@slaplic.com.br"))
-              .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-              .subject("Código de acesso ao Formulário");
-          }
-        );
+        "emails.CodForm",
+        { Codigo: cod, FRONTEND: Env.get('CLIENT_URL') },
+        (message) => {
+          message
+            .to(email.trim())
+            .cc(Env.get("suporte3@slaplic.com.br"))
+            .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+            .subject("Código de acesso ao Formulário");
+        }
+      );
 
       response.status(201).send('ok');
     } catch (err) {

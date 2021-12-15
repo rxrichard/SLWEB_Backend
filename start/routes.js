@@ -96,6 +96,7 @@ Route.post("/form/upload", "ADMIN/FuturoFranqueadoController.FileUpload"); //faz
 Route.post("/form", "ADMIN/FuturoFranqueadoController.FormUpload"); //faz upload do formulario
 Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM"); //baixa o formulario .doc
 Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show").middleware('jwt'); //retorna todos os formulários
+Route.get("/form/pdf/:formcod", "ADMIN/FuturoFranqueadoController.GeneratePDF").middleware('jwt'); //retorna pdf do formulario
 
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
 Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jwt'); //cria a planilha que a cris pediu
