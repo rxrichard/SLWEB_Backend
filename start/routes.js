@@ -98,5 +98,10 @@ Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM");
 Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show").middleware('jwt'); //retorna todos os formulários
 Route.get("/form/pdf/:formcod", "ADMIN/FuturoFranqueadoController.GeneratePDF").middleware('jwt'); //retorna pdf do formulario
 
+//Dashboard
+Route.get("/dashboard/telemetrias", "WEB/DashboardController.Telemetrias").middleware('jwt'); //retorna pdf do formulario
+Route.post("/dashboard/telemetrias/chamado", "WEB/DashboardController.AbrirChamado").middleware('jwt'); //retorna pdf do formulario
+
+//quebra galho
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
 Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jwt'); //cria a planilha que a cris pediu

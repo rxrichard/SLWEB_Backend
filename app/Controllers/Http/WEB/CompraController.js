@@ -11,6 +11,7 @@ class CompraController {
    */
   async Produtos({ request, response }) {
     const token = request.header("authorization");
+    
     try {
       seeToken(token);
 
@@ -422,7 +423,7 @@ class CompraController {
     try {
       if (multiples === 'N') {
 
-        newFileName = `comprovante-1.${formData.subtype}`;
+        newFileName = `comprovante-1-${new Date().getTime()}.${formData.subtype}`;
 
         await formData.move(path, {
           name: newFileName,
@@ -440,7 +441,7 @@ class CompraController {
         );
       } else {
         await formData.moveAll(path, (file, i) => {
-          newFileName = `comprovante-${i + 1}.${file.subtype}`;
+          newFileName = `comprovante-${i + 1}-${new Date().getTime()}.${file.subtype}`;
           filenames.push(newFileName);
 
           return {
