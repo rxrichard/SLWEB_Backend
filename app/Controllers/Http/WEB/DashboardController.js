@@ -63,6 +63,7 @@ class DashboardController {
         (message) => {
           message
             .to('helpdesk@2btech.com.br')
+            .cc(Env.get("EMAIL_ADMIN_1"))
             .from(Env.get("MAIL_USERNAME"), "SLWEB")
             .subject("PROBLEMAS COM TELEMETRIA")
         }
