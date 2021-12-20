@@ -51,8 +51,7 @@ Route.get("/compras/pedidos/detalhes/:ID/:STATUS", "WEB/CompraController.PedidoD
 Route.delete("/compras/pedidos/cancelar/:ID", "WEB/CompraController.Cancelar").middleware('jwt'); //retorna detalhes do pedido
 Route.get("/compras/retrivepdf/:ID", "WEB/CompraController.RetrivePDF").middleware('jwt'); //retorna o pdf do pedido
 Route.post("/compras/comprar", "WEB/CompraController.Comprar").middleware('jwt'); //retorna detalhes do pedido
-Route.post("/compras/duplicatas/report/file/:multiples/:compensar", "WEB/CompraController.FileUpload").middleware('jwt'); //salva arquivo de duplicatas
-Route.post("/compras/duplicatas/report/", "WEB/CompraController.CompensarDuplicata").middleware('jwt'); //guardar compensação de duplicatas
+Route.post("/compras/duplicatas/report/", "WEB/CompraController.Compensar").middleware('jwt'); //salva arquivo de duplicatas
 
 //Vendas
 Route.get("/vendas/produtos", "WEB/VendaController.Produtos").middleware('jwt'); //retorna lista de produtos compraveis

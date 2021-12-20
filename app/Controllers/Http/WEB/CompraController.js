@@ -1,6 +1,8 @@
 "use strict";
 const Database = use("Database");
 const Drive = use("Drive");
+const Mail = use("Mail");
+const Env = use("Env");
 const Helpers = use("Helpers");
 const { seeToken } = require("../../../POG/jwt");
 const moment = require("moment");
@@ -11,7 +13,7 @@ class CompraController {
    */
   async Produtos({ request, response }) {
     const token = request.header("authorization");
-    
+
     try {
       seeToken(token);
 
@@ -379,43 +381,19 @@ class CompraController {
     }
   }
 
-  async CompensarDuplicata({ request, response, }) {
-    const token = request.header("authorization");
-    const { serie, nf } = request.only(['serie', 'nf']);
-
-    try {
-      seeToken(token);
-
-      const exists = await Database.select("*").from('dbo.SE1_exc').where({
-        E1Prefixo: serie,
-        E1Num: nf,
-      })
-
-      if (exists.length > 0) {
-        throw new Error('Duplicata já compensada')
-      }
-
-      await Database.insert({
-        E1Prefixo: serie,
-        E1Num: nf,
-      }).into('dbo.SE1_exc')
-
-      response.status(200).send()
-    } catch (err) {
-      response.status(400).send(err)
-    }
-  }
-
-  async FileUpload({ request, response, params }) {
-    const compensar = params.compensar
-    const multiples = params.multiples
+  async Compensar({ request, response }) {
+    const folderName = request.input('folderName')
+    const multiples = request.input('multiple')
+    const nf = request.input('nf')
+    const serie = request.input('serie')
+    const valor = request.input('valor')
     const token = request.header("authorization");
     const formData = request.file("formData", {
       types: ["image", "pdf"],
       size: "10mb",
     });
     const verified = seeToken(token);
-    let path = Helpers.publicPath(`/COMPROVANTES/${verified.user_code}/${compensar}`);
+    let path = Helpers.publicPath(`/COMPROVANTES/${verified.user_code}/${folderName}`);
     let newFileName = ''
     let filenames = []
     let file = null
@@ -436,7 +414,7 @@ class CompraController {
 
         file = await Drive.get(`${path}/${newFileName}`);
         Drive.put(
-          `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\COMPROVANTES\\${verified.user_code}\\${compensar}\\${newFileName}`,
+          `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\COMPROVANTES\\${verified.user_code}\\${folderName}\\${newFileName}`,
           file
         );
       } else {
@@ -457,13 +435,53 @@ class CompraController {
         filenames.map(async (name) => {
           file = await Drive.get(`${path}/${name}`);
           Drive.put(
-            `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\COMPROVANTES\\${verified.user_code}\\${compensar}\\${name}`,
+            `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\COMPROVANTES\\${verified.user_code}\\${folderName}\\${name}`,
             file
           );
         });
       }
 
-      response.status(200).send("Arquivos Salvos");
+      const exists = await Database.select("*").from('dbo.SE1_exc').where({
+        E1Prefixo: serie,
+        E1Num: nf,
+      })
+
+      if (exists.length === 0) {
+        await Database.insert({
+          E1Prefixo: serie,
+          E1Num: nf,
+        }).into('dbo.SE1_exc')
+      }
+
+      const franqueado = await Database
+        .select('A1_COD', 'A1_LOJA', 'GrupoVenda')
+        .from('dbo.FilialEntidadeGrVenda')
+        .where({
+          A1_GRPVEN: verified.grpven,
+        })
+
+      await Mail.send(
+        "emails.CompensacaoDeDuplicata",
+        {
+          FRANQUEADO: franqueado[0].GrupoVenda,
+          CODIGO: franqueado[0].A1_COD,
+          LOJA: franqueado[0].A1_LOJA,
+          DUPLICATA: nf,
+          SERIE: serie,
+          Frontend: Env.get("CLIENT_URL"),
+          VALOR: valor
+        },
+        (message) => {
+          message
+            .to([Env.get("EMAIL_FINANCEIRO_1"), Env.get("EMAIL_FINANCEIRO_2")])
+            .cc([Env.get("EMAIL_COMERCIAL_1"), Env.get("EMAIL_SUPORTE")])
+            .from(Env.get("MAIL_USERNAME"), "SLWEB")
+            .subject(`Baixa de título do(a) franqueado(a) ${String(franqueado[0].GrupoVenda).split(' ')[0]} - ${franqueado[0].A1_COD}/${franqueado[0].A1_LOJA} - R$ ${valor}`)
+            .attach(`${path}/${newFileName}`)
+        }
+      );
+
+      response.status(200).send();
     } catch (err) {
       response.status(400).send(err);
     }
