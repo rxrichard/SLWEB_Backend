@@ -364,7 +364,7 @@ class CompraController {
     }
   }
 
-  async RetrivePDF({ request, response, params }) {
+  async RetriveBoleto({ request, response, params }) {
     const token = request.header("authorization");
     const PedidoId = params.ID;
 
@@ -372,6 +372,23 @@ class CompraController {
       seeToken(token);
 
       const path = `\\\\192.168.1.248\\totvs12\\Producao\\protheus_data\\DANFE_FRANQUIA\\0201\\boleto_${PedidoId}.pdf`
+
+      const Imagem = await Drive.exists(path) ? await Drive.get(path) : { message: 'File not found' };
+
+      response.status(200).send(Imagem);
+    } catch (err) {
+      response.status(400).send(err);
+    }
+  }
+
+  async RetriveNota({ request, response, params }) {
+    const token = request.header("authorization");
+    const PedidoId = params.ID;
+
+    try {
+      seeToken(token);
+
+      const path = `\\\\192.168.1.248\\totvs12\\Producao\\protheus_data\\DANFE_FRANQUIA\\0201\\nf\\nf_${PedidoId}.pdf`
 
       const Imagem = await Drive.exists(path) ? await Drive.get(path) : { message: 'File not found' };
 
@@ -450,6 +467,9 @@ class CompraController {
         await Database.insert({
           E1Prefixo: serie,
           E1Num: nf,
+          DtInserido: moment().subtract(3, "hours").toDate(),
+          Origem: 'SLWEB',
+          EmailFinanceiro: false
         }).into('dbo.SE1_exc')
       }
 
@@ -481,6 +501,15 @@ class CompraController {
         }
       );
 
+      await Database.table("dbo.SE1_exc")
+        .where({
+          E1Prefixo: serie,
+          E1Num: nf,
+        })
+        .update({
+          EmailFinanceiro: true,
+        });
+
       response.status(200).send();
     } catch (err) {
       response.status(400).send(err);
@@ -497,13 +526,13 @@ const queryGigante1 =
   "SELECT dbo.FilialEntidadeGrVenda.LimiteCredito, IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) as LimExtraCredito, dbo.FilialEntidadeGrVenda.Retira, dbo.FilialEntidadeGrVenda.VlrMinCompra, SE1_GrpVenT.Avencer, SE1_GrpVenT.Vencida, SE1_ComprasNVencidas.Compras, IIf( [Compras] > 0, [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) - [Compras], [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) ) AS LimiteAtual FROM ( ( dbo.FilialEntidadeGrVenda LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(IIf([SE1DtVencR] > GETDATE(), 0, [E1_SALDO])) AS Avencer, Sum(IIf([SE1DtVencR] < GETDATE(), [E1_SALDO], 0)) AS Vencida FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_GrpVenT ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_GrpVenT.GrpVen ) LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE (((SE1_Class.E1Desc) = 'Compra')) and dbo.SE1_GrpVen.E1_NUM not in (select E1Num from SE1_exc) GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen ) WHERE ( ((dbo.FilialEntidadeGrVenda.Inatv) Is Null) and dbo.FilialEntidadeGrVenda.A1_GRPVEN = ? )";
 
 const queryBloqueado =
-  "SELECT IIF(SUM(dbo.SE1_GrpVen.E1_VALOR) > 0, 'S', 'N') as Bloqueado FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc where dbo.SE1_GrpVen.GrpVen = ? and CAST(DtVenc as date) < CAST(GETDATE() as date) and dbo.SE1_GrpVen.E1_NUM not in (select E1Num from SE1_exc)";
+  "SELECT IIF(SUM(dbo.SE1_GrpVen.E1_SALDO) > 0, 'S', 'N') as Bloqueado FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc where dbo.SE1_GrpVen.GrpVen = ? and CAST(DtVenc as date) < CAST(GETDATE() as date) and dbo.SE1_GrpVen.E1_NUM not in (select E1Num from SE1_exc)";
 
 const queryDuplicatas =
   "SELECT * FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE dbo.SE1_GrpVen.GrpVen = ? and dbo.SE1_GrpVen.E1_NUM not in (select E1Num from SE1_exc)";
 
 const queryComprasAno =
-  "SELECT * FROM ( SELECT dbo.SE1_GrpVenT.GrpVen, dbo.SE1_GrpVenT.MesE, dbo.SE1_GrpVenT.E1_VALOR FROM dbo.SE1_GrpVenT INNER JOIN SE1_Class ON (dbo.SE1_GrpVenT.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVenT.E1_PREFIXO = SE1_Class.E1_PREFIXO) WHERE (((dbo.SE1_GrpVenT.GrpVen)= ?) AND ((SE1_Class.E1Desc)='Compra') AND ((dbo.SE1_GrpVenT.AnoE)=Year(GETDATE()))) ) t PIVOT (   Sum(t.E1_VALOR)   FOR t.MesE   IN([1], [2], [3], [4],[5],[6],[7],[8],[9],[10],[11],[12]) ) p";
+  "SELECT * FROM ( SELECT dbo.SE1_GrpVenT.GrpVen, dbo.SE1_GrpVenT.MesE, dbo.SE1_GrpVenT.E1_SALDO FROM dbo.SE1_GrpVenT INNER JOIN SE1_Class ON (dbo.SE1_GrpVenT.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVenT.E1_PREFIXO = SE1_Class.E1_PREFIXO) WHERE (((dbo.SE1_GrpVenT.GrpVen)= ?) AND ((SE1_Class.E1Desc)='Compra') AND ((dbo.SE1_GrpVenT.AnoE)=Year(GETDATE()))) ) t PIVOT (   Sum(t.E1_SALDO)   FOR t.MesE   IN([1], [2], [3], [4],[5],[6],[7],[8],[9],[10],[11],[12]) ) p";
 
 const queryPedidosNaoAtendidos =
   "SELECT 'Processando' AS Status, dbo.PedidosCompraCab.DataCriacao AS Solicitacao, dbo.PedidosCompraCab.PedidoId as Pedido, '' as NF, '' as Serie, Sum(dbo.PedidosVenda.PrecoTotal) AS Total, Count(dbo.PedidosVenda.Item) AS QtItems FROM dbo.PedidosVenda  INNER JOIN dbo.PedidosCompraCab ON (dbo.PedidosVenda.Filial = dbo.PedidosCompraCab.Filial) AND (dbo.PedidosVenda.PedidoID = dbo.PedidosCompraCab.PedidoId)  WHERE (((dbo.PedidosCompraCab.NroNF) Is Null) AND ((dbo.PedidosCompraCab.GrpVen)=?) AND ((dbo.PedidosVenda.STATUS)<>'C' Or (dbo.PedidosVenda.STATUS) Is Null and dbo.PedidosCompraCab.STATUS <> 'C' or dbo.PedidosCompraCab.STATUS is null))  GROUP BY dbo.PedidosCompraCab.STATUS, dbo.PedidosCompraCab.DataCriacao, dbo.PedidosCompraCab.PedidoId, dbo.PedidosVenda.CodigoTotvs  ORDER BY dbo.PedidosCompraCab.DataCriacao DESC";

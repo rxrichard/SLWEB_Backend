@@ -3,7 +3,7 @@
 const Database = use("Database");
 const Mail = use("Mail");
 const Env = use("Env");
-const { genToken, genTokenADM, genTokenExternal } = require("../../POG/jwt");
+const { genToken, genTokenAdm, genTokenAdmWithFilial, genTokenExternal, seeToken } = require("../../POG/jwt");
 
 class UserController {
   async Login({ request, response }) {
@@ -61,50 +61,36 @@ class UserController {
     }
   }
 
-  async AdmAtempt({ request, response }) {
+  async AdmPartialLogin({ request, response }) {
     const { admin_code, admin_password } = request.only([
       "admin_code",
       "admin_password",
     ]);
 
     try {
-      const isAdm = await Database.raw(
-        "select O.M0_CODFIL, F.Senha, T.TopeDes from dbo.Operador as O inner join dbo.FilialAcesso as F on O.M0_CODFIL = F.M0_CODFIL inner join dbo.TipoOper as T on O.TopeCod = T.TopeCod where O.TopeCod <> 3 and O.M0_CODFIL = ? and F.Senha = ?",
-        [admin_code, admin_password]
-      );
+      const token = await genTokenAdm(admin_code, admin_password)
 
-      if (isAdm.length > 0) {
-        const franqueados = await Database.select("M0_CODFIL", "GrupoVenda")
-          .from("dbo.FilialEntidadeGrVenda")
-          .orderBy("M0_CODFIL", "ASC");
-
-        response.status(200).send(franqueados);
-      } else {
-        response.status(401).send();
-      }
+      response.status(202).send(token);
     } catch (err) {
-      response.status(400).send();
+      response.status(401).send();
     }
   }
 
-  async AdmLogin({ request, response }) {
-    const { admin_code, user_code, admin_password } = request.only([
-      "admin_code",
-      "user_code",
-      "admin_password",
-    ]);
+  async AdmFullLogin({ request, response }) {
+    const token = request.header("authorization");
+    const { user_code } = request.only(["user_code"]);
+
     try {
-      //verifico se existe esse administrador
-      const isAdm = await Database.raw(
-        "select O.M0_CODFIL, F.Senha, T.TopeDes from dbo.Operador as O inner join dbo.FilialAcesso as F on O.M0_CODFIL = F.M0_CODFIL inner join dbo.TipoOper as T on O.TopeCod = T.TopeCod where O.TopeCod <> 3 and O.M0_CODFIL = ? and F.Senha = ?",
-        [admin_code, admin_password]
-      );
-      if (isAdm.length < 1) return isAdm;
+      const verified = seeToken(token);
+
+      if (verified.role === 'Franquia') {
+        throw new Error('Acesso negado')
+      }
 
       //crio token com codido do adm, codigo do cliente, senha e nivel do adm
-      const admToken = await genTokenADM(user_code, admin_password, admin_code);
+      const admTokenWithFilial = await genTokenAdmWithFilial(user_code, verified);
 
-      response.status(200).send(admToken);
+      response.status(200).send(admTokenWithFilial);
     } catch (err) {
       response.status(400).send();
     }

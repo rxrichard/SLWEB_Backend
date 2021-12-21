@@ -305,6 +305,10 @@ class VendaController {
 
       const PedidoParaFaturar = await Database.raw(queryPedidosParaFaturar, [NovoIDPedido, verified.grpven, PvcID])
 
+      if (PedidoParaFaturar.length < 1) {
+        throw new Error('Não há itens à faturar na pedidosVendaDet')
+      }
+
       PedidoParaFaturar.forEach(async (item, i) => {
         await Database.insert({
           GrpVen: verified.grpven,

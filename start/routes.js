@@ -20,8 +20,8 @@ Route.get("/emails/recipients/:model", "ADMIN/MailerController.See").middleware(
 //Sessão
 Route.post("/auth", "UserController.Login");
 Route.post("/forgot", "UserController.Forgot");
-Route.post("/admAuth", "UserController.AdmLogin");
-Route.get("/admAuth", "UserController.AdmAtempt");
+Route.post("/admAuth/full", "UserController.AdmFullLogin");
+Route.post("/admAuth/partial", "UserController.AdmPartialLogin");
 Route.post("/checkAuth", "UserController.ExternalAuth");
 
 //Usuário
@@ -49,7 +49,8 @@ Route.get("/compras/contas", "WEB/CompraController.Contas").middleware('jwt'); /
 Route.get("/compras/pedidos", "WEB/CompraController.Pedidos").middleware('jwt'); //retorna pedidos atendidos e abertos do cliente
 Route.get("/compras/pedidos/detalhes/:ID/:STATUS", "WEB/CompraController.PedidoDet").middleware('jwt'); //retorna detalhes do pedido
 Route.delete("/compras/pedidos/cancelar/:ID", "WEB/CompraController.Cancelar").middleware('jwt'); //retorna detalhes do pedido
-Route.get("/compras/retrivepdf/:ID", "WEB/CompraController.RetrivePDF").middleware('jwt'); //retorna o pdf do pedido
+Route.get("/compras/retriveboleto/:ID", "WEB/CompraController.RetriveBoleto").middleware('jwt'); //retorna o pdf do pedido
+Route.get("/compras/retrivenfe/:ID", "WEB/CompraController.RetriveNota").middleware('jwt'); //retorna o pdf do pedido
 Route.post("/compras/comprar", "WEB/CompraController.Comprar").middleware('jwt'); //retorna detalhes do pedido
 Route.post("/compras/duplicatas/report/", "WEB/CompraController.Compensar").middleware('jwt'); //salva arquivo de duplicatas
 
@@ -99,6 +100,7 @@ Route.get("/form/pdf/:formcod", "ADMIN/FuturoFranqueadoController.GeneratePDF").
 
 //Dashboard
 Route.get("/dashboard/telemetrias", "WEB/DashboardController.Telemetrias").middleware('jwt'); //retorna pdf do formulario
+Route.get("/dashboard/filiais", "WEB/DashboardController.Filiais").middleware('jwt'); //retorna pdf do formulario
 Route.post("/dashboard/telemetrias/chamado", "WEB/DashboardController.AbrirChamado").middleware('jwt'); //retorna pdf do formulario
 
 //quebra galho

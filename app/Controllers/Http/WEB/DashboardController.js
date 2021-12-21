@@ -69,19 +69,38 @@ class DashboardController {
         }
       );
 
-      Database.table("dbo.ChamadosSL2MiFix")
-      .where({
-        GrpVen: verified.grpven,
-        EquiCod: DTO.Ativo,
-        DtAberturaChamado: null,
-        ChamadoAberto: false
-      })
-      .update({
-        DtAberturaChamado: moment().subtract(3, "hours").toDate(),
-        ChamadoAberto: true,
-      });
+      await Database.table("dbo.ChamadosSL2MiFix")
+        .where({
+          GrpVen: verified.grpven,
+          EquiCod: DTO.Ativo,
+          DtAberturaChamado: null,
+          ChamadoAberto: false
+        })
+        .update({
+          DtAberturaChamado: moment().subtract(3, "hours").toDate(),
+          ChamadoAberto: true,
+        });
 
       response.status(200).send()
+    } catch (err) {
+      response.status(400).send(err)
+    }
+  }
+
+  async Filiais({ request, response }) {
+    const token = request.header("authorization");
+
+    try {
+      const verified = seeToken(token);
+      if (verified.role === 'Franquia') {
+        throw new Error('Acesso negado')
+      }
+
+      const franqueados = await Database.select("M0_CODFIL", "GrupoVenda")
+        .from("dbo.FilialEntidadeGrVenda")
+        .orderBy("M0_CODFIL", "ASC");
+
+      response.status(200).send(franqueados)
     } catch (err) {
       response.status(400).send(err)
     }
