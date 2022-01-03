@@ -15,10 +15,15 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
 
   const contenedores = [];
 
-  Solicitacao.Contenedor.map((cont) =>
+  if(Solicitacao.Contenedor.length > 0){
+    Solicitacao.Contenedor.map((cont) =>
     contenedores.push([{ text: defineContenedor(cont) }])
-  );
-
+    );
+  }else{
+    contenedores.push([{ text: 'VAZIO' }])
+  }
+  
+  
   const detalhes = [
     [{ text: "Modelo da Máquina: ", bold: true }, `${Solicitacao.Maquina}`],
   ];

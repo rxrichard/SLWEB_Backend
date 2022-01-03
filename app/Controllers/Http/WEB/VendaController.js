@@ -3,6 +3,7 @@ const Database = use("Database");
 const Drive = use("Drive");
 const { seeToken } = require("../../../POG/jwt");
 const moment = require("moment");
+moment.locale("pt-br");
 class VendaController {
   async Produtos({ request, response }) {
     const token = request.header("authorization");
@@ -83,7 +84,7 @@ class VendaController {
 
       const ultPvcId = await Database.raw("select MAX(PvcID) as UltimoID from dbo.PedidosVendaCab where PvcSerie = 'F' and GrpVen = ?", [verified.grpven]);
 
-      const actualDate = new Date(moment().format())
+      const actualDate = moment().subtract(3, "hours").toDate()
 
       await Database.insert({
         GrpVen: verified.grpven,

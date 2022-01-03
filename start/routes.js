@@ -103,6 +103,11 @@ Route.get("/dashboard/telemetrias", "WEB/DashboardController.Telemetrias").middl
 Route.get("/dashboard/filiais", "WEB/DashboardController.Filiais").middleware('jwt'); //retorna pdf do formulario
 Route.post("/dashboard/telemetrias/chamado", "WEB/DashboardController.AbrirChamado").middleware('jwt'); //retorna pdf do formulario
 
+//Consulta Coletas
+Route.get("/coletas", "WEB/ConsultaColetasController.Show").middleware('jwt'); //retorna todas as coletas do franqueado
+Route.get("/coletas/detalhes/:anxid/:pdvid/:fseq", "WEB/ConsultaColetasController.See").middleware('jwt'); //retorna todas as coletas do franqueado
+Route.get("/coletas/historico/:equicod", "WEB/ConsultaColetasController.NovaColetaOptions").middleware('jwt'); //retorna info sobre a última coleta do eq
+
 //quebra galho
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
 Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jwt'); //cria a planilha que a cris pediu

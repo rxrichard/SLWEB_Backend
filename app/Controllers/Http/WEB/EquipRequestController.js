@@ -386,13 +386,12 @@ class EquipRequestController {
         ...cab[0],
         Contenedor: ContenedoresDB2PDF(contenedores),
         Validador: String(cab[0].Validador).split(','),
-          Configuracao: [...det],
-        }
+        Configuracao: [...det],
+      }
 
-        
-        const ModVerified = {
-          ...verified,
-          user_name: Dados[0].GrupoVenda,
+      const ModVerified = {
+        ...verified,
+        user_name: Dados[0].GrupoVenda,
         user_code: Dados[0].M0_CODFIL
       }
 
