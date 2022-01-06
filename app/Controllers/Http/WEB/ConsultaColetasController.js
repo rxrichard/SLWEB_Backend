@@ -56,12 +56,12 @@ class ConsultaColetasController {
       const verified = seeToken(token);
 
       const ultimaColeta = await Database.raw(queryUltimaColeta, [verified.grpven, verified.grpven, EquiCod])
-      
-      let leiturasDisponiveis 
 
-      if(ultimaColeta.length > 0) {
+      let leiturasDisponiveis
+
+      if (ultimaColeta.length > 0) {
         leiturasDisponiveis = await Database.raw(queryLeiturasDisponiveis, [ultimaColeta[0].LeituraId, EquiCod, verified.grpven, AnxId])
-      }else{
+      } else {
         leiturasDisponiveis = await Database.raw(queryLeiturasDisponiveis, ['0', EquiCod, verified.grpven, AnxId])
       }
 
@@ -75,19 +75,47 @@ class ConsultaColetasController {
     }
   }
 
-  async CalcColetas({ request, response, params }){
+  async CalcColetas({ request, response, params }) {
     const token = request.header("authorization");
     const leitIniID = params.l1id;
     const leitFimID = params.l2id;
+    const AnxId = params.anxid;
+    const PdvId = params.pdvid;
 
-    try{
+    try {
       const verified = seeToken(token);
 
-      // const coletaInicial = await Database.raw(, [])
-      // const coletaFinal = await Database.raw(, [])
+      const coletaInicial = await Database.raw(queryLeituraDetalhes, [leitIniID, AnxId, PdvId, verified.grpven])
+      const coletaFinal = await Database.raw(queryLeituraDetalhes, [leitFimID, AnxId, PdvId, verified.grpven])
 
-      response.status(200).send({})
-    }catch(err){
+      let finalArray = []
+
+      coletaFinal.forEach((element, index) => {
+        finalArray.push({
+          Selecao: element.Selecao,
+        Real: {
+          Ant: coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaPaga) : 0,
+          Agr: Number(element.QuantidadeVendaPaga),
+        },
+        Teste: {
+          Ant: coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaTeste) : 0,
+          Agr: Number(element.QuantidadeVendaTeste),
+        },
+        Consumo: {
+          Real: Number(element.QuantidadeVendaPaga) - (coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaPaga) : 0),
+          Teste: Number(element.QuantidadeVendaTeste) - (coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaTeste) : 0),
+        },
+        PV1: element.PvpVvn1,
+        PV2: element.PvpVvn2,
+        Produto: element.Produto,
+        ProdId: element.ProdId
+        })
+      })
+
+      response.status(200).send({
+        Coleta: finalArray
+      })
+    } catch (err) {
       response.status(400).send(err)
     }
   }
@@ -104,3 +132,5 @@ const queryColetasDetalhes = 'SELECT D.AnxId, D.PdvId, D.FfmSeq, D.PvpSel, D.Ffd
 const queryUltimaColeta = "SELECT top(1) dbo.FichFatM.FfmDtColeta AS UltimaColeta, SUM(dbo.FichFatM.FfmSeq + 1) as ProximaColeta, dbo.FichFatM.FfmCNT as ContadorAnterior, SUM(dbo.FichFatM.FfmSeqM + 1) as ProximaColetaMes, dbo.FichFatM.FfmSelZero as Zerou, dbo.FichFatM.LeituraId FROM ( dbo.FichFatM INNER JOIN dbo.Anexos ON dbo.FichFatM.AnxId = dbo.Anexos.AnxId ) INNER JOIN dbo.CalculaFat ON dbo.Anexos.CalcFatId = dbo.CalculaFat.CalcFatId WHERE dbo.FichFatM.GrpVen = ? AND dbo.Anexos.GrpVen = ? AND dbo.FichFatM.EquiCod = ? group by dbo.FichFatM.FfmDtColeta, dbo.FichFatM.FfmCNT, dbo.FichFatM.FfmSelZero, dbo.FichFatM.LeituraId order by dbo.FichFatM.FfmDtColeta desc"
 
 const queryLeiturasDisponiveis = "SELECT dbo.SLTELLeitura.LeituraId, dbo.SLTELLeitura.DataLeitura, dbo.SLTELLeitura.QuantidadeTotal AS Contador FROM dbo.SLTELLeitura INNER JOIN dbo.PontoVenda ON dbo.SLTELLeitura.Matricula = dbo.PontoVenda.EquiCod WHERE ( ((dbo.SLTELLeitura.LeituraId) >= ?) AND ((dbo.PontoVenda.EquiCod) = ?) AND ((dbo.PontoVenda.GrpVen) = ?) AND ((dbo.PontoVenda.PdvStatus) = 'A') AND ((dbo.PontoVenda.AnxId) = ?) ) order by LeituraId ASC"
+
+const queryLeituraDetalhes = "SELECT LS.Selecao, LS.QuantidadeVendaPaga, LS.QuantidadeVendaTeste, PV.PvpVvn1, PV.PvpVvn2, P.Produto, P.ProdId FROM dbo.SLTEL_LeituraSelecao AS LS left join dbo.PVPROD as PV on LS.Selecao = PV.PvpSel left join dbo.Produtos as P on PV.ProdId  = P.ProdId WHERE LS.LeituraId = ? and PV.AnxId = ? and PV.PdvId = ? AND PV.GrpVen = ?"

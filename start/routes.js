@@ -107,6 +107,7 @@ Route.post("/dashboard/telemetrias/chamado", "WEB/DashboardController.AbrirChama
 Route.get("/coletas", "WEB/ConsultaColetasController.Show").middleware('jwt'); //retorna todas as coletas do franqueado
 Route.get("/coletas/detalhes/:anxid/:pdvid/:fseq", "WEB/ConsultaColetasController.See").middleware('jwt'); //retorna todas as coletas do franqueado
 Route.get("/coletas/historico/:equicod/:anxid", "WEB/ConsultaColetasController.NovaColetaOptions").middleware('jwt'); //retorna info sobre a última coleta do eq
+Route.get("/coletas/novacoleta/:l1id/:l2id/:anxid/:pdvid", "WEB/ConsultaColetasController.CalcColetas").middleware('jwt'); //retorna qtd de doses em x tempo
 
 //quebra galho
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
