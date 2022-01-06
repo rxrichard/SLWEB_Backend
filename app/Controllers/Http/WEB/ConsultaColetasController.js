@@ -50,15 +50,43 @@ class ConsultaColetasController {
   async NovaColetaOptions({ request, response, params }) {
     const token = request.header("authorization");
     const EquiCod = params.equicod
+    const AnxId = params.anxid
+
+    try {
+      const verified = seeToken(token);
+
+      const ultimaColeta = await Database.raw(queryUltimaColeta, [verified.grpven, verified.grpven, EquiCod])
+      
+      let leiturasDisponiveis 
+
+      if(ultimaColeta.length > 0) {
+        leiturasDisponiveis = await Database.raw(queryLeiturasDisponiveis, [ultimaColeta[0].LeituraId, EquiCod, verified.grpven, AnxId])
+      }else{
+        leiturasDisponiveis = await Database.raw(queryLeiturasDisponiveis, ['0', EquiCod, verified.grpven, AnxId])
+      }
+
+
+      response.status(200).send({
+        UltColeta: ultimaColeta,
+        LeiturasDisponiveis: leiturasDisponiveis
+      })
+    } catch (err) {
+      response.status(400).send(err)
+    }
+  }
+
+  async CalcColetas({ request, response, params }){
+    const token = request.header("authorization");
+    const leitIniID = params.l1id;
+    const leitFimID = params.l2id;
 
     try{
       const verified = seeToken(token);
 
-      const ultimaColeta = await Database.raw(queryUltimaColeta, [verified.grpven, verified.grpven, EquiCod])
-    
-      response.status(200).send({
-        UltColeta: ultimaColeta
-      })
+      // const coletaInicial = await Database.raw(, [])
+      // const coletaFinal = await Database.raw(, [])
+
+      response.status(200).send({})
     }catch(err){
       response.status(400).send(err)
     }
@@ -73,4 +101,6 @@ const queryEquipamentos = "SELECT dbo.Anexos.GrpVen, dbo.Anexos.AnxDesc, dbo.Ane
 
 const queryColetasDetalhes = 'SELECT D.AnxId, D.PdvId, D.FfmSeq, D.PvpSel, D.FfdPago, D.FfdQtdFaturar, D.ProdId, D.TveId, D.PvpVvn1, D.PvpVvn2, P.Produto FROM FichFatD AS D left join dbo.Produtos as P on P.ProdId = D.ProdId WHERE D.AnxId=? AND D.PdvId=? AND D.FfmSeq=? and GrpVen = ?'
 
-const queryUltimaColeta = "SELECT top(1) dbo.FichFatM.FfmDtColeta AS UltimaColeta, SUM(dbo.FichFatM.FfmSeq + 1) as ProximaColeta, dbo.FichFatM.FfmCNT as ContadorAnterior, SUM(dbo.FichFatM.FfmSeqM + 1) as ProximaColetaMes FROM ( dbo.FichFatM INNER JOIN dbo.Anexos ON dbo.FichFatM.AnxId = dbo.Anexos.AnxId ) INNER JOIN dbo.CalculaFat ON dbo.Anexos.CalcFatId = dbo.CalculaFat.CalcFatId WHERE dbo.FichFatM.GrpVen = ? AND dbo.Anexos.GrpVen = ? AND dbo.FichFatM.EquiCod = ? group by dbo.FichFatM.FfmDtColeta, dbo.FichFatM.FfmCNT order by dbo.FichFatM.FfmDtColeta desc"
+const queryUltimaColeta = "SELECT top(1) dbo.FichFatM.FfmDtColeta AS UltimaColeta, SUM(dbo.FichFatM.FfmSeq + 1) as ProximaColeta, dbo.FichFatM.FfmCNT as ContadorAnterior, SUM(dbo.FichFatM.FfmSeqM + 1) as ProximaColetaMes, dbo.FichFatM.FfmSelZero as Zerou, dbo.FichFatM.LeituraId FROM ( dbo.FichFatM INNER JOIN dbo.Anexos ON dbo.FichFatM.AnxId = dbo.Anexos.AnxId ) INNER JOIN dbo.CalculaFat ON dbo.Anexos.CalcFatId = dbo.CalculaFat.CalcFatId WHERE dbo.FichFatM.GrpVen = ? AND dbo.Anexos.GrpVen = ? AND dbo.FichFatM.EquiCod = ? group by dbo.FichFatM.FfmDtColeta, dbo.FichFatM.FfmCNT, dbo.FichFatM.FfmSelZero, dbo.FichFatM.LeituraId order by dbo.FichFatM.FfmDtColeta desc"
+
+const queryLeiturasDisponiveis = "SELECT dbo.SLTELLeitura.LeituraId, dbo.SLTELLeitura.DataLeitura, dbo.SLTELLeitura.QuantidadeTotal AS Contador FROM dbo.SLTELLeitura INNER JOIN dbo.PontoVenda ON dbo.SLTELLeitura.Matricula = dbo.PontoVenda.EquiCod WHERE ( ((dbo.SLTELLeitura.LeituraId) >= ?) AND ((dbo.PontoVenda.EquiCod) = ?) AND ((dbo.PontoVenda.GrpVen) = ?) AND ((dbo.PontoVenda.PdvStatus) = 'A') AND ((dbo.PontoVenda.AnxId) = ?) ) order by LeituraId ASC"
