@@ -93,28 +93,48 @@ class ConsultaColetasController {
       coletaFinal.forEach((element, index) => {
         finalArray.push({
           Selecao: element.Selecao,
-        Real: {
-          Ant: coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaPaga) : 0,
-          Agr: Number(element.QuantidadeVendaPaga),
-        },
-        Teste: {
-          Ant: coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaTeste) : 0,
-          Agr: Number(element.QuantidadeVendaTeste),
-        },
-        Consumo: {
-          Real: Number(element.QuantidadeVendaPaga) - (coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaPaga) : 0),
-          Teste: Number(element.QuantidadeVendaTeste) - (coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaTeste) : 0),
-        },
-        PV1: element.PvpVvn1,
-        PV2: element.PvpVvn2,
-        Produto: element.Produto,
-        ProdId: element.ProdId
+          Real: {
+            Ant: coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaPaga) : 0,
+            Agr: Number(element.QuantidadeVendaPaga),
+          },
+          Teste: {
+            Ant: coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaTeste) : 0,
+            Agr: Number(element.QuantidadeVendaTeste),
+          },
+          Consumo: {
+            Real: Number(element.QuantidadeVendaPaga) - (coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaPaga) : 0),
+            Teste: Number(element.QuantidadeVendaTeste) - (coletaInicial[index] ? Number(coletaInicial[index].QuantidadeVendaTeste) : 0),
+          },
+          PV1: element.PvpVvn1,
+          PV2: element.PvpVvn2,
+          Produto: element.Produto,
+          ProdId: element.ProdId
         })
       })
 
       response.status(200).send({
         Coleta: finalArray
       })
+    } catch (err) {
+      response.status(400).send(err)
+    }
+  }
+
+  async GravaColeta({ request, response, params }) {
+    const token = request.header("authorization");
+
+    const { ref } = request.only(['ref'])
+
+    try {
+      const verified = seeToken(token);
+
+      if (ref === null || ref === '') {
+        throw new Error('Ref não informada')
+      }
+
+      //gravar FichFatM e FichFatD
+
+      response.status(200).send()
     } catch (err) {
       response.status(400).send(err)
     }
