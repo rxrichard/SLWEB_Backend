@@ -108,7 +108,8 @@ class ConsultaColetasController {
           PV1: element.PvpVvn1,
           PV2: element.PvpVvn2,
           Produto: element.Produto,
-          ProdId: element.ProdId
+          ProdId: element.ProdId,
+          TveId: element.TveId
         })
       })
 
@@ -123,18 +124,73 @@ class ConsultaColetasController {
   async GravaColeta({ request, response, params }) {
     const token = request.header("authorization");
 
-    const { ref } = request.only(['ref'])
+    const { Detalhes, Doses, Margem, Zerou, Ref } = request.only(['Detalhes', 'Doses', 'Margem', 'Zerou', 'Ref'])
 
     try {
       const verified = seeToken(token);
 
-      if (ref === null || ref === '') {
-        throw new Error('Ref não informada')
-      }
+      const ultimasSequencia = await Database
+        .raw(
+          "select MAX(FfmSeq) as MaxSequencia from dbo.FichFatM where GrpVen = ? and PdvId = ? and AnxId = ? and EquiCod = ?",
+          [verified.grpven, Detalhes.PdvId, Detalhes.AnxId, Detalhes.EquiCod]
+        )
 
-      //gravar FichFatM e FichFatD
+      const ultimasSequenciaMes = await Database
+        .raw(
+          "select MAX(FfmSeqM) as MaxSequenciaMes from dbo.FichFatM where GrpVen = ? and PdvId = ? and AnxId = ? and EquiCod = ? and FfmRef = CONVERT(smalldatetime, ?, 101)",
+          [verified.grpven, Detalhes.PdvId, Detalhes.AnxId, Detalhes.EquiCod, moment(Ref).toDate()]
+        )
 
-      response.status(200).send()
+      // await Database.insert({
+      //   GrpVen: verified.grpven,
+      //   AnxId: Detalhes.AnxId,
+      //   PdvId: Detalhes.PdvId,
+      //   FfmSeq: ultimasSequencia[0] && ultimasSequencia[0].MaxSequencia !== null ? Number(ultimasSequencia[0].MaxSequencia) + 1 : 1,
+      //   FfmRef: Ref,
+      //   FfmSeqM: ultimasSequenciaMes[0] && ultimasSequenciaMes[0].MaxSequenciaMes !== null ? Number(ultimasSequenciaMes[0].MaxSequenciaMes) + 1 : 1,
+      //   CNPJ: String(Detalhes.CNPJ).replace(/([-,./])/g, ''),
+      //   ConId: Detalhes.ConId,
+      //   EquiCod: Detalhes.EquiCod,
+      //   FfmDtGeracao: Margem.ate,
+      //   FfmDtColetaAnt: Margem.de,
+      //   FfmDtColeta: Margem.ate,
+      //   FfmCNTAnt: Margem.deCont,
+      //   FfmCNT: Margem.ateCont,
+      //   FfmContadorDiferenca: 0,
+      //   FfmSomaGratis: 0,
+      //   FfmSomaPago: 0,
+      //   FfmSomaProva: 0,
+      //   FfmSomaQtdFaturar: 0,
+      //   FfmSelZero: Zerou,
+      //   FfmMoedeiroZero: 'S',
+      //   FfmColeta: 'S',
+      //   LeituraId: Margem.ateID
+      // }).into('dbo.FichFatM')
+
+      // Doses.forEach(async (dose) => {
+      //   await Database.insert({
+      //     GrpVen: verified.grpven,
+      //     AnxId: Detalhes.AnxId,
+      //     PdvId: Detalhes.PdvId,
+      //     FfmSeq: ultimasSequencia[0] && ultimasSequencia[0].MaxSequencia !== null ? Number(ultimasSequencia[0].MaxSequencia) + 1 : 1,
+      //     PvpSel: dose.Selecao,
+      //     FfdGratis: 0,
+      //     FfdPago: dose.Real.Agr,
+      //     FfdProva: dose.Teste.Agr,
+      //     FfdQtdFaturar: dose.Consumo.Real,
+      //     ProdId: dose.ProdId,
+      //     FfdPcr: null,
+      //     FfdVvn: '0.00',
+      //     TveId: dose.TveId,
+      //     PvpVvn1: dose.PV1,
+      //     PvpVvn2: dose.PV2,
+      //     FfdInc: null,
+      //     RecId: null,
+      //     PorcCons: 0
+      //   }).into('dbo.FichFatD')
+      // });
+
+      response.status(200).send({ message: 'Coleta gravada com sucesso' })
     } catch (err) {
       response.status(400).send(err)
     }
@@ -145,7 +201,7 @@ module.exports = ConsultaColetasController
 
 const queryColetas = 'SELECT dbo.FichFatM.GrpVen, dbo.FichFatM.AnxId, dbo.FichFatM.PdvId, dbo.FichFatM.EquiCod, dbo.FichFatM.FfmSeq, dbo.FichFatM.FfmRef AS Ref, dbo.FichFatM.FfmSeqM AS SeqMês, dbo.Anexos.AnxDesc AS Anexo, dbo.CalculaFat.CalcFatDesc AS Cálculo, dbo.FichFatM.FfmDtColetaAnt AS ColeteAnterior, dbo.FichFatM.FfmDtColeta AS DataColeta, dbo.FichFatM.FfmCNTAnt AS ContAnterior, dbo.FichFatM.FfmCNT AS Contador, dbo.FichFatM.FfmSelZero FROM ( dbo.FichFatM INNER JOIN dbo.Anexos ON dbo.FichFatM.AnxId = dbo.Anexos.AnxId ) INNER JOIN dbo.CalculaFat ON dbo.Anexos.CalcFatId = dbo.CalculaFat.CalcFatId WHERE dbo.FichFatM.GrpVen = ? AND dbo.Anexos.GrpVen = ? ORDER BY Ref DESC, SeqMês DESC'
 
-const queryEquipamentos = "SELECT dbo.Anexos.GrpVen, dbo.Anexos.AnxDesc, dbo.Anexos.CNPJss, dbo.PontoVenda.EquiCod, dbo.PontoVenda.IMEI, dbo.PontoVenda.PdvDataAtivacao, dbo.PontoVenda.PdvStatus, dbo.PontoVenda.AnxId, dbo.PontoVenda.PdvId FROM dbo.Anexos INNER JOIN dbo.PontoVenda ON (dbo.Anexos.AnxId = dbo.PontoVenda.AnxId) AND ( dbo.Anexos.GrpVen = dbo.PontoVenda.GrpVen ) WHERE ( ((dbo.Anexos.GrpVen) = ?) AND ((dbo.PontoVenda.PdvStatus) = 'A') ) ORDER BY dbo.Anexos.AnxDesc, dbo.PontoVenda.EquiCod"
+const queryEquipamentos = "SELECT dbo.Anexos.GrpVen, dbo.Anexos.AnxDesc, dbo.Anexos.CNPJss, dbo.PontoVenda.EquiCod, dbo.PontoVenda.IMEI, dbo.PontoVenda.PdvDataAtivacao, dbo.PontoVenda.PdvStatus, dbo.PontoVenda.AnxId, dbo.PontoVenda.PdvId, dbo.PontoVenda.ConId FROM dbo.Anexos INNER JOIN dbo.PontoVenda ON (dbo.Anexos.AnxId = dbo.PontoVenda.AnxId) AND ( dbo.Anexos.GrpVen = dbo.PontoVenda.GrpVen ) WHERE ( ((dbo.Anexos.GrpVen) = ?) AND ((dbo.PontoVenda.PdvStatus) = 'A') ) ORDER BY dbo.Anexos.AnxDesc, dbo.PontoVenda.EquiCod"
 
 const queryColetasDetalhes = 'SELECT D.AnxId, D.PdvId, D.FfmSeq, D.PvpSel, D.FfdPago, D.FfdQtdFaturar, D.ProdId, D.TveId, D.PvpVvn1, D.PvpVvn2, P.Produto FROM FichFatD AS D left join dbo.Produtos as P on P.ProdId = D.ProdId WHERE D.AnxId=? AND D.PdvId=? AND D.FfmSeq=? and GrpVen = ?'
 
@@ -153,4 +209,4 @@ const queryUltimaColeta = "SELECT top(1) dbo.FichFatM.FfmDtColeta AS UltimaColet
 
 const queryLeiturasDisponiveis = "SELECT dbo.SLTELLeitura.LeituraId, dbo.SLTELLeitura.DataLeitura, dbo.SLTELLeitura.QuantidadeTotal AS Contador FROM dbo.SLTELLeitura INNER JOIN dbo.PontoVenda ON dbo.SLTELLeitura.Matricula = dbo.PontoVenda.EquiCod WHERE ( ((dbo.SLTELLeitura.LeituraId) >= ?) AND ((dbo.PontoVenda.EquiCod) = ?) AND ((dbo.PontoVenda.GrpVen) = ?) AND ((dbo.PontoVenda.PdvStatus) = 'A') AND ((dbo.PontoVenda.AnxId) = ?) ) order by LeituraId ASC"
 
-const queryLeituraDetalhes = "SELECT LS.Selecao, LS.QuantidadeVendaPaga, LS.QuantidadeVendaTeste, PV.PvpVvn1, PV.PvpVvn2, P.Produto, P.ProdId FROM dbo.SLTEL_LeituraSelecao AS LS left join dbo.PVPROD as PV on LS.Selecao = PV.PvpSel left join dbo.Produtos as P on PV.ProdId  = P.ProdId WHERE LS.LeituraId = ? and PV.AnxId = ? and PV.PdvId = ? AND PV.GrpVen = ?"
+const queryLeituraDetalhes = "SELECT LS.Selecao, LS.QuantidadeVendaPaga, LS.QuantidadeVendaTeste, PV.PvpVvn1, PV.PvpVvn2, P.Produto, P.ProdId, PV.TveId FROM dbo.SLTEL_LeituraSelecao AS LS left join dbo.PVPROD as PV on LS.Selecao = PV.PvpSel left join dbo.Produtos as P on PV.ProdId  = P.ProdId WHERE LS.LeituraId = ? and PV.AnxId = ? and PV.PdvId = ? AND PV.GrpVen = ?"

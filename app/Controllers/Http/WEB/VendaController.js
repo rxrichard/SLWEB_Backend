@@ -115,7 +115,44 @@ class VendaController {
           DataCriacao: actualDate,
           PdvVlrDesc: item.DVenda
         }).into("dbo.PedidosVendaDet");
+
+        //TESTA ISSO AQUI
+        await Database.insert({
+          D_FILIAL: verified.user_code,
+          F_SERIE: 'F',
+          DOC: Number(ultPvcId[0].UltimoID) + 1,
+          D_ITEM: i + 1,
+          M0_TIPO: 'S',
+          PvTipo: Pedido.TipoVenda,
+          D_DOC: `000000000${Number(ultPvcId[0].UltimoID) + 1}`.slice(-9),
+          DEPDEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
+          DtEmissao: moment().toDate(),
+          D_TES: '0',
+          C5_ZZADEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
+          D_COD: item.CodFab,
+          ProdId: item.ProdId,
+          Produto: item.Produto,
+          D_UM: item.UnMedida,
+          D_QUANT: item.FatConversao !== null ? item.QVenda * item.FatConversao : item.QVenda,
+          D_SEGUM: item.UnMedida,
+          Pedido: Number(ultPvcId[0].UltimoID) + 1,
+          D_EMISSAO: moment().format('DD/MM/YYYY').replace('/', ''),
+          A1_SATIV1: Pedido.Cliente.A1_SATIV1,
+          A1_NREDUZ: Pedido.Cliente.Nome_Fantasia,
+          A1_NOME: Pedido.Cliente.Razão_Social,
+          A1_CGC: Pedido.Cliente.CNPJ,
+          A1_COD: Pedido.Cliente.A1_COD,
+          A1_LOJA: Pedido.Cliente.A1_LOJA,
+          GrpVen: verified.grpven,
+          VENVLR: item.PrVenda,
+          PvnRoy: 1,
+          D_PRCVEN: item.VVenda,
+          D_TOTAL: item.FatConversao !== null ? (item.QVenda * item.FatConversao) * (item.VVenda - item.DVenda) : item.QVenda * (item.VVenda - item.DVenda),
+          D_DESC: item.DVenda,
+          C5_CONDPAG: Pedido.CondPag
+        }).into("dbo.SDBase");
       });
+
 
       response.status(200).send({ message: "ok" });
     } catch (err) {
