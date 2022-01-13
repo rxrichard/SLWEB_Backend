@@ -116,7 +116,6 @@ class VendaController {
           PdvVlrDesc: item.DVenda
         }).into("dbo.PedidosVendaDet");
 
-        //TESTA ISSO AQUI
         await Database.insert({
           D_FILIAL: verified.user_code,
           F_SERIE: 'F',
@@ -126,26 +125,26 @@ class VendaController {
           PvTipo: Pedido.TipoVenda,
           D_DOC: `000000000${Number(ultPvcId[0].UltimoID) + 1}`.slice(-9),
           DEPDEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
-          DtEmissao: moment().toDate(),
+          DtEmissao: moment().subtract(3, "hours").toDate(),
           D_TES: '0',
           C5_ZZADEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
-          D_COD: item.CodFab,
-          ProdId: item.ProdId,
+          D_COD: String(item.CodFab).slice(0, 5),
+          ProdId: String(item.ProdId).slice(0, 4),
           Produto: item.Produto,
           D_UM: item.UnMedida,
           D_QUANT: item.FatConversao !== null ? item.QVenda * item.FatConversao : item.QVenda,
           D_SEGUM: item.UnMedida,
           Pedido: Number(ultPvcId[0].UltimoID) + 1,
-          D_EMISSAO: moment().format('DD/MM/YYYY').replace('/', ''),
+          D_EMISSAO: moment().subtract(3, "hours").format('YYYY/MM/DD').replace(/([/])/g, ""),
           A1_SATIV1: Pedido.Cliente.A1_SATIV1,
           A1_NREDUZ: Pedido.Cliente.Nome_Fantasia,
           A1_NOME: Pedido.Cliente.Razão_Social,
-          A1_CGC: Pedido.Cliente.CNPJ,
+          A1_CGC: String(Pedido.Cliente.CNPJ).replace(/([-,./])/g, ""),
           A1_COD: Pedido.Cliente.A1_COD,
           A1_LOJA: Pedido.Cliente.A1_LOJA,
-          GrpVen: verified.grpven,
+          GRPVEN: verified.grpven,
           VENVLR: item.PrVenda,
-          PvnRoy: 1,
+          PvnRoy: item.ProdRoy,
           D_PRCVEN: item.VVenda,
           D_TOTAL: item.FatConversao !== null ? (item.QVenda * item.FatConversao) * (item.VVenda - item.DVenda) : item.QVenda * (item.VVenda - item.DVenda),
           D_DESC: item.DVenda,
@@ -279,6 +278,7 @@ class VendaController {
           PvcSerie: PvcSerie,
           GrpVen: verified.grpven,
         });
+
       if (
         NotaGerada[0].STATUS === "C" ||
         NotaGerada[0].STATUS === "S" ||

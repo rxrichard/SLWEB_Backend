@@ -138,57 +138,57 @@ class ConsultaColetasController {
       const ultimasSequenciaMes = await Database
         .raw(
           "select MAX(FfmSeqM) as MaxSequenciaMes from dbo.FichFatM where GrpVen = ? and PdvId = ? and AnxId = ? and EquiCod = ? and FfmRef = CONVERT(smalldatetime, ?, 101)",
-          [verified.grpven, Detalhes.PdvId, Detalhes.AnxId, Detalhes.EquiCod, moment(Ref).toDate()]
+          [verified.grpven, Detalhes.PdvId, Detalhes.AnxId, Detalhes.EquiCod, moment(Ref).subtract(3, "hours").toDate()]
         )
 
-      // await Database.insert({
-      //   GrpVen: verified.grpven,
-      //   AnxId: Detalhes.AnxId,
-      //   PdvId: Detalhes.PdvId,
-      //   FfmSeq: ultimasSequencia[0] && ultimasSequencia[0].MaxSequencia !== null ? Number(ultimasSequencia[0].MaxSequencia) + 1 : 1,
-      //   FfmRef: Ref,
-      //   FfmSeqM: ultimasSequenciaMes[0] && ultimasSequenciaMes[0].MaxSequenciaMes !== null ? Number(ultimasSequenciaMes[0].MaxSequenciaMes) + 1 : 1,
-      //   CNPJ: String(Detalhes.CNPJ).replace(/([-,./])/g, ''),
-      //   ConId: Detalhes.ConId,
-      //   EquiCod: Detalhes.EquiCod,
-      //   FfmDtGeracao: Margem.ate,
-      //   FfmDtColetaAnt: Margem.de,
-      //   FfmDtColeta: Margem.ate,
-      //   FfmCNTAnt: Margem.deCont,
-      //   FfmCNT: Margem.ateCont,
-      //   FfmContadorDiferenca: 0,
-      //   FfmSomaGratis: 0,
-      //   FfmSomaPago: 0,
-      //   FfmSomaProva: 0,
-      //   FfmSomaQtdFaturar: 0,
-      //   FfmSelZero: Zerou,
-      //   FfmMoedeiroZero: 'S',
-      //   FfmColeta: 'S',
-      //   LeituraId: Margem.ateID
-      // }).into('dbo.FichFatM')
+      await Database.insert({
+        GrpVen: verified.grpven,
+        AnxId: Detalhes.AnxId,
+        PdvId: Detalhes.PdvId,
+        FfmSeq: ultimasSequencia[0] && ultimasSequencia[0].MaxSequencia !== null ? Number(ultimasSequencia[0].MaxSequencia) + 1 : 1,
+        FfmRef: moment(Ref).subtract(3, "hours").toDate(),
+        FfmSeqM: ultimasSequenciaMes[0] && ultimasSequenciaMes[0].MaxSequenciaMes !== null ? Number(ultimasSequenciaMes[0].MaxSequenciaMes) + 1 : 1,
+        CNPJ: String(Detalhes.CNPJ).replace(/([-,./])/g, ''),
+        ConId: Detalhes.ConId,
+        EquiCod: Detalhes.EquiCod,
+        FfmDtGeracao: Margem.ate,
+        FfmDtColetaAnt: Detalhes.UltimaColeta,
+        FfmDtColeta: Margem.ate,
+        FfmCNTAnt: Detalhes.ContadorAnterior,
+        FfmCNT: Margem.ateCont,
+        FfmContadorDiferenca: 0,
+        FfmSomaGratis: 0,
+        FfmSomaPago: 0,
+        FfmSomaProva: 0,
+        FfmSomaQtdFaturar: 0,
+        FfmSelZero: Zerou,
+        FfmMoedeiroZero: 'S',
+        FfmColeta: 'S',
+        LeituraId: Margem.ateID
+      }).into('dbo.FichFatM')
 
-      // Doses.forEach(async (dose) => {
-      //   await Database.insert({
-      //     GrpVen: verified.grpven,
-      //     AnxId: Detalhes.AnxId,
-      //     PdvId: Detalhes.PdvId,
-      //     FfmSeq: ultimasSequencia[0] && ultimasSequencia[0].MaxSequencia !== null ? Number(ultimasSequencia[0].MaxSequencia) + 1 : 1,
-      //     PvpSel: dose.Selecao,
-      //     FfdGratis: 0,
-      //     FfdPago: dose.Real.Agr,
-      //     FfdProva: dose.Teste.Agr,
-      //     FfdQtdFaturar: dose.Consumo.Real,
-      //     ProdId: dose.ProdId,
-      //     FfdPcr: null,
-      //     FfdVvn: '0.00',
-      //     TveId: dose.TveId,
-      //     PvpVvn1: dose.PV1,
-      //     PvpVvn2: dose.PV2,
-      //     FfdInc: null,
-      //     RecId: null,
-      //     PorcCons: 0
-      //   }).into('dbo.FichFatD')
-      // });
+      Doses.forEach(async (dose) => {
+        await Database.insert({
+          GrpVen: verified.grpven,
+          AnxId: Detalhes.AnxId,
+          PdvId: Detalhes.PdvId,
+          FfmSeq: ultimasSequencia[0] && ultimasSequencia[0].MaxSequencia !== null ? Number(ultimasSequencia[0].MaxSequencia) + 1 : 1,
+          PvpSel: dose.Selecao,
+          FfdGratis: 0,
+          FfdPago: dose.Real.Agr,
+          FfdProva: dose.Teste.Agr,
+          FfdQtdFaturar: Zerou === 'N' ? dose.Consumo.Real : dose.Real.Agr,
+          ProdId: dose.ProdId,
+          FfdPcr: null,
+          FfdVvn: '0.00',
+          TveId: dose.TveId,
+          PvpVvn1: dose.PV1,
+          PvpVvn2: dose.PV2,
+          FfdInc: null,
+          RecId: null,
+          PorcCons: 0
+        }).into('dbo.FichFatD')
+      });
 
       response.status(200).send({ message: 'Coleta gravada com sucesso' })
     } catch (err) {
