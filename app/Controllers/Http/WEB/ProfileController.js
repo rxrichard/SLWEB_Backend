@@ -18,9 +18,23 @@ class ProfileController {
         [verified.grpven]
       );
 
-      response.status(200).send(res[0]);
+      const Certificado = await Database.connection("pg").raw(queryCertificados, [verified.user_code])
+
+      let vencimento = null
+
+      if (Certificado.rows[0]) {
+        vencimento = String(Certificado.rows[0].valor).substring(
+          String(Certificado.rows[0].valor).indexOf('datavenctocertificado=') + 22,
+          String(Certificado.rows[0].valor).indexOf('datavenctocertificado=') + 32
+        )
+      }
+
+      response.status(200).send({
+        Franqueado: res[0],
+        VencCert: vencimento,
+      });
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send(err);
     }
   }
 
@@ -121,3 +135,5 @@ class ProfileController {
 }
 
 module.exports = ProfileController;
+
+const queryCertificados = 'SELECT swvix."ns.estabelecimentos".codigo, valor FROM ( ( swvix."ns.estabelecimentos" INNER JOIN swvix."ns.series" ON swvix."ns.estabelecimentos".estabelecimento = swvix."ns.series".estabelecimento ) INNER JOIN swvix."ns.ConfigCertif" ON swvix."ns.estabelecimentos".codigo = swvix."ns.ConfigCertif".codigo ) INNER JOIN swvix."estoque.locaisdeestoques" ON swvix."ns.estabelecimentos".estabelecimento = swvix."estoque.locaisdeestoques".estabelecimento WHERE swvix."ns.estabelecimentos".codigo = ? ORDER BY swvix."ns.estabelecimentos".codigo'
