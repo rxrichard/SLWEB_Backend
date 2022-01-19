@@ -121,7 +121,7 @@ class ConsultaColetasController {
     }
   }
 
-  async GravaColeta({ request, response, params }) {
+  async GravaColeta({ request, response }) {
     const token = request.header("authorization");
 
     const { Detalhes, Doses, Margem, Zerou, Ref } = request.only(['Detalhes', 'Doses', 'Margem', 'Zerou', 'Ref'])
@@ -191,6 +191,41 @@ class ConsultaColetasController {
       });
 
       response.status(200).send({ message: 'Coleta gravada com sucesso' })
+    } catch (err) {
+      response.status(400).send(err)
+    }
+  }
+
+  async Delete({ request, response }) {
+    const token = request.header("authorization");
+
+    const { EquiCod, AnxId, PdvId, FfmSeq } = request.only(['EquiCod', 'AnxId', 'PdvId', 'FfmSeq'])
+
+    try {
+      const verified = seeToken(token);
+
+      await Database.table("dbo.FichFatM")
+        .where({
+          EquiCod: EquiCod,
+          AnxId: AnxId,
+          PdvId: PdvId,
+          FfmSeq: FfmSeq,
+          GrpVen: verified.grpven
+        })
+        .delete();
+
+      await Database.table("dbo.FichFatD")
+        .where({
+          AnxId: AnxId,
+          PdvId: PdvId,
+          FfmSeq: FfmSeq,
+          GrpVen: verified.grpven
+        })
+        .delete();
+
+      response.status(200).send({
+        message: 'Coleta deletada com sucesso'
+      })
     } catch (err) {
       response.status(400).send(err)
     }

@@ -410,6 +410,9 @@ class VendaController {
           PvcID: pvc,
         });
 
+
+      console.log(numeroExterno)
+
       const NFe = await Database.connection("pg")
         .select("num_pedido", "chave_de_acesso")
         .from("swvix.pedido")
@@ -418,6 +421,8 @@ class VendaController {
           status: "1",
           localestoque: verified.user_code,
         });
+
+      console.log(NFe)
 
       const prefixoCancelamento = "110111";
       const prefixoCartaDeCorrecao = "110110";

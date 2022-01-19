@@ -108,11 +108,15 @@ class CompraController {
 
       if (Status === "Faturado") {
         //busca nos pedidos atendidos
-        PedidoDet = await Database.raw(queryPedidosAtendidosDetPorPedidoID, [
-          verified.grpven,
-          verified.user_code,
-          PedidoID,
-        ]);
+        // PedidoDet = await Database.raw(queryPedidosAtendidosDetPorPedidoID, [
+        //   verified.grpven,
+        //   verified.user_code,
+        //   PedidoID,
+        // ]);
+        PedidoDet = await Database.raw(
+          `execute ProcPedidosCompraAtendidosDet @GrpVen=?, @Filial =?, @PedidoId=?`,
+          [verified.grpven, verified.user_code, PedidoID]
+        );
 
         if (PedidoDet.length > 0) {
           const transp = await Database.raw(
@@ -290,7 +294,7 @@ class CompraController {
             Filial: "0201",
             CodigoTabelaPreco: "462",
             CodigoVendedor: "000026",
-            CodigoCondicaoPagto: AVista? '001' : "003",
+            CodigoCondicaoPagto: AVista ? '001' : "003",
             TipoFrete: "C",
             MsgNotaFiscal: null,
             MsgPadrao: null,
@@ -298,7 +302,7 @@ class CompraController {
             CodigoProduto: `00000${item.Cód}`.slice(-5),
             QtdeVendida: item.QCompra * item.QtMin,
             PrecoUnitarioLiquido: item.VlrUn * (AVista ? 0.95 : 1),
-            PrecoTotal: item.QCompra * (item.QtMin * item.VlrUn)* (AVista ? 0.95 : 1),
+            PrecoTotal: item.QCompra * (item.QtMin * item.VlrUn) * (AVista ? 0.95 : 1),
             Limite: null,
             CodigoTotvs: null,
             DataCriacao: new Date(moment().subtract(3, "hours").format()),
@@ -538,7 +542,7 @@ const queryPedidosNaoAtendidos =
   "SELECT 'Processando' AS Status, dbo.PedidosCompraCab.DataCriacao AS Solicitacao, dbo.PedidosCompraCab.PedidoId as Pedido, '' as NF, '' as Serie, Sum(dbo.PedidosVenda.PrecoTotal) AS Total, Count(dbo.PedidosVenda.Item) AS QtItems FROM dbo.PedidosVenda  INNER JOIN dbo.PedidosCompraCab ON (dbo.PedidosVenda.Filial = dbo.PedidosCompraCab.Filial) AND (dbo.PedidosVenda.PedidoID = dbo.PedidosCompraCab.PedidoId)  WHERE (((dbo.PedidosCompraCab.NroNF) Is Null) AND ((dbo.PedidosCompraCab.GrpVen)=?) AND ((dbo.PedidosVenda.STATUS)<>'C' Or (dbo.PedidosVenda.STATUS) Is Null and dbo.PedidosCompraCab.STATUS <> 'C' or dbo.PedidosCompraCab.STATUS is null))  GROUP BY dbo.PedidosCompraCab.STATUS, dbo.PedidosCompraCab.DataCriacao, dbo.PedidosCompraCab.PedidoId, dbo.PedidosVenda.CodigoTotvs  ORDER BY dbo.PedidosCompraCab.DataCriacao DESC";
 
 const queryPedidosAtendidos =
-  "SELECT 'Faturado' as Status, S.DtEmissao as Faturado, S.Pedido as Pedido, S.DOC as NF, S.F_SERIE as Serie, SUM(S.D_TOTAL) as Total, COUNT(S.D_ITEM) as QtItems FROM dbo.SDBase as S WHERE S.GRPVEN = ? AND S.M0_TIPO='E' AND S.Pedido<>'0' AND S.F_SERIE = '1' GROUP BY S.D_FILIAL, S.Pedido, S.F_SERIE, S.DOC, S.DtEmissao ORDER BY S.Pedido DESC , S.DtEmissao DESC;";
+  "SELECT 'Faturado' as Status, S.DtEmissao as Faturado, S.Pedido as Pedido, S.DOC as NF, S.F_SERIE as Serie, SUM(S.D_TOTAL) as Total, COUNT(S.D_ITEM) as QtItems FROM dbo.SDBase as S WHERE S.GRPVEN = ? AND S.M0_TIPO='E' AND S.Pedido<>'0' GROUP BY S.D_FILIAL, S.Pedido, S.F_SERIE, S.DOC, S.DtEmissao ORDER BY S.Pedido DESC , S.DtEmissao DESC;";
 
 const queryPedidosAtendidosDetPorPedidoID =
   "SELECT GRPVEN, D_EMISSAO, F_SERIE, DOC, Pedido, D_ITEM, ProdId, Produto, D_UM, D_QUANT, D_PRCVEN, D_TOTAL, DtEmissao AS Emissao, DEPDEST FROM dbo.SDBase WHERE (((GRPVEN)=?) AND ((D_FILIAL)<>?) AND ((M0_TIPO)='E')) AND ((Pedido) = ?) AND F_SERIE = '1' ORDER BY D_EMISSAO DESC";
