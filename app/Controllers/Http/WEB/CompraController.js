@@ -239,7 +239,7 @@ class CompraController {
       Items.map(
         (item) =>
         (TotalDoPedido +=
-          Number(item.QCompra) * (Number(item.QtMin) * Number(item.VlrUn)))
+          Number(item.QCompra) * (Number(item.QtMin) * (Number(item.VlrUn) * (AVista ? 0.95 : 1))))
       );
 
       if (
@@ -248,6 +248,7 @@ class CompraController {
       ) {
         throw new Error();
       }
+
 
       //testo se o cara ta bloqueado
       const bloqueado = await Database.raw(queryBloqueado, [verified.grpven]);
@@ -407,6 +408,7 @@ class CompraController {
     const multiples = request.input('multiple')
     const nf = request.input('nf')
     const serie = request.input('serie')
+    const parcela = request.input('parcela')
     const valor = request.input('valor')
     const token = request.header("authorization");
     const formData = request.file("formData", {
@@ -462,15 +464,20 @@ class CompraController {
         });
       }
 
-      const exists = await Database.select("*").from('dbo.SE1_exc').where({
-        E1Prefixo: serie,
-        E1Num: nf,
-      })
+      const exists = await Database
+        .select("*")
+        .from('dbo.SE1_exc')
+        .where({
+          E1Prefixo: serie,
+          E1Num: nf,
+          E1Parcela: parcela
+        })
 
       if (exists.length === 0) {
         await Database.insert({
           E1Prefixo: serie,
           E1Num: nf,
+          E1Parcela: parcela,
           DtInserido: moment().subtract(3, "hours").toDate(),
           Origem: 'SLWEB',
           EmailFinanceiro: false
@@ -492,6 +499,7 @@ class CompraController {
           LOJA: franqueado[0].A1_LOJA,
           DUPLICATA: nf,
           SERIE: serie,
+          PARCELA: String(parcela).trim() === '' ? 1 : String(parcela).trim(),
           Frontend: Env.get("CLIENT_URL"),
           VALOR: valor
         },
@@ -509,6 +517,7 @@ class CompraController {
         .where({
           E1Prefixo: serie,
           E1Num: nf,
+          E1Parcela: parcela,
         })
         .update({
           EmailFinanceiro: true,
@@ -527,13 +536,13 @@ const queryProdutos =
   "SELECT dbo.PrecoCompra.ProdId AS Cód, dbo.PrecoCompra.Produto, dbo.Produtos.ProdQtMinCompra AS QtMin, dbo.Produtos.PrCompra AS VlrUn, [ProdQtMinCompra]*[PrCompra] AS Vlr, dbo.Produtos.FatConversao FROM dbo.PrecoCompra INNER JOIN dbo.Produtos ON dbo.PrecoCompra.ProdId = dbo.Produtos.ProdId WHERE dbo.Produtos.Compra = 'S' ORDER BY dbo.PrecoCompra.Produto";
 
 const queryGigante1 =
-  "SELECT dbo.FilialEntidadeGrVenda.LimiteCredito, IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) as LimExtraCredito, dbo.FilialEntidadeGrVenda.Retira, dbo.FilialEntidadeGrVenda.VlrMinCompra, SE1_GrpVenT.Avencer, SE1_GrpVenT.Vencida, SE1_ComprasNVencidas.Compras, IIf( [Compras] > 0, [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) - [Compras], [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) ) AS LimiteAtual FROM ( ( dbo.FilialEntidadeGrVenda LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(IIf([SE1DtVencR] > GETDATE(), 0, [E1_SALDO])) AS Avencer, Sum(IIf([SE1DtVencR] < GETDATE(), [E1_SALDO], 0)) AS Vencida FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_GrpVenT ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_GrpVenT.GrpVen ) LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE (((SE1_Class.E1Desc) = 'Compra')) and dbo.SE1_GrpVen.E1_NUM not in ( select E1Num from SE1_exc ) GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen ) WHERE ( dbo.FilialEntidadeGrVenda.A1_GRPVEN = ? )";
+  "SELECT dbo.FilialEntidadeGrVenda.LimiteCredito, IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) as LimExtraCredito, dbo.FilialEntidadeGrVenda.Retira, dbo.FilialEntidadeGrVenda.VlrMinCompra, SE1_GrpVenT.Avencer, SE1_GrpVenT.Vencida, SE1_ComprasNVencidas.Compras, IIf( [Compras] > 0, [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) - [Compras], [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) ) AS LimiteAtual FROM ( ( dbo.FilialEntidadeGrVenda LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(IIf([SE1DtVencR] > GETDATE(), 0, [E1_SALDO])) AS Avencer, Sum(IIf([SE1DtVencR] < GETDATE(), [E1_SALDO], 0)) AS Vencida FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_GrpVenT ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_GrpVenT.GrpVen ) LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE (((SE1_Class.E1Desc) = 'Compra')) GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen ) WHERE (dbo.FilialEntidadeGrVenda.A1_GRPVEN = ?)";
 
 const queryBloqueado =
-  "SELECT IIF(SUM(dbo.SE1_GrpVen.E1_SALDO) > 0, 'S', 'N') as Bloqueado FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc where dbo.SE1_GrpVen.GrpVen = ? and CAST(DtVenc as date) < CAST(GETDATE() as date) and dbo.SE1_GrpVen.E1_NUM not in (select E1Num from SE1_exc)";
+  "SELECT IIF(SUM(dbo.SE1_GrpVen.E1_SALDO) > 0, 'S', 'N') as Bloqueado FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc where dbo.SE1_GrpVen.GrpVen = ? and CAST(DtVenc as date) < CAST(GETDATE() as date)";
 
 const queryDuplicatas =
-  "SELECT * FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE dbo.SE1_GrpVen.GrpVen = ? and dbo.SE1_GrpVen.E1_NUM not in (select E1Num from SE1_exc)";
+  "SELECT * FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE dbo.SE1_GrpVen.GrpVen = ?";
 
 const queryComprasAno =
   "SELECT * FROM ( SELECT dbo.SE1_GrpVenT.GrpVen, dbo.SE1_GrpVenT.MesE, dbo.SE1_GrpVenT.E1_VALOR FROM dbo.SE1_GrpVenT INNER JOIN SE1_Class ON (dbo.SE1_GrpVenT.E1_TIPO = SE1_Class.E1_TIPO) AND ( dbo.SE1_GrpVenT.E1_PREFIXO = SE1_Class.E1_PREFIXO ) WHERE ( ((dbo.SE1_GrpVenT.GrpVen) = ?) AND ((SE1_Class.E1Desc) = 'Compra') AND ((dbo.SE1_GrpVenT.AnoE) = Year(GETDATE())) ) ) t PIVOT ( Sum(t.E1_VALOR) FOR t.MesE IN( [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12] ) ) p";
@@ -551,4 +560,4 @@ const queryPedidosAtendidosDetPorDocNum =
   "SELECT GRPVEN, D_EMISSAO, F_SERIE, DOC, Pedido, D_ITEM, ProdId, Produto, D_UM, D_QUANT, D_PRCVEN, D_TOTAL, DtEmissao AS Emissao, DEPDEST FROM dbo.SDBase WHERE (((GRPVEN)=?) AND ((D_FILIAL)<>?) AND ((M0_TIPO)='E')) AND ((DOC) = ?) AND F_SERIE = '1' ORDER BY D_EMISSAO DESC";
 
 const queryLimiteDisponivel =
-  "SELECT IIf( [Compras] > 0, [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) - [Compras], [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) ) AS LimiteAtual FROM dbo.FilialEntidadeGrVenda LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE ( ((SE1_Class.E1Desc) = 'Compra') ) and dbo.SE1_GrpVen.E1_NUM not in ( select E1Num from SE1_exc ) GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen WHERE ( ((dbo.FilialEntidadeGrVenda.Inatv) Is Null) and dbo.FilialEntidadeGrVenda.A1_GRPVEN = ? )";
+  "SELECT IIf( [Compras] > 0, [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) - [Compras], [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) ) AS LimiteAtual FROM dbo.FilialEntidadeGrVenda LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE ( ((SE1_Class.E1Desc) = 'Compra') ) GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen WHERE ( ((dbo.FilialEntidadeGrVenda.Inatv) Is Null) and dbo.FilialEntidadeGrVenda.A1_GRPVEN = ? )";
