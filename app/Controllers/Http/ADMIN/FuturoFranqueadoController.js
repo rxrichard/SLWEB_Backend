@@ -51,9 +51,12 @@ class FuturoFranqueadoController {
 
       if (verified.role === "Franquia") throw Error;
 
-      const Form = await Database.select("*").from("dbo.FuturaFranquia").where({
-        CodCandidato: formcod,
-      })
+      const Form = await Database
+        .select("*")
+        .from("dbo.FuturaFranquia")
+        .where({
+          CodCandidato: formcod,
+        })
 
       const PDFModel = PDFGen(Form[0]);
 
@@ -221,7 +224,23 @@ class FuturoFranqueadoController {
           ConcRegras: String(form.Com_Regra).slice(0, 250),
           LucroMin: String(form.Com_Med).slice(0, 250),
           CompInformar: String(form.Com_Inf).slice(0, 250),
+          Consultor: String(form.Consultor).slice(0, 50),
         });
+
+        await Mail.send(
+          "emails.FormFranquiaPreenchido",
+          { Destinatario: String(form.Nome_Completo).split(" ")[0] },
+          (message) => {
+            message
+              .to(String(form.Email).slice(0, 250))
+              .cc(Env.get("suporte3@slaplic.com.br"))
+              .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+              .subject("Formulário de Franquia preenchido")
+              .attach('X:\\Franquia\\EXPANSÃO DE FRANQUIAS\\Consultor\\COF - SL CAFÉS - PILÃO PROFESSIONAL 2022.pdf', {
+                filename: 'COF Pilão Professional.pdf'
+              })
+          }
+        );
 
       response.status(201).send(resposta);
     } catch (err) {

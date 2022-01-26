@@ -1,5 +1,4 @@
 const Helpers = use("Helpers");
-const moment = require("moment");
 
 exports.PDFGen = (Form) => {
   //obj que vai virar pdf
@@ -32,7 +31,17 @@ exports.PDFGen = (Form) => {
       {
         unbreakable: true,
         stack: [{
-          columns: [GetPart6(Form)],
+          columns: [
+            GetPart6(Form),
+            [
+              { text: 'Consultor referência', style: "subheader" },
+              {
+                width: '50%',
+                margin: [0, 5, 0, 0],
+                text: Form.Consultor === '' || Form.Consultor === null ? 'Não informado' : Form.Consultor,
+              }
+            ]
+          ],
         }]
       },
       {

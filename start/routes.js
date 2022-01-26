@@ -37,8 +37,8 @@ Route.put("/leads", "WEB/LeadController.Update").middleware('jwt');
 Route.post("/leads", "WEB/LeadController.Store").middleware('jwt');
 
 //Clientes
-Route.post("/client/details", "WEB/ClientController.See").middleware('jwt'); //mostra contagem de dados
 Route.get("/client", "WEB/ClientController.Show").middleware('jwt'); //retorna clientes
+Route.post("/client/details", "WEB/ClientController.See").middleware('jwt'); //mostra contagem de dados
 Route.post("/client/new", "WEB/ClientController.Store").middleware('jwt'); //adicionar cliente
 Route.put("/client/update", "WEB/ClientController.Update").middleware('jwt'); //atualiza cliente
 Route.delete("/client/delete", "WEB/ClientController.Destroy").middleware('jwt'); //apagar cliente?
