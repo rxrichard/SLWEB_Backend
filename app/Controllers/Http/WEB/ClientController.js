@@ -2,6 +2,7 @@
 
 const Database = use("Database");
 const { seeToken } = require("../../../POG/jwt");
+const axios = require("axios").default;
 
 class ClientController {
   async Show({ request, response }) {
@@ -21,27 +22,25 @@ class ClientController {
     }
   }
 
-  async See({ request, response }) {
-    //busca pelo numero de contratos, anexos e maquinas do cliente de X GrpVen
-    try {
-      const token = request.header("authorization");
-      const { CNPJ } = request.only(["CNPJ"]);
+  async See({ request, response, params }) {
+    const token = request.header("authorization");
+    const CNPJ = params.CNPJ
 
+    try {
       const verified = seeToken(token);
 
-      const contratos = await Database.select("*")
-        .from("dbo.Contrato")
-        .where({ GrpVen: verified.grpven, CNPJ: CNPJ });
+      axios
+      .get(`https://receitaws.com.br/v1/cnpj/${CNPJ}`)
+      .then(response => {
+        console.log(response.data)
+      })
+      .catch(err => {
+        console.log(err)
+      })
 
-      const anexos = await Database.select("*")
-        .from("dbo.Anexos")
-        .where({ GrpVen: verified.grpven, CNPJ: CNPJ });
-
-      response
-        .status(200)
-        .send({ Contratos: contratos.length, Anexos: anexos.length });
+      response.status(200).send();
     } catch (err) {
-      return err;
+      response.status(400).send(err);
     }
   }
 
@@ -132,78 +131,31 @@ class ClientController {
     try {
       const verified = seeToken(token);
 
-      if (cliente.TPessoa === "F") {
-        const CNPJ_cru = cliente.CNPJ.replace(/([-,./])/g, "");
-        const CNPJ_cru_array = CNPJ_cru.split(" ", 1);
-        const CNPJ_SEM_ZEROS_A_ESQUERDA = `000${CNPJ_cru_array}`;
-        const CNPJ_COMPLETO = CNPJ_SEM_ZEROS_A_ESQUERDA.slice(-11);
-
-        var CPF = [];
-
-        CPF[0] = CNPJ_COMPLETO.substring(0, 3);
-        CPF[1] = CNPJ_COMPLETO.substring(3, 6);
-        CPF[2] = CNPJ_COMPLETO.substring(6, 9);
-        CPF[3] = CNPJ_COMPLETO.substring(9, 11);
-
-        cliente.CNPJss = `${CPF[0]}.${CPF[1]}.${CPF[2]}-${CPF[3]}`;
-
-        cliente.CNPJn = parseInt(CNPJ_cru_array.slice(-11));
-        cliente.CNPJ = CNPJ_COMPLETO;
-      } else {
-        const CNPJ_cru = cliente.CNPJ.replace(/([-,./])/g, "");
-        const CNPJ_SEM_ZEROS_A_ESQUERDA = `000${CNPJ_cru}`;
-        const CNPJ_COMPLETO = CNPJ_SEM_ZEROS_A_ESQUERDA.slice(-14);
-
-        var CNPJss = [];
-
-        CNPJss[0] = CNPJ_COMPLETO.substring(0, 2);
-        CNPJss[1] = CNPJ_COMPLETO.substring(2, 5);
-        CNPJss[2] = CNPJ_COMPLETO.substring(5, 8);
-        CNPJss[3] = CNPJ_COMPLETO.substring(8, 12);
-        CNPJss[4] = CNPJ_COMPLETO.substring(12, 14);
-
-        cliente.CNPJss = `${CNPJss[0]}.${CNPJss[1]}.${CNPJss[2]}/${CNPJss[3]}-${CNPJss[4]}`;
-
-        cliente.CNPJn = parseInt(CNPJ_cru);
-        cliente.CNPJ = CNPJ_COMPLETO;
-      }
-
       await Database.table("dbo.Cliente")
         .where({
           GrpVen: verified.grpven,
           A1_COD: cliente.A1_COD,
           A1_LOJA: cliente.A1_LOJA,
-          CNPJn: cliente.CNPJn,
+          CNPJn: cliente.CNPJ,
         })
         .update({
-          A1_COD: cliente.A1_COD,
-          A1_LOJA: cliente.A1_LOJA,
-          CNPJ: cliente.CNPJ,
-          CNPJss: cliente.CNPJss,
-          Nome_Fantasia: cliente.Nome_Fantasia.toUpperCase(),
-          Razão_Social: cliente.Razão_Social.toUpperCase(),
-          IE: cliente.IE,
-          Logradouro: cliente.Logradouro.toUpperCase(),
-          Número: cliente.Número, //ok
-          Complemento: cliente.Complemento,
-          Bairro: cliente.Bairro,
-          CEP: cliente.CEP,
-          Município: cliente.Município.toUpperCase(),
-          UF: cliente.UF.toUpperCase(),
-          Contato_Empresa: cliente.Contato_Empresa.toUpperCase(),
-          Email: cliente.Email,
-          DDD: cliente.DDD,
-          Fone: cliente.Fone,
-          A1_SATIV1: "",
-          NIRE: null,
-          FPAS: null,
-          NIREDt: null,
-          DtSolicita: cliente.DtSolicita,
-          DtCadastro: cliente.DtCadastro,
-          TPessoa: cliente.TPessoa,
+          Nome_Fantasia: String(cliente.Nome_Fantasia).trim(),
+          IE: String(cliente.IE).trim(),
+          Logradouro: String(cliente.Logradouro).trim(),
+          Número: String(cliente.Número).trim(),
+          Complemento: String(cliente.Complemento).trim(),
+          Bairro: String(cliente.Bairro).trim(),
+          CEP: String(cliente.CEP).trim(),
+          Município: String(cliente.Município).trim(),
+          UF: String(cliente.UF).trim(),
+          Contato_Empresa: String(cliente.Contato_Empresa).trim(),
+          Email: String(cliente.Email).trim(),
+          DDD: String(cliente.DDD).trim(),
+          Fone: String(cliente.Fone).trim(),
+          TPessoa: String(cliente.TPessoa).trim(),
         });
 
-      response.status(202).send();
+      response.status(201).send();
     } catch (err) {
       response.status(400).send();
     }
