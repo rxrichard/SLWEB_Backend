@@ -23,102 +23,117 @@ class ClientController {
   }
 
   async See({ request, response, params }) {
-    const token = request.header("authorization");
     const CNPJ = params.CNPJ
+    const Tipo = params.Tipo
+    let ClienteValido = true
 
     try {
-      const verified = seeToken(token);
+      let receitawsData = null
 
-      axios
-      .get(`https://receitaws.com.br/v1/cnpj/${CNPJ}`)
-      .then(response => {
-        console.log(response.data)
-      })
-      .catch(err => {
-        console.log(err)
-      })
+      if (Tipo === "J") {
+        const response = await axios.get(`https://receitaws.com.br/v1/cnpj/${CNPJ}`)
+        receitawsData = response.data
+      }
 
-      response.status(200).send();
+      //verificar se já está cadastrado com alguem
+      const ClienteJaExiste = await Database
+        .select('*')
+        .from('dbo.Cliente')
+        .where({
+          CNPJ: CNPJ
+        })
+
+      //verificar se é um franqueado Pilão
+      const ClienteEFranqueado = await Database
+        .select('*')
+        .from('dbo.FilialEntidadeGrVenda')
+        .where({
+          M0_CGC: CNPJ
+        })
+
+      if (ClienteJaExiste.length > 0 || ClienteEFranqueado.length > 0) {
+        ClienteValido = false
+      }
+
+      response.status(200).send({
+        ClienteValido,
+        wsInfo: receitawsData
+      });
     } catch (err) {
       response.status(400).send(err);
     }
   }
 
   async Store({ request, response }) {
+    const token = request.header("authorization");
+    const { cliente } = request.only(["cliente"]);
+
     try {
-      const token = request.header("authorization");
-      const { cliente } = request.only(["cliente"]);
-
       const verified = seeToken(token);
-
-      cliente.GrpVen = verified.grpven;
+      let CNPJss = null
+      let CNPJ_AUX = null
 
       if (cliente.TPessoa === "F") {
-        const CNPJ_cru = cliente.CNPJn.replace(/([-,./])/g, "");
-        const CNPJ_SEM_ZEROS_A_ESQUERDA = `000${CNPJ_cru}`;
-        const CNPJ_COMPLETO = CNPJ_SEM_ZEROS_A_ESQUERDA.slice(-11);
+        CNPJ_AUX = cliente.CNPJ.slice(-11);
 
-        var CPF = [];
-
-        CPF[0] = CNPJ_COMPLETO.substring(0, 3);
-        CPF[1] = CNPJ_COMPLETO.substring(3, 6);
-        CPF[2] = CNPJ_COMPLETO.substring(6, 9);
-        CPF[3] = CNPJ_COMPLETO.substring(9, 11);
-
-        cliente.CNPJss = `${CPF[0]}.${CPF[1]}.${CPF[2]}-${CPF[3]}`;
-
-        cliente.CNPJn = parseInt(CNPJ_cru);
-        cliente.CNPJ = CNPJ_COMPLETO;
+        CNPJss = `
+        ${CNPJ_AUX.substring(0, 3)}.
+        ${CNPJ_AUX.substring(3, 6)}.
+        ${CNPJ_AUX.substring(6, 9)}-
+        ${CNPJ_AUX.substring(9, 11)}
+        `
       } else {
-        const CNPJ_cru = cliente.CNPJn.replace(/([-,./])/g, "");
-        const CNPJ_SEM_ZEROS_A_ESQUERDA = `000${CNPJ_cru}`;
-        const CNPJ_COMPLETO = CNPJ_SEM_ZEROS_A_ESQUERDA.slice(-14);
+        CNPJ_AUX = cliente.CNPJ.slice(-14);
 
-        var CNPJss = [];
-
-        CNPJss[0] = CNPJ_COMPLETO.substring(0, 2);
-        CNPJss[1] = CNPJ_COMPLETO.substring(2, 5);
-        CNPJss[2] = CNPJ_COMPLETO.substring(5, 8);
-        CNPJss[3] = CNPJ_COMPLETO.substring(8, 12);
-        CNPJss[4] = CNPJ_COMPLETO.substring(12, 14);
-
-        cliente.CNPJss = `${CNPJss[0]}.${CNPJss[1]}.${CNPJss[2]}/${CNPJss[3]}-${CNPJss[4]}`;
-
-        cliente.CNPJn = parseInt(CNPJ_cru);
-        cliente.CNPJ = CNPJ_COMPLETO;
+        CNPJss = `
+        ${CNPJ_COMPLETO.substring(0, 2)}.
+        ${CNPJ_COMPLETO.substring(2, 5)}.
+        ${CNPJ_COMPLETO.substring(5, 8)}/
+        ${CNPJ_COMPLETO.substring(8, 12)}-
+        ${CNPJ_COMPLETO.substring(12, 14)}
+        `
       }
 
-      await Database.insert({
-        GrpVen: cliente.GrpVen,
-        CNPJn: cliente.CNPJn,
-        A1_COD: "",
-        A1_LOJA: "",
+      const ultimoCliCod = await Database.raw("select MAX(A1_COD) as LastCliCod from dbo.Cliente where A1_COD like 'N%'")
+      const ultimoCliCodNum = Number(String(ultimoCliCod[0].LastCliCod).split("N")[1]) + 1
+      const proximoCliCod = `N${`00000${ultimoCliCodNum}`.slice(-5)}`
+
+      const novoCliente = {
+        GrpVen: verified.grpven,
+        CNPJn: Number(cliente.CNPJ),
+        A1_COD: proximoCliCod,
+        A1_LOJA: '01',
         CNPJ: cliente.CNPJ,
-        CNPJss: cliente.CNPJss,
-        Nome_Fantasia: cliente.Nome_Fantasia.toUpperCase(),
-        Razão_Social: cliente.Razão_Social.toUpperCase(),
-        IE: cliente.IE,
-        Logradouro: cliente.Logradouro.toUpperCase(),
-        Número: cliente.Número,
-        Complemento: cliente.Complemento.toUpperCase(),
-        Bairro: cliente.Bairro.toUpperCase(),
-        CEP: cliente.CEP.replace(/\.|\-/g, ""),
-        Município: cliente.Município.toUpperCase(),
-        UF: cliente.UF.toUpperCase(),
-        Contato_Empresa: cliente.Contato_Empresa.toUpperCase(),
-        Email: cliente.Email,
-        DDD: `0${cliente.DDD}`,
-        Fone: cliente.Fone,
-        A1_SATIV1: "",
+        CNPJss: CNPJss,
+        Nome_Fantasia: String(cliente.Nome_Fantasia).trim(),
+        Razão_Social: String(cliente.Razão_Social).trim(),
+        IE: String(cliente.IE).trim(),
+        Logradouro: String(cliente.Logradouro).trim(),
+        Número: String(cliente.Número).trim(),
+        Complemento: String(cliente.Complemento).trim(),
+        Bairro: String(cliente.Bairro).trim(),
+        CEP: String(cliente.CEP).trim(),
+        Município: String(cliente.Município).trim(),
+        UF: String(cliente.UF).trim(),
+        Contato_Empresa: String(cliente.Contato_Empresa).trim(),
+        Email: String(cliente.Email).trim(),
+        DDD: String(cliente.DDD).trim(),
+        Fone: String(cliente.Fone).trim(),
+        A1_SATIV1: '000114',
         NIRE: null,
         FPAS: null,
         NIREDt: null,
-        DtSolicita: new Date().toISOString(),
-        DtCadastro: null,
+        DtSolicita: new Date(),
+        DtCadastro: new Date(),
         TPessoa: cliente.TPessoa,
-      }).into("dbo.Cliente");
+        A1Tipo: 'F',
+        TipoLogradouro: null,
+        Ibge: null,
+      }
 
-      response.status(201).send();
+      await Database.insert(novoCliente).into("dbo.Cliente");
+
+      response.status(201).send({ ClienteCadastrado: novoCliente });
     } catch (err) {
       response.status(400).send();
     }
