@@ -32,7 +32,12 @@ class FuturoFranqueadoController {
 
       if (verified.role === "Franquia") throw Error;
 
-      const formularios = await Database.select("*").from("dbo.FuturaFranquia").orderBy('DtSolicitacao', 'desc');
+      const formularios = await Database
+        .select("*")
+        .from("dbo.FuturaFranquia")
+        .where({
+          PREENCHIDO: true
+        }).orderBy('DtSolicitacao', 'desc');
 
       response.status(200).send(formularios);
     } catch (err) {
@@ -42,9 +47,9 @@ class FuturoFranqueadoController {
 
   async GeneratePDF({ request, response, params }) {
     const token = request.header("authorization");
-    const formcod = params.formcod;
-    const path = Helpers.publicPath(`/Forms`);
-    const PathWithName = `${path}/${formcod}-${new Date().getTime()}.pdf`;
+    const CodCandidato = params.CodCandidato;
+    const path = Helpers.publicPath(`/tmp`);
+    const PathWithName = `${path}/${CodCandidato}-${new Date().getTime()}.pdf`;
 
     try {
       const verified = await seeToken(token);
@@ -55,7 +60,7 @@ class FuturoFranqueadoController {
         .select("*")
         .from("dbo.FuturaFranquia")
         .where({
-          CodCandidato: formcod,
+          CodCandidato: CodCandidato,
         })
 
       const PDFModel = PDFGen(Form[0]);
@@ -99,6 +104,7 @@ class FuturoFranqueadoController {
 
   async RequestCod({ request, response }) {
     const { email } = request.only(["email"]);
+
     try {
       //crio um numero aleatório de 6 posições
       const cod = Math.random().toString().slice(2, 8);
@@ -114,7 +120,6 @@ class FuturoFranqueadoController {
         (message) => {
           message
             .to(email.trim())
-            .cc(Env.get("suporte3@slaplic.com.br"))
             .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
             .subject("Código de acesso ao Formulário");
         }
@@ -126,9 +131,11 @@ class FuturoFranqueadoController {
     }
   }
 
-  async FormUpload({ request, response }) {
+  async FormUpload({ request, response, params }) {
     const { form } = request.only(["form"]);
-    const candidato = request.header("proto-cod");
+    const candidato = params.CodCandidato;
+    const path = Helpers.publicPath(`/tmp`);
+    const PathWithName = `${path}/${candidato}-${new Date().getTime()}.pdf`;
 
     try {
       let estado_civil;
@@ -180,67 +187,118 @@ class FuturoFranqueadoController {
           Email: String(form.Email).slice(0, 250),
           TelResidencial: String(form.Tel_Residencial).slice(0, 250),
           Celular: String(form.Celular).slice(0, 250),
-          EstCivil: String(estado_civil).slice(0, 250),
+          EstCivil: estado_civil,
           NomeConj: String(form.Conj_Nome).slice(0, 250),
           DtNascConj: String(form.Conj_DtNascimento).slice(0, 250),
           TempoUni: String(form.TUnião).slice(0, 250),
           CPFConj: String(form.Conj_CPF).slice(0, 250),
           RGConj: String(form.Conj_RG).slice(0, 250),
           RendMenConj: String(form.Conj_RendMensal).slice(0, 250),
-          CLT: String(form.CLT).slice(0, 250),
+          CLT: form.CLT,
           RendMensal: String(form.Rend_Mensal).slice(0, 250),
           PFilhos: String(form.Tem_filhos).slice(0, 250),
           QFilhos: String(form.Qtd_filhos).slice(0, 250),
-          IFilhos: String(form.Idd_filhos).slice(0, 250),
-          TResidencia: String(form.T_Residencia).slice(0, 250),
+          IFilhos: form.Idd_filhos,
+          TResidencia: form.T_Residencia,
           ValResidencia: String(form.Residencia_Mensal).slice(0, 250),
-          PVeiculo: String(form.P_Veiculo).slice(0, 250),
-          PImovel: String(form.P_Imovel).slice(0, 250),
-          ExpectRetorno: String(form.Expect).slice(0, 250),
-          PRecolhimento: String(form.Recolhimento).slice(0, 250),
+          PVeiculo: form.P_Veiculo,
+          PImovel: form.P_Imovel,
+          ExpectRetorno: form.Expect,
+          PRecolhimento: form.Recolhimento,
           QRecolhimento: String(form.Recolhimento_QTD).slice(0, 250),
           OrigemCapital: String(form.Origem_Capital).slice(0, 250),
           RendaFamiliar: String(form.Renda_Familiar).slice(0, 250),
           CRendaFamiliar: String(form.Renda_Composta).slice(0, 250),
           DispInvest: String(form.Disp_Invest).slice(0, 250),
-          TEmpresaExp: String(form.T_Empresa).slice(0, 250),
+          TEmpresaExp: form.T_Empresa,
           EspcEmpresa: String(form.Detalhes_Atividade).slice(0, 250),
           FormEscolar: String(form.Form_Escolar).slice(0, 250),
           UltExp: String(form.Ult_exp).slice(0, 250),
-          HavSociedade: String(form.Sociedade).slice(0, 250),
+          HavSociedade: form.Sociedade,
           NomeSocio: String(form.Nome_Socio).slice(0, 250),
           VincSocio: String(form.Socio_Vinculo).slice(0, 250),
           TempConhece: String(form.Tempo_ConheceSocio).slice(0, 250),
           Realizacoes: String(form.Realizou_Socio).slice(0, 250),
           TSocio: String(form.Cond_Socio).slice(0, 250),
-          SocioInvest: String(form.Part_invest).slice(0, 250),
+          SocioInvest: form.Part_invest,
           InvestProp: String(form.Prop_Invest).slice(0, 250),
-          TeveSociedade: String(form.T_Empreendimento).slice(0, 250),
+          TeveSociedade: form.T_Empreendimento,
           SociedadeExp: String(form.Exp_Sociedade).slice(0, 250),
-          InvestMenInic: String(form.Cob_Desp).slice(0, 250),
+          InvestMenInic: form.Cob_Desp,
           ConhecPilao: String(form.Conhece_Pilao).slice(0, 250),
           Notas: form.Prioridade.toString(),
           CaracEscolha: String(form.Caracteristica_Peso).slice(0, 250),
-          ConcRegras: String(form.Com_Regra).slice(0, 250),
-          LucroMin: String(form.Com_Med).slice(0, 250),
-          CompInformar: String(form.Com_Inf).slice(0, 250),
-          Consultor: String(form.Consultor).slice(0, 50),
+          ConcRegras: form.Com_Regra,
+          LucroMin: form.Com_Med,
+          CompInformar: form.Com_Inf,
+          Consultor: form.Consultor,
         });
 
+      await Mail.send(
+        "emails.FormFranquiaPreenchidoFF",
+        { Destinatario: String(form.Nome_Completo).split(" ")[0] },
+        (message) => {
+          message
+            .to(String(form.Email).slice(0, 250))
+            .cc(Env.get("EMAIL_SUPORTE"))
+            .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+            .subject("Formulário de Franquia recebido")
+        }
+      );
+
+      let emailConsultor = null
+
+      switch (form.Consultor) {
+        case 'Alessandro':
+          emailConsultor = 'alessandro.pinheiro@pilaoprofessional.com.br'
+          break;
+        case 'Kauê':
+          emailConsultor = 'kaue.santos@pilaoprofessional.com.br'
+          break;
+        case 'Richard':
+          emailConsultor = 'richard.bastos@pilaoprofessional.com.br'
+          break;
+        case 'Tatiane':
+          emailConsultor = 'tatiane.silva@pilaoprofessional.com.br'
+          break;
+        default:
+          emailConsultor = null
+          break;
+      }
+
+      const Form = await Database
+        .select("*")
+        .from("dbo.FuturaFranquia")
+        .where({
+          CodCandidato: candidato,
+        })
+
+      const PDFModel = PDFGen(Form[0]);
+
+      var pdfDoc = printer.createPdfKitDocument(PDFModel);
+      pdfDoc.pipe(fs.createWriteStream(PathWithName));
+      pdfDoc.end();
+
+      if (emailConsultor !== null) {
         await Mail.send(
-          "emails.FormFranquiaPreenchido",
-          { Destinatario: String(form.Nome_Completo).split(" ")[0] },
+          "emails.FormFranquiaPreenchidoConsultor",
+          {
+            Consultor: form.Consultor,
+            INTERESSADO: String(form.Nome_Completo).split(" ")[0],
+            Frontend: Env.get('CLIENT_URL')
+          },
           (message) => {
             message
-              .to(String(form.Email).slice(0, 250))
-              .cc(Env.get("suporte3@slaplic.com.br"))
+              .to(emailConsultor)
+              .cc(Env.get("EMAIL_SUPORTE"))
               .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
               .subject("Formulário de Franquia preenchido")
-              .attach('X:\\Franquia\\EXPANSÃO DE FRANQUIAS\\Consultor\\COF - SL CAFÉS - PILÃO PROFESSIONAL 2022.pdf', {
-                filename: 'COF Pilão Professional.pdf'
+              .attach(PathWithName, {
+                filename: `Formulário de Perfil_${candidato}.pdf`,
               })
           }
         );
+      }
 
       response.status(201).send(resposta);
     } catch (err) {
@@ -248,42 +306,68 @@ class FuturoFranqueadoController {
     }
   }
 
-  async FileUpload({ request, response }) {
-    const candidato = request.header("proto-cod");
+  async FileUpload({ request, response, params }) {
+    const candidato = params.CodCandidato;
+    const QFiles = params.qfiles;
     const formData = request.file("formData", {
       types: ["image", "pdf"],
       size: "10mb",
     });
     const path = Helpers.publicPath(`/DOCS/${candidato}`);
     let filenames = [];
+    let file = null
 
     try {
-      await formData.moveAll(path, (file, i) => {
-        let newFileName = `upload-${i}-${new Date().getTime()}.${file.subtype}`;
-        filenames.push(newFileName);
-
-        return {
+      if (Number(QFiles) === 0) {
+        response.status(200).send("nenhum arquivo para salvar");
+      } else if (Number(QFiles) === 1) {
+        let newFileName = `upload-SINGLE-${new Date().getTime()}.${formData.subtype}`;
+        
+        await formData.move(path, {
           name: newFileName,
           overwrite: true,
-        };
-      });
-
-      if (!formData.movedAll()) {
-        return formData.errors();
-      }
-
-      //Não consigo salvar diretamente na rede(por motivos de tipagem), então salvo na pasta mesmo do servidor e depois copio para o .250
-      filenames.map(async (name) => {
-        const file = await Drive.get(`${path}/${name}`);
+        });
+        
+        if (!formData.moved()) {
+          return formData.errors();
+        }
+        
+        file = await Drive.get(`${path}/${newFileName}`);
+        
         Drive.put(
-          `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${candidato}\\${name}`,
+          `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${candidato}\\${newFileName}`,
           file
-        );
-      });
+          );
+          
+          response.status(200).send("Arquivos Salvos");
+        } else {
+        await formData.moveAll(path, (file, i) => {
+          let newFileName = `upload-${i}-${new Date().getTime()}.${file.subtype}`;
+          filenames.push(newFileName);
 
-      response.status(200).send("Arquivos Salvos");
+          return {
+            name: newFileName,
+            overwrite: true,
+          };
+        });
+
+        if (!formData.movedAll()) {
+          return formData.errors();
+        }
+
+        //Não consigo salvar diretamente na rede(por motivos de tipagem), então salvo na pasta mesmo do servidor e depois copio para o .250
+        filenames.map(async (name) => {
+          file = await Drive.get(`${path}/${name}`);
+          Drive.put(
+            `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${candidato}\\${name}`,
+            file
+          );
+        });
+
+        response.status(200).send("Arquivos Salvos");
+      }
     } catch (err) {
-      response.status(200).send("Falha ao salvar arquivos");
+      response.status(400).send("Falha ao salvar arquivos");
     }
   }
 

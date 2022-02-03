@@ -30,17 +30,13 @@ class ClientController {
     try {
       let receitawsData = null
 
-      if (Tipo === "J") {
-        const response = await axios.get(`https://receitaws.com.br/v1/cnpj/${CNPJ}`)
-        receitawsData = response.data
-      }
-
       //verificar se já está cadastrado com alguem
       const ClienteJaExiste = await Database
         .select('*')
         .from('dbo.Cliente')
         .where({
-          CNPJ: CNPJ
+          CNPJ: CNPJ,
+          ClienteStatus: 'A'
         })
 
       //verificar se é um franqueado Pilão
@@ -53,6 +49,11 @@ class ClientController {
 
       if (ClienteJaExiste.length > 0 || ClienteEFranqueado.length > 0) {
         ClienteValido = false
+      }
+
+      if (Tipo === "J" && ClienteValido) {
+        const response = await axios.get(`https://receitaws.com.br/v1/cnpj/${CNPJ}`)
+        receitawsData = response.data
       }
 
       response.status(200).send({
@@ -72,26 +73,15 @@ class ClientController {
       const verified = seeToken(token);
       let CNPJss = null
       let CNPJ_AUX = null
-
+      
       if (cliente.TPessoa === "F") {
-        CNPJ_AUX = cliente.CNPJ.slice(-11);
-
-        CNPJss = `
-        ${CNPJ_AUX.substring(0, 3)}.
-        ${CNPJ_AUX.substring(3, 6)}.
-        ${CNPJ_AUX.substring(6, 9)}-
-        ${CNPJ_AUX.substring(9, 11)}
-        `
+        CNPJ_AUX = String(cliente.CNPJ).slice(-11);
+        
+        CNPJss = `${String(CNPJ_AUX).substring(0, 3)}.${String(CNPJ_AUX).substring(3, 6)}.${String(CNPJ_AUX).substring(6, 9)}-${String(CNPJ_AUX).substring(9, 11)}`
       } else {
-        CNPJ_AUX = cliente.CNPJ.slice(-14);
-
-        CNPJss = `
-        ${CNPJ_COMPLETO.substring(0, 2)}.
-        ${CNPJ_COMPLETO.substring(2, 5)}.
-        ${CNPJ_COMPLETO.substring(5, 8)}/
-        ${CNPJ_COMPLETO.substring(8, 12)}-
-        ${CNPJ_COMPLETO.substring(12, 14)}
-        `
+        CNPJ_AUX = String(cliente.CNPJ).slice(-14);
+        
+        CNPJss = `${String(CNPJ_AUX).substring(0, 2)}.${String(CNPJ_AUX).substring(2, 5)}.${String(CNPJ_AUX).substring(5, 8)}/${String(CNPJ_AUX).substring(8, 12)}-${String(CNPJ_AUX).substring(12, 14)}`
       }
 
       const ultimoCliCod = await Database.raw("select MAX(A1_COD) as LastCliCod from dbo.Cliente where A1_COD like 'N%'")
@@ -129,13 +119,14 @@ class ClientController {
         A1Tipo: 'F',
         TipoLogradouro: null,
         Ibge: null,
+        ClienteStatus: 'A'
       }
 
       await Database.insert(novoCliente).into("dbo.Cliente");
 
       response.status(201).send({ ClienteCadastrado: novoCliente });
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send(err);
     }
   }
 

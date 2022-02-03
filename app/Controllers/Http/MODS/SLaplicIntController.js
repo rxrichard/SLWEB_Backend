@@ -23,7 +23,7 @@ class SLaplicIntController {
     const EquiCod = params.ativo;
 
     if (EquiCod !== null && typeof EquiCod != 'undefined') {
-      const filePath = Helpers.publicPath(`/QR/${EquiCod}-${moment().format('hh:mm:ss').replace(/:/g, "-")}.png`);
+      const filePath = Helpers.publicPath(`/tmp/${EquiCod}-${moment().format('hh:mm:ss').replace(/:/g, "-")}.png`);
       await QRCode.toFile(filePath, EquiCod)
 
       response.status(200).attachment(filePath, 'QRCODE.png')

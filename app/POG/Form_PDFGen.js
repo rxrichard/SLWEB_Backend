@@ -347,7 +347,7 @@ const GetPart4 = (Form) => {
         text: `Sócio participará do investimento: ${Form.SocioInvest}`,
       }
     ,
-    Form.HavSociedade === 'Não' && Form.SocioInvest === 'Não' ? null :
+    Form.HavSociedade === 'Não' && (Form.SocioInvest === 'Não' || Form.SocioInvest === 'null' || Form.SocioInvest === null) ? null :
       {
         width: '50%',
         margin: [0, 5, 0, 0],
