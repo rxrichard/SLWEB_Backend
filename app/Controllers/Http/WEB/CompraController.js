@@ -4,7 +4,7 @@ const Drive = use("Drive");
 const Mail = use("Mail");
 const Env = use("Env");
 const Helpers = use("Helpers");
-const { seeToken } = require("../../../POG/jwt");
+const { seeToken } = require("../../../Services/jwtServices");
 const moment = require("moment");
 
 class CompraController {

@@ -2,7 +2,7 @@
 
 const Helpers = use("Helpers");
 const Database = use("Database");
-const GerarExcel = require("../../../POG/excelExportService");
+const GerarExcel = require("../../../Services/excelExportServices");
 
 class ConsultoreController {
   async GeraTabelaExcel({ response }) {

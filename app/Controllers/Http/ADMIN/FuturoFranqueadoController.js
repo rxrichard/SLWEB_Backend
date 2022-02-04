@@ -9,8 +9,8 @@ const PdfPrinter = require("pdfmake");
 const fs = require("fs");
 const toArray = require('stream-to-array')
 
-const { seeToken, dateCheck } = require("../../../POG/jwt");
-const { PDFGen } = require("../../../POG/Form_PDFGen");
+const { seeToken, dateCheck } = require("../../../Services/jwtServices");
+const { PDFGen } = require("../../../../resources/pdfModels/perfilFranqueadoForm_pdfModel");
 
 var fonts = {
   Roboto: {

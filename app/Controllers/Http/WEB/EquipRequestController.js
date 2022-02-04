@@ -8,8 +8,8 @@ const Drive = use("Drive");
 const PdfPrinter = require("pdfmake");
 const fs = require("fs");
 const toArray = require('stream-to-array')
-const { seeToken } = require("../../../POG/jwt");
-const { PDFGen } = require("../../../POG/OS_PDFGen");
+const { seeToken } = require("../../../Services/jwtServices");
+const { PDFGen } = require("../../../../resources/pdfModels/solicitacaoOS_pdfModel");
 const moment = require("moment");
 moment.locale("pt-br");
 

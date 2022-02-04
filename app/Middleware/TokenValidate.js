@@ -1,5 +1,5 @@
 'use strict'
-const { seeToken } = require("../POG/jwt");
+const { seeToken } = require("../Services/jwtServices");
 
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */

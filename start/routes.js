@@ -41,7 +41,7 @@ Route.get("/client", "WEB/ClientController.Show").middleware('jwt'); //retorna c
 Route.put("/client", "WEB/ClientController.Update").middleware('jwt'); //atualiza cliente
 Route.get("/client/:CNPJ/:Tipo", "WEB/ClientController.See").middleware('jwt'); //mostra contagem de dados
 Route.post("/client/new", "WEB/ClientController.Store").middleware('jwt'); //adicionar cliente
-Route.delete("/client/delete", "WEB/ClientController.Destroy").middleware('jwt'); //apagar cliente?
+Route.put("/client/inativar", "WEB/ClientController.Inativar").middleware('jwt'); //inativa cliente
 
 //Compras
 Route.get("/compras/produtos", "WEB/CompraController.Produtos").middleware('jwt'); //retorna lista de produtos compraveis

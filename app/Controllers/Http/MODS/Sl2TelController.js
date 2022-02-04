@@ -1,6 +1,6 @@
 "use strict";
 const Database = use("Database");
-const { seeToken } = require('../../../POG/jwt')
+const { seeToken } = require('../../../Services/jwtServices')
 const {
   GenTokenTMT,
   ListClients,
@@ -14,7 +14,7 @@ const {
   FecharInstalacoes,
   StoreInstalacao,
   ListMaquinas
-} = require("../../../POG/TMTConn");
+} = require("../../../Services/TMTConnServices");
 
 class Sl2TelController {
   //atualizar posse da máquina no totvs

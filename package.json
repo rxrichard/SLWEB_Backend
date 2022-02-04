@@ -1,6 +1,6 @@
 {
   "name": "adonis-api-app",
-  "version": "8.3.0",
+  "version": "8.4.0",
   "adonis-version": "4.1.0",
   "description": "Adonisjs boilerplate for API server with pre-configured JWT",
   "main": "index.js",
@@ -34,6 +34,7 @@
     "pg": "8.7.1",
     "qrcode": "1.5.0",
     "stream-to-array": "2.3.0",
+    "winston": "^3.5.1",
     "xlsx": "0.16.9"
   },
   "devDependencies": {},

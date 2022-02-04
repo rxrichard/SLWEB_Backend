@@ -3,7 +3,7 @@
 const Database = use("Database");
 const Helpers = use("Helpers");
 
-const { seeToken } = require("../../../POG/jwt");
+const { seeToken } = require("../../../Services/jwtServices");
 
 class AdministracaoController {
   async Show({ request, response }) {

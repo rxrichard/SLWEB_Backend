@@ -5,6 +5,7 @@ public/OS
 public/DOCS
 public/COMPROVANTES
 public/tmp
+dump/critical
 
 yarn.lock
 package-lock.json

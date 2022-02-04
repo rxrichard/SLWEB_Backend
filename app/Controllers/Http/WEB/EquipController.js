@@ -2,7 +2,7 @@
 
 const Database = use("Database");
 const moment = require("moment");
-const { seeToken } = require("../../../POG/jwt");
+const { seeToken } = require("../../../Services/jwtServices");
 
 class EquipController {
   async Show({ request, response }) {

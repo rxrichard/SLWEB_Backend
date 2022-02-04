@@ -10,7 +10,7 @@ const TiposEmail = [
   { id: 3, model: "Notificação Extrajudicial" },
 ];
 
-const { seeToken } = require("../../../POG/jwt");
+const { seeToken } = require("../../../Services/jwtServices");
 
 class PogController {
   async Show({ request, response }) {

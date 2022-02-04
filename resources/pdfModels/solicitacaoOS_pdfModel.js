@@ -15,15 +15,15 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
 
   const contenedores = [];
 
-  if(Solicitacao.Contenedor.length > 0){
+  if (Solicitacao.Contenedor.length > 0) {
     Solicitacao.Contenedor.map((cont) =>
-    contenedores.push([{ text: defineContenedor(cont) }])
+      contenedores.push([{ text: defineContenedor(cont) }])
     );
-  }else{
+  } else {
     contenedores.push([{ text: 'VAZIO' }])
   }
-  
-  
+
+
   const detalhes = [
     [{ text: "Modelo da Máquina: ", bold: true }, `${Solicitacao.Maquina}`],
   ];
@@ -42,7 +42,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
 
   detalhes.push([
     { text: "Acompanha Gabinete: ", bold: true },
-    `${typeof Solicitacao.Gabinete == 'undefined' || Solicitacao.Gabinete === ''|| Solicitacao.Gabinete === false || Solicitacao.Gabinete === '0'? "Não" : "Sim"}`,
+    `${typeof Solicitacao.Gabinete == 'undefined' || Solicitacao.Gabinete === '' || Solicitacao.Gabinete === false || Solicitacao.Gabinete === '0' ? "Não" : "Sim"}`,
   ]);
   detalhes.push([
     { text: "Abastecimento: ", bold: true },
@@ -67,12 +67,12 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
         { text: "Fichas: ", bold: true },
         `${Solicitacao.Validador.toString()}`,
       ]);
-    } else if(Solicitacao.TipoValidador === "Moeda"){
+    } else if (Solicitacao.TipoValidador === "Moeda") {
       detalhes.push([
         { text: "Moedas: ", bold: true },
         `${Solicitacao.Validador.toString()}`,
       ]);
-    }else{
+    } else {
       detalhes.push([
         { text: "Moedas/Fichas: ", bold: true },
         `${Solicitacao.Validador.toString()}`,
@@ -85,7 +85,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
   ]);
   detalhes.push([
     { text: "Operadora do Chip da Telemetria: ", bold: true },
-    `${Solicitacao.Chip === '' ? 'Não especificado' : Solicitacao.Chip }`,
+    `${Solicitacao.Chip === '' ? 'Não especificado' : Solicitacao.Chip}`,
   ]);
 
   Solicitacao.Configuracao.map((bebida) => {
@@ -93,7 +93,7 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
       `${bebida.selecao}`,
       `${bebida.bebida.trim()}`,
       `${bebida.medida}ML`,
-      `${typeof bebida.valor == 'undefined' || bebida.valor == null || bebida.valor === '' ? '0' : bebida.valor }`,
+      `${typeof bebida.valor == 'undefined' || bebida.valor == null || bebida.valor === '' ? '0' : bebida.valor}`,
       `${bebida.tipo}`,
       `${bebida.configura ? "Sim" : "Não"}`,
     ]);
@@ -107,6 +107,13 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
   //obj que vai virar pdf
   var docDefinition = {
     // watermark: Helpers.resourcesPath("logo/Exemplo logo pilao - Danfe.bmp"),
+    footer: (currentPage, pageCount) => {
+      return {
+        columns: [
+          { text: `OS ${`000000${ID}`.slice(-6)} - ${currentPage.toString()} de ${pageCount}`, alignment: 'right', style: "footer" }
+        ]
+      }
+    },
     content: [
       { text: "Ordem de Serviço", style: "header" },
 
@@ -146,16 +153,14 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
           body: [
             [
               { text: "Grupo: ", bold: true },
-              `${
-                typeof Dados[0] != "undefined"
-                  ? Dados[0].GrupoVenda.trim()
-                  : "Não encontrado"
+              `${typeof Dados[0] != "undefined"
+                ? Dados[0].GrupoVenda.trim()
+                : "Não encontrado"
               }`,
               { text: "CNPJ: ", bold: true },
-              `${
-                typeof Dados[0] != "undefined"
-                  ? Dados[0].M0_CGC.trim()
-                  : "Não encontrado"
+              `${typeof Dados[0] != "undefined"
+                ? Dados[0].M0_CGC.trim()
+                : "Não encontrado"
               }`,
             ],
           ],
@@ -206,12 +211,12 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
                 .split("/")
                 .reverse()
                 .join("/") : new Date(solicitacao)
-                .toISOString()
-                .split("T")[0]
-                .replace(/-/g, "/")
-                .split("/")
-                .reverse()
-                .join("/")}`,
+                  .toISOString()
+                  .split("T")[0]
+                  .replace(/-/g, "/")
+                  .split("/")
+                  .reverse()
+                  .join("/")}`,
               { text: "Data Esperada: ", bold: true },
               `${new Date(Solicitacao.Data_Entrega_Desejada)
                 .toISOString()
@@ -316,6 +321,10 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
         fontSize: 13,
         color: "black",
       },
+      footer: {
+        bold: true,
+        margin: [0, 0, 10, 0],
+      }
     },
   };
 

@@ -3,19 +3,30 @@
 const Database = use("Database");
 const Mail = use("Mail");
 const Env = use("Env");
-const { genToken, genTokenAdm, genTokenAdmWithFilial, genTokenExternal, seeToken } = require("../../POG/jwt");
+const { genToken, genTokenAdm, genTokenAdmWithFilial, genTokenExternal, seeToken } = require("../../Services/jwtServices");
+const logger = require("../../../dump/index")
 
 class UserController {
+  /** @param {object} ctx
+   * @param {import('@adonisjs/framework/src/Request')} ctx.request
+   */
   async Login({ request, response }) {
     const { user_code, password } = request.only(["user_code", "password"]);
 
     try {
       //testa usuario + senha informados
       const token = await genToken(user_code, password);
-
+      
       response.status(202).send(token); //Retorno do token
     } catch (err) {
       response.status(401).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'UserController.Login',
+      })
     }
   }
 

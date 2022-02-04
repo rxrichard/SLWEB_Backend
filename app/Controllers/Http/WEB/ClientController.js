@@ -1,7 +1,7 @@
 "use strict";
 
 const Database = use("Database");
-const { seeToken } = require("../../../POG/jwt");
+const { seeToken } = require("../../../Services/jwtServices");
 const axios = require("axios").default;
 
 class ClientController {
@@ -73,14 +73,14 @@ class ClientController {
       const verified = seeToken(token);
       let CNPJss = null
       let CNPJ_AUX = null
-      
+
       if (cliente.TPessoa === "F") {
         CNPJ_AUX = String(cliente.CNPJ).slice(-11);
-        
+
         CNPJss = `${String(CNPJ_AUX).substring(0, 3)}.${String(CNPJ_AUX).substring(3, 6)}.${String(CNPJ_AUX).substring(6, 9)}-${String(CNPJ_AUX).substring(9, 11)}`
       } else {
         CNPJ_AUX = String(cliente.CNPJ).slice(-14);
-        
+
         CNPJss = `${String(CNPJ_AUX).substring(0, 2)}.${String(CNPJ_AUX).substring(2, 5)}.${String(CNPJ_AUX).substring(5, 8)}/${String(CNPJ_AUX).substring(8, 12)}-${String(CNPJ_AUX).substring(12, 14)}`
       }
 
@@ -142,7 +142,7 @@ class ClientController {
           GrpVen: verified.grpven,
           A1_COD: cliente.A1_COD,
           A1_LOJA: cliente.A1_LOJA,
-          CNPJn: cliente.CNPJ,
+          CNPJ: cliente.CNPJ,
         })
         .update({
           Nome_Fantasia: String(cliente.Nome_Fantasia).trim(),
@@ -167,54 +167,51 @@ class ClientController {
     }
   }
 
-  async Destroy({ request, response }) {
+  async Inativar({ request, response }) {
     const token = request.header("authorization");
-    const { CNPJ } = request.only(["CNPJ"]);
+    const { COD, LOJA, CNPJ, Status } = request.only(["COD", "LOJA", "CNPJ", "Status"]);
 
     try {
       const verified = seeToken(token);
 
-      const hasTransaction = await Database.select("*")
-        .from("dbo.SDBase")
-        .where({
-          GRPVEN: verified.grpven,
-          A1_CGC: CNPJ,
-        });
-
-      if (hasTransaction.length > 0) {
-        return 409;
-      }
-
-      const hasAnnex = await Database.select("*").from("dbo.Anexos").where({
-        GrpVen: verified.grpven,
-        CNPJ: CNPJ,
-      });
-
-      if (hasAnnex.length > 0) {
-        return 409;
-      }
-
-      const hasPDV = await Database.select("*").from("dbo.PontoVenda").where({
-        GrpVen: verified.grpven,
-        CNPJ: CNPJ,
-      });
-
-      if (hasPDV.length > 0) {
-        return 409;
-      }
-
       await Database.table("dbo.Cliente")
         .where({
           GrpVen: verified.grpven,
+          A1_COD: COD,
+          A1_LOJA: LOJA,
           CNPJ: CNPJ,
         })
-        .delete();
+        .update({
+          ClienteStatus: Status
+        });
 
-      response.status(200).send();
+      response.status(200).send()
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send()
     }
   }
+
+  // async Destroy({ request, response }) {
+  //   const token = request.header("authorization");
+  //   const { CNPJ } = request.only(["CNPJ"]);
+
+  //   try {
+  //     const verified = seeToken(token);
+
+  //     const hasTransaction = await Database.select("*")
+  //       .from("dbo.SDBase")
+  //       .where({
+  //         GRPVEN: verified.grpven,
+  //         A1_CGC: CNPJ,
+  //       });
+
+  //     //se o cara não tiver movimentação, pode deletar cliente, contrato, anexo, PdV
+
+  //     response.status(200).send();
+  //   } catch (err) {
+  //     response.status(400).send();
+  //   }
+  // }
 }
 
 module.exports = ClientController;

@@ -3,7 +3,7 @@
 const Database = use("Database");
 const Mail = use("Mail");
 const Env = use("Env");
-const { seeToken } = require("../../../POG/jwt");
+const { seeToken } = require("../../../Services/jwtServices");
 const moment = require("moment");
 moment.locale("pt-br");
 

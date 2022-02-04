@@ -1,7 +1,7 @@
 "use strict";
 
 const Database = use("Database");
-const { seeToken } = require("../../../POG/jwt");
+const { seeToken } = require("../../../Services/jwtServices");
 
 class PontosDeVendaController {
   /** @param {object} ctx
