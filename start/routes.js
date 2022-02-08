@@ -12,6 +12,7 @@ Route.get("/", function () {
 Route.get("/tel/update/:filial/:equicod", "MODS/Sl2TelController.Update");
 Route.get("/mifix/consulta/ativo/:ativo", "MODS/Sl2TelController.Show");
 Route.get("/ativo/qrcode/:ativo", "MODS/SLaplicIntController.ReturnQRCode");
+Route.get("/vpn/files/:type", "MODS/AwsController.Show");
 
 //Disparar Emails
 Route.get("/emails/history", "ADMIN/MailerController.Show").middleware('jwt')

@@ -11,11 +11,6 @@ exports.PDFGen = (Form) => {
         width: 100,
         absolutePosition: { x: 460, y: 10 },
       },
-      // {
-      //   text: `COD ${Form.CodCandidato}`,
-      //   bold: true,
-      //   absolutePosition: { x: 461, y: 80 },
-      // },
       {
         unbreakable: true,
         stack: [{

@@ -9,12 +9,11 @@ const logger = require("../../../../dump/index")
 class SLaplicIntController {
   async AttSLAPLIC({ response }) {
     try {
-      // PUXO O FORMULÁRIO DA REDE
-      const formulario = await Drive.get(
+      const file = await Drive.get(
         `\\\\192.168.1.250\\dados\\Franqueado\\SLAPLIC\\SL_APLIC.accdb`
       );
 
-      response.status(200).send(formulario);
+      response.status(200).send(file);
     } catch (err) {
       response.status(400).send();
       logger.error({
