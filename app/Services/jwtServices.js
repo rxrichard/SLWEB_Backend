@@ -1,6 +1,7 @@
 const Database = use("Database");
-const jwt = require("jsonwebtoken");
 const Env = use("Env");
+const jwt = require("jsonwebtoken");
+const logger = require("../../dump/index")
 
 exports.seeToken = (token) => {
   try {
@@ -8,6 +9,13 @@ exports.seeToken = (token) => {
 
     return verified;
   } catch (err) {
+    logger.error({
+      token: token,
+      params: null,
+      payload: null,
+      err: err,
+      handler: 'jwtServices.seeToken',
+    })
     return err;
   }
 };
@@ -133,6 +141,13 @@ exports.genTokenExternal = async (code) => {
 
     return { nome: dados[0].GrupoVenda, token, role: "Franquia" }
   } catch (err) {
+    logger.error({
+      token: null,
+      params: null,
+      payload: code,
+      err: err,
+      handler: 'jwtServices.genTokenExternal',
+    })
     return null;
   }
 };

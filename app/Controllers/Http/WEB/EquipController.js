@@ -3,6 +3,7 @@
 const Database = use("Database");
 const moment = require("moment");
 const { seeToken } = require("../../../Services/jwtServices");
+const logger = require("../../../../dump/index")
 
 class EquipController {
   async Show({ request, response }) {
@@ -35,7 +36,14 @@ class EquipController {
         JaReportou: jaReportou.length > 0 ? true : false,
       });
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipController.Show',
+      })
     }
   }
 
@@ -54,7 +62,14 @@ class EquipController {
 
       response.status(200).send({ Reports: reports });
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipController.See',
+      })
     }
   }
 
@@ -204,7 +219,14 @@ class EquipController {
         NewAnxId: newAnxId, NewPdvId: newPdvId,
       })
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipController.Update',
+      })
     }
   }
 
@@ -227,7 +249,14 @@ class EquipController {
 
       response.status(200).send({ message: 'ok' });
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipController.StoreReport',
+      })
     }
   }
 
@@ -250,7 +279,14 @@ class EquipController {
 
       response.status(200).send({ message: 'ok' });
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipController.DeleteReport',
+      })
     }
   }
 
@@ -265,6 +301,13 @@ class EquipController {
       response.status(200).send({ Enderecos: enderecos });
     } catch (err) {
       response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipController.SeeConfirmInfo',
+      })
     }
   }
 
@@ -288,7 +331,14 @@ class EquipController {
 
       response.status(200).send()
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipController.ConfirmAddresses',
+      })
     }
   }
 }

@@ -1,6 +1,7 @@
-const axios = require("axios");
 const Env = use("Env");
+const axios = require("axios");
 const https = require('https');
+const logger = require("../../dump/index")
 
 //faz a autenticacao e devolve um token de acesso ao TMT junto com outras informacoes
 exports.GenTokenTMT = async (filial) => {
@@ -16,7 +17,13 @@ exports.GenTokenTMT = async (filial) => {
   try {
     return await con.post("/Token", Formulario);
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: null,
+      params: null,
+      payload: filial,
+      err: err,
+      handler: 'TMTConnServices.GenTokenTMT',
+    })
   }
 };
 
@@ -31,7 +38,13 @@ exports.ListClients = async (token) => {
 
     return result.data.List;
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: null,
+      err: err,
+      handler: 'TMTConnServices.ListClients',
+    })
   }
 };
 
@@ -46,7 +59,13 @@ exports.ListCidades = async (token) => {
 
     return result.data.List;
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: null,
+      err: err,
+      handler: 'TMTConnServices.ListCidades',
+    })
   }
 };
 
@@ -61,7 +80,13 @@ exports.ListInstalacoes = async (token) => {
 
     return result.data.List;
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: null,
+      err: err,
+      handler: 'TMTConnServices.ListInstalacoes',
+    })
   }
 };
 
@@ -76,7 +101,13 @@ exports.ListMaquinas = async (token) => {
 
     return result.data.List;
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: null,
+      err: err,
+      handler: 'TMTConnServices.ListMaquinas',
+    })
   }
 };
 
@@ -91,7 +122,13 @@ exports.ListSegmentos = async (token) => {
 
     return result.data.List;
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: null,
+      err: err,
+      handler: 'TMTConnServices.ListSegmentos',
+    })
   }
 };
 
@@ -121,7 +158,13 @@ exports.StoreClient = async (token, cliente, cidade, empresaID, segmento) => {
   try {
     await con.post("/api/v1/cliente", DTO);
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: { cliente, cidade, empresaID, segmento },
+      err: err,
+      handler: 'TMTConnServices.StoreClient',
+    })
   }
 
   return
@@ -139,7 +182,13 @@ exports.StoreInstalacao = async (token, empresaID, maquinaID, clienteID) => {
   try {
     await con.post("api/v1/instalacao", DTO);
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: { empresaID, maquinaID, clienteID },
+      err: err,
+      handler: 'TMTConnServices.StoreInstalacao',
+    })
   }
 
   return
@@ -171,7 +220,13 @@ exports.UpdateClient = async (token, ID, cliente, cidade, empresaID, segmento) =
   try {
     await con.put("/api/v1/cliente", DTO);
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: { ID, cliente, cidade, empresaID, segmento },
+      err: err,
+      handler: 'TMTConnServices.UpdateClient',
+    })
   }
 
   return
@@ -191,7 +246,13 @@ exports.FecharInstalacoes = async (token, instalacao) => {
   try {
     await con.put("api/v1/instalacao", DTO);
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: instalacao,
+      err: err,
+      handler: 'TMTConnServices.FecharInstalacoes',
+    })
   }
 
   return
@@ -250,7 +311,13 @@ exports.FindEnderecoPorInstalacaoCliente = async (token, instalacao) => {
   try {
     return await con.get(`/api/v1/cliente/${instalacao.ClienteId}`);
   } catch (err) {
-    console.log(err)
+    logger.error({
+      token: token,
+      params: null,
+      payload: instalacao,
+      err: err,
+      handler: 'TMTConnServices.FindEnderecoPorInstalacaoCliente',
+    })
   }
 };
 

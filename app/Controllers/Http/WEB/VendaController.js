@@ -2,6 +2,7 @@
 const Database = use("Database");
 const Drive = use("Drive");
 const { seeToken } = require("../../../Services/jwtServices");
+const logger = require("../../../../dump/index")
 const moment = require("moment");
 moment.locale("pt-br");
 class VendaController {
@@ -34,7 +35,14 @@ class VendaController {
 
       response.status(200).send({ Produtos: aux, Clientes, CodPag, Depositos });
     } catch (err) {
-      response.status(400);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.Produtos',
+      })
     }
   }
 
@@ -51,7 +59,14 @@ class VendaController {
 
       response.status(200).send({ Pedidos: pedidos });
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.Show',
+      })
     }
   }
 
@@ -70,7 +85,14 @@ class VendaController {
 
       response.status(200).send(detalhes);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.See',
+      })
     }
   }
 
@@ -155,7 +177,14 @@ class VendaController {
 
       response.status(200).send({ message: "ok" });
     } catch (err) {
-      response.status(200).send(err);
+      response.status(200).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.Store',
+      })
     }
   }
 
@@ -225,7 +254,14 @@ class VendaController {
 
       response.status(200).send({ message: "ok" });
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.Update',
+      })
     }
   }
 
@@ -250,7 +286,14 @@ class VendaController {
 
       response.status(200).send({ message: 'ok' })
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.CancelVenda',
+      })
     }
   }
 
@@ -388,7 +431,14 @@ class VendaController {
 
       response.status(200).send({ message: 'ok', pedido: NovoIDPedido });
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.RequestNFeGeneration',
+      })
     }
   }
 
@@ -472,7 +522,14 @@ class VendaController {
 
       response.status(200).send(retorno);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.RecoverDocs',
+      })
     }
   }
 }

@@ -8,7 +8,7 @@ const Env = use("Env");
 const PdfPrinter = require("pdfmake");
 const fs = require("fs");
 const toArray = require('stream-to-array')
-
+const logger = require("../../../../dump/index")
 const { seeToken, dateCheck } = require("../../../Services/jwtServices");
 const { PDFGen } = require("../../../../resources/pdfModels/perfilFranqueadoForm_pdfModel");
 
@@ -42,6 +42,13 @@ class FuturoFranqueadoController {
       response.status(200).send(formularios);
     } catch (err) {
       response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'FuturoFranqueadoController.Show',
+      })
     }
   }
 
@@ -75,7 +82,14 @@ class FuturoFranqueadoController {
 
       response.status(200).send(enviarDaMemóriaSemEsperarSalvarNoFS);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'FuturoFranqueadoController.GeneratePDF',
+      })
     }
   }
 
@@ -96,9 +110,14 @@ class FuturoFranqueadoController {
 
       response.status(200).send("ok");
     } catch (err) {
-      response
-        .status(400)
-        .send("nenhum candidato à franquia encontraco com o código fornecido");
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'FuturoFranqueadoController.FutureCod',
+      })
     }
   }
 
@@ -127,7 +146,14 @@ class FuturoFranqueadoController {
 
       response.status(201).send('ok');
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'FuturoFranqueadoController.RequestCod',
+      })
     }
   }
 
@@ -302,7 +328,14 @@ class FuturoFranqueadoController {
 
       response.status(201).send(resposta);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'FuturoFranqueadoController.FormUpload',
+      })
     }
   }
 
@@ -322,25 +355,25 @@ class FuturoFranqueadoController {
         response.status(200).send("nenhum arquivo para salvar");
       } else if (Number(QFiles) === 1) {
         let newFileName = `upload-SINGLE-${new Date().getTime()}.${formData.subtype}`;
-        
+
         await formData.move(path, {
           name: newFileName,
           overwrite: true,
         });
-        
+
         if (!formData.moved()) {
           return formData.errors();
         }
-        
+
         file = await Drive.get(`${path}/${newFileName}`);
-        
+
         Drive.put(
           `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${candidato}\\${newFileName}`,
           file
-          );
-          
-          response.status(200).send("Arquivos Salvos");
-        } else {
+        );
+
+        response.status(200).send("Arquivos Salvos");
+      } else {
         await formData.moveAll(path, (file, i) => {
           let newFileName = `upload-${i}-${new Date().getTime()}.${file.subtype}`;
           filenames.push(newFileName);
@@ -367,7 +400,14 @@ class FuturoFranqueadoController {
         response.status(200).send("Arquivos Salvos");
       }
     } catch (err) {
-      response.status(400).send("Falha ao salvar arquivos");
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'FuturoFranqueadoController.FileUpload',
+      })
     }
   }
 
@@ -384,7 +424,14 @@ class FuturoFranqueadoController {
       // const formularioPath = Helpers.publicPath(`QUESTIONARIO_PERFIL_ATUALIZADO.doc`)
       // response.attachment(formularioPath)
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: null,
+        err: err,
+        handler: 'FuturoFranqueadoController.RetriveWORDFORM',
+      })
     }
   }
 }

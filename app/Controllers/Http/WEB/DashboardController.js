@@ -5,6 +5,7 @@ const Mail = use("Mail");
 const Env = use("Env");
 const { seeToken } = require("../../../Services/jwtServices");
 const moment = require("moment");
+const logger = require("../../../../dump/index")
 moment.locale("pt-br");
 
 class DashboardController {
@@ -21,7 +22,14 @@ class DashboardController {
 
       response.status(200).send(telemetrias)
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'DashboardController.Telemetrias',
+      })
     }
   }
 
@@ -83,7 +91,14 @@ class DashboardController {
 
       response.status(200).send()
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'DashboardController.AbrirChamado',
+      })
     }
   }
 
@@ -102,7 +117,14 @@ class DashboardController {
 
       response.status(200).send(franqueados)
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'DashboardController.Filiais',
+      })
     }
   }
 }

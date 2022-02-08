@@ -1,5 +1,6 @@
 'use strict'
 const { seeToken } = require("../Services/jwtServices");
+const logger = require("../../dump/index")
 
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
@@ -27,7 +28,14 @@ class TokenValidate {
 
       await next()
     } catch (err) {
-      response.status(498).send({ message: 'sessão inválida' })
+      response.status(498).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'TokenValidate.handle',
+      })
     }
   }
 }

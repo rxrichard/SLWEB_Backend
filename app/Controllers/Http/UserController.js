@@ -69,6 +69,13 @@ class UserController {
       }
     } catch (err) {
       response.status(400).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'UserController.Forgot',
+      })
     }
   }
 
@@ -84,6 +91,13 @@ class UserController {
       response.status(202).send(token);
     } catch (err) {
       response.status(401).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'UserController.AdmPartialLogin',
+      })
     }
   }
 
@@ -104,6 +118,13 @@ class UserController {
       response.status(200).send(admTokenWithFilial);
     } catch (err) {
       response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'UserController.AdmFullLogin',
+      })
     }
   }
 
@@ -158,7 +179,14 @@ class UserController {
       }
 
     } catch (err) {
-      response.status(401).send(err);
+      response.status(401).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'UserController.ExternalAuth',
+      })
     }
   }
 }

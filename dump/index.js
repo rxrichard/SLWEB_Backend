@@ -1,5 +1,6 @@
 const { createLogger, format, transports } = require('winston');
 const moment = require('moment');
+const package = require('../package.json')
 const { combine, timestamp, printf, errors } = format;
 
 const customFormat = printf(({ level, message, timestamp, stack }) => {
@@ -19,7 +20,7 @@ const logger = createLogger({
     customFormat
   ),
   transports: [
-    new transports.File({ filename: 'dump/critical/error.log', level: 'error' }),
+    new transports.File({ filename: `dump/critical/error_v${package.version}.log`, level: 'error' }),
   ],
 });
 

@@ -11,6 +11,7 @@ const toArray = require('stream-to-array')
 const { seeToken } = require("../../../Services/jwtServices");
 const { PDFGen } = require("../../../../resources/pdfModels/solicitacaoOS_pdfModel");
 const moment = require("moment");
+const logger = require("../../../../dump/index")
 moment.locale("pt-br");
 
 var fonts = {
@@ -150,7 +151,14 @@ class EquipRequestController {
         newAjudas,
       });
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.See',
+      })
     }
   }
 
@@ -165,7 +173,14 @@ class EquipRequestController {
 
       response.status(200).send(requisicao);
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.Show',
+      })
     }
   }
 
@@ -201,7 +216,14 @@ class EquipRequestController {
 
       response.status(200).send(filtered);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.SearchDefaultConfig',
+      })
     }
   }
 
@@ -225,7 +247,14 @@ class EquipRequestController {
         throw Error;
       }
     } catch (err) {
-      response.status(400).send("token não possui privilégios");
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.All',
+      })
     }
   }
 
@@ -354,7 +383,14 @@ class EquipRequestController {
 
       response.status(201).send("ok");
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.Store',
+      })
     }
 
   }
@@ -407,7 +443,14 @@ class EquipRequestController {
 
       response.status(201).send(enviarDaMemóriaSemEsperarSalvarNoFS);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.RetriveOS',
+      })
     }
   }
 
@@ -447,7 +490,14 @@ class EquipRequestController {
       }
       response.status(200).send("ok");
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.ViewCheck',
+      })
     }
   }
 
@@ -727,7 +777,14 @@ class EquipRequestController {
           break;
       }
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.ValidateOS',
+      })
     }
   }
 
@@ -823,7 +880,14 @@ class EquipRequestController {
           break;
       }
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.SistemOptions',
+      })
     }
   }
 }

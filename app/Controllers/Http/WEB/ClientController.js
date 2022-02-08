@@ -3,6 +3,7 @@
 const Database = use("Database");
 const { seeToken } = require("../../../Services/jwtServices");
 const axios = require("axios").default;
+const logger = require("../../../../dump/index")
 
 class ClientController {
   async Show({ request, response }) {
@@ -19,6 +20,13 @@ class ClientController {
       response.status(200).send(clientes);
     } catch (err) {
       response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ClientController.Show',
+      })
     }
   }
 
@@ -36,7 +44,7 @@ class ClientController {
         .from('dbo.Cliente')
         .where({
           CNPJ: CNPJ,
-          ClienteStatus: 'A'
+          // ClienteStatus: 'A'
         })
 
       //verificar se é um franqueado Pilão
@@ -61,7 +69,14 @@ class ClientController {
         wsInfo: receitawsData
       });
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'ClientController.See',
+      })
     }
   }
 
@@ -126,7 +141,14 @@ class ClientController {
 
       response.status(201).send({ ClienteCadastrado: novoCliente });
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ClientController.Store',
+      })
     }
   }
 
@@ -164,6 +186,13 @@ class ClientController {
       response.status(201).send();
     } catch (err) {
       response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ClientController.Update',
+      })
     }
   }
 
@@ -188,6 +217,13 @@ class ClientController {
       response.status(200).send()
     } catch (err) {
       response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ClientController.Inativar',
+      })
     }
   }
 
@@ -210,6 +246,13 @@ class ClientController {
   //     response.status(200).send();
   //   } catch (err) {
   //     response.status(400).send();
+  //     logger.error({
+  //       token: token,
+  //       params: null,
+  //       payload: request.body,
+  //       err: err,
+  //       handler: 'ClientController.Destroy',
+  //     })
   //   }
   // }
 }

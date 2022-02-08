@@ -4,6 +4,7 @@ const Drive = use("Drive");
 const Helpers = use("Helpers");
 var QRCode = require('qrcode')
 const moment = require("moment");
+const logger = require("../../../../dump/index")
 
 class SLaplicIntController {
   async AttSLAPLIC({ response }) {
@@ -15,7 +16,14 @@ class SLaplicIntController {
 
       response.status(200).send(formulario);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: null,
+        err: err,
+        handler: 'SLaplicIntController.AttSLAPLIC',
+      })
     }
   }
 

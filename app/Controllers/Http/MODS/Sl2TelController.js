@@ -15,16 +15,19 @@ const {
   StoreInstalacao,
   ListMaquinas
 } = require("../../../Services/TMTConnServices");
+const logger = require("../../../../dump/index")
 
 class Sl2TelController {
   //atualizar posse da máquina no totvs
   async Update({ request, response, params }) {
     const EquiCod = params.equicod;
     let filial = params.filial;
+    let token = null
+    let verified = null
 
     if (String(filial) === 'WYSI') {
-      let token = request.header("authorization");
-      let verified = seeToken(token);
+      token = request.header("authorization");
+      verified = seeToken(token);
       filial = verified.user_code
     }
 
@@ -96,10 +99,14 @@ class Sl2TelController {
 
       response.status(200).send({ message: "Atualizado com sucesso" });
     } catch (err) {
-      response.status(400).send({
-        message: 'Falha na atualização',
-        error: err
-      });
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'Sl2TelController.Update',
+      })
     }
 
   }

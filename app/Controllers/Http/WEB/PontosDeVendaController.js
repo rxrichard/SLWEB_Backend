@@ -2,6 +2,7 @@
 
 const Database = use("Database");
 const { seeToken } = require("../../../Services/jwtServices");
+const logger = require("../../../../dump/index")
 
 class PontosDeVendaController {
   /** @param {object} ctx
@@ -22,7 +23,14 @@ class PontosDeVendaController {
 
       response.status(200).send(PDVs);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'PontosDeVendaController.Show',
+      })
     }
   }
 }

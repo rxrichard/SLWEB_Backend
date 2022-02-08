@@ -3,6 +3,7 @@
 const Database = use("Database");
 const { seeToken } = require("../../../Services/jwtServices");
 const moment = require("moment");
+const logger = require("../../../../dump/index")
 moment.locale("pt-br");
 
 class ConsultaColetasController {
@@ -24,7 +25,14 @@ class ConsultaColetasController {
         Equipamentos: equipamentos
       })
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ConsultaColetasController.Show',
+      })
     }
   }
 
@@ -43,7 +51,14 @@ class ConsultaColetasController {
         Detalhes: detalhes
       })
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'ConsultaColetasController.See',
+      })
     }
   }
 
@@ -71,7 +86,14 @@ class ConsultaColetasController {
         LeiturasDisponiveis: leiturasDisponiveis
       })
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'ConsultaColetasController.NovaColetaOptions',
+      })
     }
   }
 
@@ -117,7 +139,14 @@ class ConsultaColetasController {
         Coleta: finalArray
       })
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'ConsultaColetasController.CalcColetas',
+      })
     }
   }
 
@@ -192,7 +221,14 @@ class ConsultaColetasController {
 
       response.status(200).send({ message: 'Coleta gravada com sucesso' })
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ConsultaColetasController.GravaColeta',
+      })
     }
   }
 
@@ -227,7 +263,14 @@ class ConsultaColetasController {
         message: 'Coleta deletada com sucesso'
       })
     } catch (err) {
-      response.status(400).send(err)
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ConsultaColetasController.Delete',
+      })
     }
   }
 }

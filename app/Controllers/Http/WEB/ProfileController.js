@@ -1,7 +1,8 @@
 "use strict";
 
-const { seeToken } = require("../../../Services/jwtServices");
 const Database = use("Database");
+const { seeToken } = require("../../../Services/jwtServices");
+const logger = require("../../../../dump/index")
 
 class ProfileController {
   /** @param {object} ctx
@@ -34,7 +35,14 @@ class ProfileController {
         VencCert: vencimento,
       });
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ProfileController.Show',
+      })
     }
   }
 
@@ -76,7 +84,14 @@ class ProfileController {
           response.status(200).send();
         }
       } catch (err) {
-        response.status(400).send();
+        response.status(400).send()
+        logger.error({
+          token: token,
+          params: null,
+          payload: request.body,
+          err: err,
+          handler: 'ProfileController.ChangePassword',
+        })
       }
     }
   }
@@ -101,7 +116,14 @@ class ProfileController {
 
       response.status(200).send();
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ProfileController.ChangeEmail',
+      })
     }
   }
 
@@ -129,7 +151,14 @@ class ProfileController {
 
       response.status(200).send();
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ProfileController.ChangeTax',
+      })
     }
   }
 }

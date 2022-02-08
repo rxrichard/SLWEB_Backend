@@ -3,6 +3,7 @@
 const Database = use("Database");
 const { seeToken } = require("../../../Services/jwtServices");
 const moment = require("moment");
+const logger = require("../../../../dump/index")
 
 class LeadController {
   async Show({ request, response }) {
@@ -35,7 +36,14 @@ class LeadController {
 
       response.status(200).send({ LeadsGeral, LeadsFranqueado, Limites });
     } catch (err) {
-      response.status(400).send("Erro");
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.Show',
+      })
     }
   }
 
@@ -48,16 +56,22 @@ class LeadController {
 
       const historico = await Database.raw('select LeadId, Motivo, DataFechamento from dbo.LeadsAttr where Desistiu = 1 and LeadId = ? order by DataFechamento DESC', [LeadId])
 
-
       response.status(200).send(historico)
     } catch (err) {
       response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.See',
+      })
     }
   }
 
   async Update({ request, response }) {
-    const { ID, type, motivo } = request.only(["ID", "type", "motivo"]);
     const token = request.header("authorization");
+    const { ID, type, motivo } = request.only(["ID", "type", "motivo"]);
 
     try {
       const verified = seeToken(token);
@@ -119,7 +133,14 @@ class LeadController {
         response.status(200).send();
       }
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.Update',
+      })
     }
   }
 
@@ -149,7 +170,14 @@ class LeadController {
 
       response.status(201).send("Ok");
     } catch (err) {
-      response.status(400).send();
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.Store',
+      })
     }
   }
 }

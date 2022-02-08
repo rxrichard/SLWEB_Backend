@@ -3,14 +3,17 @@
 const Database = use("Database");
 const Helpers = use("Helpers");
 
+const logger = require("../../../../dump/index")
 const { seeToken } = require("../../../Services/jwtServices");
 
-class AdministracaoController {
+class FranquiasController {
   async Show({ request, response }) {
     const token = request.header("authorization");
 
     try {
       const verified = seeToken(token);
+
+      //verificar se o token é de ADM > 
 
       const filiais = await Database.select("*")
         .from("dbo.FilialEntidadeGrVenda")
@@ -20,9 +23,16 @@ class AdministracaoController {
 
       response.status(200).send(filiais);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'FranquiasController.Show',
+      })
     }
   }
 }
 
-module.exports = AdministracaoController;
+module.exports = FranquiasController;

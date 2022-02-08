@@ -10,9 +10,10 @@ const TiposEmail = [
   { id: 3, model: "Notificação Extrajudicial" },
 ];
 
+const logger = require("../../../../dump/index")
 const { seeToken } = require("../../../Services/jwtServices");
 
-class PogController {
+class MailerController {
   async Show({ request, response }) {
     const token = request.header("authorization");
 
@@ -29,7 +30,14 @@ class PogController {
 
       response.status(200).send({ log, Modelos: TiposEmail });
     } catch (err) {
-      response.status(400);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'MailerController.Show',
+      })
     }
   }
 
@@ -60,11 +68,19 @@ class PogController {
       //     break;
       // }
 
-      response
-        .status(200)
-        .send({ model: HtmlModel, Destinatarios: recipients });
+      response.status(200).send({
+        model: HtmlModel,
+        Destinatarios: recipients
+      });
     } catch (err) {
       response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'MailerController.See',
+      })
     }
   }
 
@@ -83,7 +99,14 @@ class PogController {
       // );
       response.status(200).send("enviado");
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'MailerController.DispararEmail',
+      })
     }
   }
 
@@ -128,10 +151,17 @@ class PogController {
       // response.status(200).send("Tudo Enviado");
       response.status(200).send(ListaNotificados);
     } catch (err) {
-      response.status(400).send("Ocorreu algum erro");
+      response.status(400).send();
+      logger.error({
+        token: null,
+        params: null,
+        payload: null,
+        err: err,
+        handler: 'MailerController.DispararNotificacao',
+      })
     }
     //fazer um insert na lista de notificacoes dos emails mandados
   }
 }
 
-module.exports = PogController;
+module.exports = MailerController;

@@ -6,6 +6,7 @@ const Env = use("Env");
 const Helpers = use("Helpers");
 const { seeToken } = require("../../../Services/jwtServices");
 const moment = require("moment");
+const logger = require("../../../../dump/index")
 
 class CompraController {
   /** @param {object} ctx
@@ -25,12 +26,20 @@ class CompraController {
 
       response.status(200).send(aux);
     } catch (err) {
-      response.status(400);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.Produtos',
+      })
     }
   }
 
   async Contas({ request, response }) {
     const token = request.header("authorization");
+
     try {
       const verified = seeToken(token);
 
@@ -65,12 +74,20 @@ class CompraController {
         AFaturar: PedidosNaoFaturados,
       });
     } catch (err) {
-      response.status(400);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.Contas',
+      })
     }
   }
 
   async Pedidos({ request, response }) {
     const token = request.header("authorization");
+
     try {
       const verified = seeToken(token);
 
@@ -84,7 +101,14 @@ class CompraController {
 
       response.status(200).send({ PedidosAbertos, PedidosFaturados });
     } catch (err) {
-      response.status(400);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.Pedidos',
+      })
     }
   }
 
@@ -209,7 +233,14 @@ class CompraController {
 
       response.status(200).send(Pedido);
     } catch (err) {
-      response.status(400);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.PedidoDet',
+      })
     }
   }
 
@@ -318,7 +349,14 @@ class CompraController {
 
       response.status(200).send(TotalDoPedido);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.Comprar',
+      })
     }
   }
 
@@ -365,7 +403,14 @@ class CompraController {
         response.status(200).send({ message: "ok" });
       }
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.Cancelar',
+      })
     }
   }
 
@@ -382,7 +427,14 @@ class CompraController {
 
       response.status(200).send(Imagem);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.RetriveBoleto',
+      })
     }
   }
 
@@ -399,7 +451,14 @@ class CompraController {
 
       response.status(200).send(Imagem);
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.RetriveNota',
+      })
     }
   }
 
@@ -525,7 +584,14 @@ class CompraController {
 
       response.status(200).send();
     } catch (err) {
-      response.status(400).send(err);
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.Compensar',
+      })
     }
   }
 }
