@@ -13,9 +13,9 @@ class TokenValidate {
    * @param {Function} next
    */
   async handle({ request, response }, next) {
+    const token = request.header('authorization')
+    
     try {
-      const token = request.header('authorization')
-
       if (!token) {
         throw new Error('token não fornecido')
       }

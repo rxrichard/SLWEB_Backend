@@ -12,7 +12,10 @@ Route.get("/", function () {
 Route.get("/tel/update/:filial/:equicod", "MODS/Sl2TelController.Update");
 Route.get("/mifix/consulta/ativo/:ativo", "MODS/Sl2TelController.Show");
 Route.get("/ativo/qrcode/:ativo", "MODS/SLaplicIntController.ReturnQRCode");
-Route.get("/vpn/files/:type", "MODS/AwsController.Show");
+
+//AWS
+Route.get("/vpn/files/:type", "MODS/AwsController.Show").middleware('jwt');
+Route.get("/vpn/pin", "MODS/AwsController.See").middleware('jwt');
 
 //Disparar Emails
 Route.get("/emails/history", "ADMIN/MailerController.Show").middleware('jwt')
@@ -60,6 +63,7 @@ Route.get("/vendas/produtos", "WEB/VendaController.Produtos").middleware('jwt');
 Route.get("/vendas/pedidos", "WEB/VendaController.Show").middleware('jwt'); //retorna todos os pedidos de venda da filial
 Route.get("/vendas/pedidos/detalhes/:serie/:pvc", "WEB/VendaController.See").middleware('jwt'); //retorna os detalhes de dado pedido
 Route.get("/vendas/pedidos/detalhes/DOCS/:doctype/:serie/:pvc", "WEB/VendaController.RecoverDocs").middleware('jwt'); //retorna a DANFE solicitada
+Route.get("/vendas/pedidos/detalhes/PDF/:serie/:pvc", "WEB/VendaController.GenPDFVenda").middleware('jwt'); //retorna pdf de venda
 Route.post("/vendas/vender", "WEB/VendaController.Store").middleware('jwt'); //registra a venda
 Route.put("/vendas/pedidos/atualizar/:pvc", "WEB/VendaController.Update").middleware('jwt'); //Cancela pedido de venda
 Route.put("/vendas/pedidos/cancelar/:serie/:pvc", "WEB/VendaController.CancelVenda").middleware('jwt'); //Cancela pedido de venda

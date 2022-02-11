@@ -316,11 +316,6 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
       tableExample: {
         margin: [0, 0, 0, 0],
       },
-      tableHeader: {
-        bold: true,
-        fontSize: 13,
-        color: "black",
-      },
       footer: {
         bold: true,
         margin: [0, 0, 10, 0],

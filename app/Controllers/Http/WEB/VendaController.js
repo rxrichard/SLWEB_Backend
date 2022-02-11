@@ -1,10 +1,26 @@
 "use strict";
 const Database = use("Database");
 const Drive = use("Drive");
-const { seeToken } = require("../../../Services/jwtServices");
+const Helpers = use("Helpers");
 const logger = require("../../../../dump/index")
 const moment = require("moment");
+const PdfPrinter = require("pdfmake");
+const toArray = require('stream-to-array')
+const fs = require("fs");
+const { seeToken } = require("../../../Services/jwtServices");
+const { PDFGen } = require("../../../../resources/pdfModels/detalhesVenda_pdfModel");
 moment.locale("pt-br");
+
+var fonts = {
+  Roboto: {
+    normal: Helpers.resourcesPath("fonts/OpenSans-Regular.ttf"),
+    bold: Helpers.resourcesPath("fonts/OpenSans-Bold.ttf"),
+    italics: Helpers.resourcesPath("fonts/OpenSans-RegularItalic.ttf"),
+    bolditalics: Helpers.resourcesPath("fonts/OpenSans-BoldItalic.ttf"),
+  },
+};
+
+const printer = new PdfPrinter(fonts);
 class VendaController {
   async Produtos({ request, response }) {
     const token = request.header("authorization");
@@ -529,6 +545,45 @@ class VendaController {
         payload: request.body,
         err: err,
         handler: 'VendaController.RecoverDocs',
+      })
+    }
+  }
+
+  async GenPDFVenda({ request, response, params }) {
+    const token = request.header("authorization");
+    const serie = params.serie;
+    const pvc = params.pvc;
+    const path = Helpers.publicPath(`/tmp`);
+    const PathWithName = `${path}/${pvc}-${serie}-${new Date().getTime()}.pdf`;
+
+    try {
+      const verified = seeToken(token);
+
+      const vendaCab = await Database.raw('select C.Nome_Fantasia, PC.PvcID, C.CNPJss, PC.DataCriacao, C.TPessoa from dbo.PedidosVendaCab as PC inner join dbo.Cliente as C on PC.CNPJ = C.CNPJ where PC.GrpVen = ? and PC.PvcID = ? and PC.PvcSerie = ?',
+        [verified.grpven, pvc, serie])
+        
+        const vendaDet = await Database.raw('select PD.ProdId, P.Produto, PD.PvdQtd, PD.PvdVlrUnit, PD.PvdVlrTotal from dbo.PedidosVendaDet as PD inner join dbo.Produtos as P on PD.ProdId = P.ProdId where GrpVen = ? and PD.PvcID = ? and PD.PvcSerie = ?',
+        [verified.grpven, pvc, serie])
+
+      const PDFModel = PDFGen(vendaCab[0], vendaDet);
+
+      var pdfDoc = printer.createPdfKitDocument(PDFModel);
+      pdfDoc.pipe(fs.createWriteStream(PathWithName));
+      pdfDoc.end();
+
+      const enviarDaMemóriaSemEsperarSalvarNoFS = await toArray(pdfDoc).then(parts => {
+        return Buffer.concat(parts);
+      })
+
+      response.status(200).send(enviarDaMemóriaSemEsperarSalvarNoFS)
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'VendaController.GenPDFVenda',
       })
     }
   }
