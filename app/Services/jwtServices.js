@@ -9,13 +9,13 @@ exports.seeToken = (token) => {
 
     return verified;
   } catch (err) {
-    logger.error({
-      token: token,
-      params: null,
-      payload: null,
-      err: err,
-      handler: 'jwtServices.seeToken',
-    })
+    // logger.error({
+    //   token: token,
+    //   params: null,
+    //   payload: null,
+    //   err: err,
+    //   handler: 'jwtServices.seeToken',
+    // })
     return err;
   }
 };

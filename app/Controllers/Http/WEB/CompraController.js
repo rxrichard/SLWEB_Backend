@@ -417,11 +417,12 @@ class CompraController {
   async RetriveBoleto({ request, response, params }) {
     const token = request.header("authorization");
     const PedidoId = params.ID;
+    const Parcela = params.P;
 
     try {
       seeToken(token);
 
-      const path = `\\\\192.168.1.248\\totvs12\\Producao\\protheus_data\\DANFE_FRANQUIA\\0201\\boleto_${PedidoId}.pdf`
+      const path = `\\\\192.168.1.248\\totvs12\\Producao\\protheus_data\\DANFE_FRANQUIA\\0201\\boleto_${PedidoId}${Parcela === 'UNICA' ? '' : `_${Parcela}`}.pdf`
 
       const Imagem = await Drive.exists(path) ? await Drive.get(path) : { message: 'File not found' };
 

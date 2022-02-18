@@ -281,6 +281,9 @@ class FuturoFranqueadoController {
         case 'Kauê':
           emailConsultor = 'kaue.santos@pilaoprofessional.com.br'
           break;
+        case 'Priscila':
+          emailConsultor = 'priscila.mattos@pilaoprofessional.com.br'
+          break;
         case 'Richard':
           emailConsultor = 'richard.bastos@pilaoprofessional.com.br'
           break;

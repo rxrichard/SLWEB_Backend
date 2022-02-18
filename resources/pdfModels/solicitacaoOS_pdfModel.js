@@ -79,10 +79,12 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
       ]);
     }
   }
+
   detalhes.push([
     { text: "Antena Externa: ", bold: true },
     `${Solicitacao.AntExt === true || Solicitacao.AntExt === '1' ? "Sim" : "Não"}`,
   ]);
+
   detalhes.push([
     { text: "Operadora do Chip da Telemetria: ", bold: true },
     `${Solicitacao.Chip === '' ? 'Não especificado' : Solicitacao.Chip}`,
@@ -104,15 +106,36 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
     ""
   );
 
-  //obj que vai virar pdf
+  /* !!!PDF COMEÇA AQUI!!! */
   var docDefinition = {
     // watermark: Helpers.resourcesPath("logo/Exemplo logo pilao - Danfe.bmp"),
     footer: (currentPage, pageCount) => {
-      return {
-        columns: [
+      if (currentPage == pageCount)
+        return [
+          {
+            style: "pilaoInfoTable",
+            table: {
+              widths: ["auto", "*", "auto", "*", "auto", "*",],
+              body: [
+                [
+                  { text: 'Ativo: ' },
+                  { text: '' },
+                  { text: 'Telemetria: ' },
+                  { text: '' },
+                  { text: 'SLRaspy: ' },
+                  { text: '' }
+                ]
+              ],
+            },
+          },
+          { text: `OS ${`000000${ID}`.slice(-6)} - ${currentPage.toString()} de ${pageCount}`, alignment: 'right', style: "footer" }
+        ]
+      else {
+        return [
           { text: `OS ${`000000${ID}`.slice(-6)} - ${currentPage.toString()} de ${pageCount}`, alignment: 'right', style: "footer" }
         ]
       }
+
     },
     content: [
       { text: "Ordem de Serviço", style: "header" },
@@ -315,6 +338,9 @@ exports.PDFGen = (Solicitacao, ID, Dados, verified, solicitacao) => {
       },
       tableExample: {
         margin: [0, 0, 0, 0],
+      },
+      pilaoInfoTable: {
+        margin: [10, 0, 10, 0],
       },
       footer: {
         bold: true,

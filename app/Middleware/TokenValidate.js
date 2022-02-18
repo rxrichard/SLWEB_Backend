@@ -29,13 +29,13 @@ class TokenValidate {
       await next()
     } catch (err) {
       response.status(498).send()
-      logger.error({
-        token: token,
-        params: null,
-        payload: request.body,
-        err: err,
-        handler: 'TokenValidate.handle',
-      })
+      // logger.error({
+      //   token: token,
+      //   params: null,
+      //   payload: request.body,
+      //   err: err,
+      //   handler: 'TokenValidate.handle',
+      // })
     }
   }
 }

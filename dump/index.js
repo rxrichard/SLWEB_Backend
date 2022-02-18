@@ -20,7 +20,7 @@ const logger = createLogger({
     customFormat
   ),
   transports: [
-    new transports.File({ filename: `dump/critical/error_v${package.version}.log`, level: 'error' }),
+    new transports.File({ filename: `dump/critical/error_v${package.version}_${process.env.NODE_ENV}.log`, level: 'error' }),
   ],
 });
 

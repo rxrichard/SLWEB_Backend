@@ -8,7 +8,7 @@ const moment = require("moment");
 const logger = require("../../../../dump/index")
 moment.locale("pt-br");
 
-class DashboardController {
+class MonitorController {
   /** @param {object} ctx
  * @param {import('@adonisjs/framework/src/Request')} ctx.request
  */
@@ -28,7 +28,7 @@ class DashboardController {
         params: null,
         payload: request.body,
         err: err,
-        handler: 'DashboardController.Telemetrias',
+        handler: 'MonitorController.Telemetrias',
       })
     }
   }
@@ -97,38 +97,12 @@ class DashboardController {
         params: null,
         payload: request.body,
         err: err,
-        handler: 'DashboardController.AbrirChamado',
-      })
-    }
-  }
-
-  async Filiais({ request, response }) {
-    const token = request.header("authorization");
-
-    try {
-      const verified = seeToken(token);
-      if (verified.role === 'Franquia') {
-        throw new Error('Acesso negado')
-      }
-
-      const franqueados = await Database.select("M0_CODFIL", "GrupoVenda")
-        .from("dbo.FilialEntidadeGrVenda")
-        .orderBy("M0_CODFIL", "ASC");
-
-      response.status(200).send(franqueados)
-    } catch (err) {
-      response.status(400).send()
-      logger.error({
-        token: token,
-        params: null,
-        payload: request.body,
-        err: err,
-        handler: 'DashboardController.Filiais',
+        handler: 'MonitorController.AbrirChamado',
       })
     }
   }
 }
 
-module.exports = DashboardController
+module.exports = MonitorController
 
 const QueryTelemetrias = "SELECT bog.GrpVen, bog.EquiCod, P.AnxDesc, bog.MáxDeDataLeitura, bog.[Ql-4], bog.[Ql-3], bog.[Ql-2], bog.[Ql-1], bog.Ql0, bog.[Con-4], bog.[Con-3], bog.[Con-2], bog.[Con-1], bog.Con0, bog.Prd3, bog.Prd2, bog.Prd1, bog.Prd, bog.LeitOk, F.GrupoVenda, F.Email, E.EquiDesc, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvBairroPV, P.PdvComplementoPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP, MAX(C.DtAberturaChamado) as UltChamado FROM dbo.bogf_Leituras_QtdGrpT as bog inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = bog.GrpVen inner join dbo.Equipamento as E on E.EquiCod = bog.EquiCod left join dbo.PontoVenda as P on P.EquiCod = bog.EquiCod and P.PdvStatus = 'A' left join dbo.ChamadosSL2MiFix as C on C.EquiCod = bog.EquiCod WHERE (((bog.GrpVen) = ?)) group by bog.GrpVen, bog.EquiCod, P.AnxDesc, bog.MáxDeDataLeitura, bog.[Ql-4], bog.[Ql-3], bog.[Ql-2], bog.[Ql-1], bog.Ql0, bog.[Con-4], bog.[Con-3], bog.[Con-2], bog.[Con-1], bog.Con0, bog.Prd3, bog.Prd2, bog.Prd1, bog.Prd, bog.LeitOk, F.GrupoVenda, F.Email, E.EquiDesc, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvBairroPV, P.PdvComplementoPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP order by EquiCod DESC"
