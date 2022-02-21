@@ -30,7 +30,7 @@ exports.PDFGen = (Cab, Det) => {
       }
     },
     content: [
-      { text: "Detalhes da Pedido", style: "header" },
+      { text: `Pedido de Venda - ${Cab.PvcID}`, style: "header" },
       {
         image: Helpers.resourcesPath("logo/Exemplo logo pilao - Danfe.bmp"),
         width: 100,
@@ -75,16 +75,16 @@ exports.PDFGen = (Cab, Det) => {
               { text: 'Cód.', style: 'tableHeader' },
               { text: 'Produto', style: 'tableHeader' },
               { text: 'Qtd.', style: 'tableHeader' },
-              { text: 'Vlr. Un.', style: 'tableHeader' },
-              { text: 'Vlr. Total.', style: 'tableHeader' }
+              { text: 'Valor Un.', style: 'tableHeader' },
+              { text: 'Valor Total', style: 'tableHeader' }
             ],
             ...detalhes,
             [
-              { text: '', alignment: 'left' },
-              { text: 'TOTAL', alignment: 'left' },
-              { text: '', alignment: 'left' },
-              { text: '', alignment: 'left' },
-              { text: `R$ ${Number(total).toFixed(2)}`, alignment: 'left' }
+              { text: '', alignment: 'right' },
+              { text: '', alignment: 'center' },
+              { text: '', alignment: 'center' },
+              { text: 'TOTAL', style: 'TextT' },
+              { text: `R$ ${Number(total).toFixed(2)}`, style: 'TextT' }
             ]
           ]
         },
@@ -132,10 +132,21 @@ exports.PDFGen = (Cab, Det) => {
         bold: true,
         margin: [0, 0, 0, 10],
       },
+      tableHeader: {
+        bold: true,
+        fontSize: 12,
+        color: '#0A0A0A',
+      },
       subheader: {
         fontSize: 14,
         bold: true,
         margin: [0, 20, 0, 8]
+      },
+      TextT:{
+        color:"#FFF",
+        alignment: 'center',
+        bold: true,
+        fontSize: 12,
       },
       table: {
         margin: [0, 5, 0, 15],
@@ -148,6 +159,7 @@ exports.PDFGen = (Cab, Det) => {
       },
       footer: {
         margin: [10, 0, 10, 10],
+        fontSize: 8,
       },
     },
   };
