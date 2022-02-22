@@ -53,7 +53,7 @@ Route.get("/compras/contas", "WEB/CompraController.Contas").middleware('jwt'); /
 Route.get("/compras/pedidos", "WEB/CompraController.Pedidos").middleware('jwt'); //retorna pedidos atendidos e abertos do cliente
 Route.get("/compras/pedidos/detalhes/:ID/:STATUS", "WEB/CompraController.PedidoDet").middleware('jwt'); //retorna detalhes do pedido
 Route.delete("/compras/pedidos/cancelar/:ID", "WEB/CompraController.Cancelar").middleware('jwt'); //retorna detalhes do pedido
-Route.get("/compras/retriveboleto/:ID", "WEB/CompraController.RetriveBoleto").middleware('jwt'); //retorna o pdf do pedido
+Route.get("/compras/retriveboleto/:ID/:P", "WEB/CompraController.RetriveBoleto").middleware('jwt'); //retorna o pdf do pedido
 Route.get("/compras/retrivenfe/:ID", "WEB/CompraController.RetriveNota").middleware('jwt'); //retorna o pdf do pedido
 Route.post("/compras/comprar", "WEB/CompraController.Comprar").middleware('jwt'); //retorna detalhes do pedido
 Route.post("/compras/duplicatas/report/", "WEB/CompraController.Compensar").middleware('jwt'); //salva arquivo de duplicatas
@@ -95,22 +95,26 @@ Route.put("/equip/requests/admin", "WEB/EquipRequestController.SistemOptions").m
 Route.get("/administrar/franquia", "ADMIN/FranquiasController.Show").middleware('jwt');
 
 //Formulário de futuros franqueados
-Route.get("/form", "ADMIN/FuturoFranqueadoController.FutureCod"); //checa se o número do futuro franqueado existe no DB
+Route.get("/form/check/:cod", "ADMIN/FuturoFranqueadoController.FutureCod"); //checa se o número do futuro franqueado existe no DB
+Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show").middleware('jwt'); //retorna todos os formulários
+Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM"); //baixa o formulario .doc
+Route.get("/form/pdf/:CodCandidato", "ADMIN/FuturoFranqueadoController.GeneratePDF").middleware('jwt'); //retorna pdf do formulario
 Route.post("/form/solicitacao", "ADMIN/FuturoFranqueadoController.RequestCod"); //solicita código de acesso
 Route.post("/form/upload/:CodCandidato/:qfiles", "ADMIN/FuturoFranqueadoController.FileUpload"); //faz upload de arquivos
 Route.post("/form/:CodCandidato", "ADMIN/FuturoFranqueadoController.FormUpload"); //faz upload do formulario
-Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM"); //baixa o formulario .doc
-Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show").middleware('jwt'); //retorna todos os formulários
-Route.get("/form/pdf/:CodCandidato", "ADMIN/FuturoFranqueadoController.GeneratePDF").middleware('jwt'); //retorna pdf do formulario
 
 //Dashboard
-Route.get("/dashboard/telemetrias", "WEB/DashboardController.Telemetrias").middleware('jwt'); //retorna pdf do formulario
-Route.get("/dashboard/filiais", "WEB/DashboardController.Filiais").middleware('jwt'); //retorna pdf do formulario
-Route.post("/dashboard/telemetrias/chamado", "WEB/DashboardController.AbrirChamado").middleware('jwt'); //retorna pdf do formulario
+Route.get("/dashboard/filiais", "WEB/GeneralController.Filiais").middleware('jwt'); //retorna pdf do formulario
+Route.get("/dashboard/news", "WEB/GeneralController.News").middleware('jwt'); //retorna noticias
+
+//Monitor
+Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //retorna pdf do formulario
+Route.post("/monitor/telemetrias/chamado", "WEB/MonitorController.AbrirChamado").middleware('jwt'); //retorna pdf do formulario
 
 //Consulta Coletas
 Route.get("/coletas", "WEB/ConsultaColetasController.Show").middleware('jwt'); //retorna todas as coletas do franqueado
 Route.get("/coletas/detalhes/:anxid/:pdvid/:fseq", "WEB/ConsultaColetasController.See").middleware('jwt'); //retorna todas as coletas do franqueado
+Route.get("/coletas/detalhes/minimo/:Equicod", "WEB/ConsultaColetasController.CalcMin").middleware('jwt'); //retorna dados para calculo de minimo
 Route.get("/coletas/historico/:equicod/:anxid", "WEB/ConsultaColetasController.NovaColetaOptions").middleware('jwt'); //retorna info sobre a última coleta do eq
 Route.get("/coletas/novacoleta/:l1id/:l2id/:anxid/:pdvid", "WEB/ConsultaColetasController.CalcColetas").middleware('jwt'); //retorna qtd de doses em x tempo
 Route.post("/coletas/novacoleta/", "WEB/ConsultaColetasController.GravaColeta").middleware('jwt'); //grava nova coleta

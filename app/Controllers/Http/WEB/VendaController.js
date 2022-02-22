@@ -162,7 +162,7 @@ class VendaController {
           M0_TIPO: 'S',
           PvTipo: Pedido.TipoVenda,
           D_DOC: `000000000${Number(ultPvcId[0].UltimoID) + 1}`.slice(-9),
-          DEPDEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
+          DEPDEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : String(Pedido.RemOrigem).slice(0, 3) : 0,
           DtEmissao: moment().subtract(3, "hours").toDate(),
           D_TES: '0',
           C5_ZZADEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
@@ -178,18 +178,17 @@ class VendaController {
           A1_NREDUZ: Pedido.Cliente.Nome_Fantasia,
           A1_NOME: Pedido.Cliente.Razão_Social,
           A1_CGC: String(Pedido.Cliente.CNPJ).replace(/([-,./])/g, ""),
-          A1_COD: Pedido.Cliente.A1_COD,
-          A1_LOJA: Pedido.Cliente.A1_LOJA,
+          A1_COD: String(Pedido.Cliente.A1_COD).slice(0, 6),
+          A1_LOJA: String(Pedido.Cliente.A1_LOJA).slice(0, 2),
           GRPVEN: verified.grpven,
           VENVLR: item.PrVenda,
           PvnRoy: item.ProdRoy,
           D_PRCVEN: item.VVenda,
           D_TOTAL: item.FatConversao !== null ? (item.QVenda * item.FatConversao) * (item.VVenda - item.DVenda) : item.QVenda * (item.VVenda - item.DVenda),
           D_DESC: item.DVenda,
-          C5_CONDPAG: Pedido.CondPag
-        }).into("dbo.SDBase");
+          C5_CONDPAG: String(Pedido.CondPag).slice(0, 3)
+        }).into("dbo.SDBase")
       });
-
 
       response.status(200).send({ message: "ok" });
     } catch (err) {
@@ -224,7 +223,8 @@ class VendaController {
         })
         .update({
           STATUS: 'C',
-          PvcSerie: 'A'
+          PvcSerie: 'A',
+          DataIntegracao: new Date()
         });
 
       await Database.table('dbo.PedidosVendaDet')
@@ -235,6 +235,16 @@ class VendaController {
         })
         .update({
           PvcSerie: 'A'
+        });
+
+      await Database.table('dbo.SDBase')
+        .where({
+          DOC: pvc,
+          F_SERIE: 'F',
+          D_FILIAL: verified.user_code
+        })
+        .update({
+          F_SERIE: 'A'
         });
 
       await Database.insert({
@@ -266,6 +276,41 @@ class VendaController {
           DataCriacao: actualDate,
           PdvVlrDesc: item.DVenda
         }).into("dbo.PedidosVendaDet");
+
+        await Database.insert({
+          D_FILIAL: verified.user_code,
+          F_SERIE: 'F',
+          DOC: Number(ultPvcId[0].UltimoID) + 1,
+          D_ITEM: i + 1,
+          M0_TIPO: 'S',
+          PvTipo: Pedido.TipoVenda,
+          D_DOC: `000000000${Number(ultPvcId[0].UltimoID) + 1}`.slice(-9),
+          DEPDEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : String(Pedido.RemOrigem).slice(0, 3) : 0,
+          DtEmissao: moment().subtract(3, "hours").toDate(),
+          D_TES: '0',
+          C5_ZZADEST: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
+          D_COD: String(item.CodFab).slice(0, 5),
+          ProdId: String(item.ProdId).slice(0, 4),
+          Produto: item.Produto,
+          D_UM: item.UnMedida,
+          D_QUANT: item.FatConversao !== null ? item.QVenda * item.FatConversao : item.QVenda,
+          D_SEGUM: item.UnMedida,
+          Pedido: Number(ultPvcId[0].UltimoID) + 1,
+          D_EMISSAO: moment().subtract(3, "hours").format('YYYY/MM/DD').replace(/([/])/g, ""),
+          A1_SATIV1: Pedido.Cliente.A1_SATIV1,
+          A1_NREDUZ: Pedido.Cliente.Nome_Fantasia,
+          A1_NOME: Pedido.Cliente.Razão_Social,
+          A1_CGC: String(Pedido.Cliente.CNPJ).replace(/([-,./])/g, ""),
+          A1_COD: String(Pedido.Cliente.A1_COD).slice(0, 6),
+          A1_LOJA: String(Pedido.Cliente.A1_LOJA).slice(0, 2),
+          GRPVEN: verified.grpven,
+          VENVLR: item.PrVenda,
+          PvnRoy: item.ProdRoy,
+          D_PRCVEN: item.VVenda,
+          D_TOTAL: item.FatConversao !== null ? (item.QVenda * item.FatConversao) * (item.VVenda - item.DVenda) : item.QVenda * (item.VVenda - item.DVenda),
+          D_DESC: item.DVenda,
+          C5_CONDPAG: String(Pedido.CondPag).slice(0, 3)
+        }).into("dbo.SDBase")
       });
 
       response.status(200).send({ message: "ok" });
@@ -297,7 +342,20 @@ class VendaController {
           STATUS: 'P'
         })
         .update({
-          STATUS: 'C'
+          STATUS: 'C',
+          DataIntegracao: new Date()
+        });
+
+      await Database.table('dbo.SDBase')
+        .where({
+          D_FILIAL: verified.user_code,
+          F_SERIE: 'F',
+          DOC: pvc,
+        })
+        .update({
+          D_QUANT: 0,
+          D_PRCVEN: 0,
+          D_TOTAL: 0
         });
 
       response.status(200).send({ message: 'ok' })
@@ -561,8 +619,8 @@ class VendaController {
 
       const vendaCab = await Database.raw('select C.Nome_Fantasia, PC.PvcID, C.CNPJss, PC.DataCriacao, C.TPessoa from dbo.PedidosVendaCab as PC inner join dbo.Cliente as C on PC.CNPJ = C.CNPJ where PC.GrpVen = ? and PC.PvcID = ? and PC.PvcSerie = ?',
         [verified.grpven, pvc, serie])
-        
-        const vendaDet = await Database.raw('select PD.ProdId, P.Produto, PD.PvdQtd, PD.PvdVlrUnit, PD.PvdVlrTotal from dbo.PedidosVendaDet as PD inner join dbo.Produtos as P on PD.ProdId = P.ProdId where GrpVen = ? and PD.PvcID = ? and PD.PvcSerie = ?',
+
+      const vendaDet = await Database.raw('select PD.ProdId, P.Produto, PD.PvdQtd, PD.PvdVlrUnit, PD.PvdVlrTotal from dbo.PedidosVendaDet as PD inner join dbo.Produtos as P on PD.ProdId = P.ProdId where GrpVen = ? and PD.PvcID = ? and PD.PvcSerie = ?',
         [verified.grpven, pvc, serie])
 
       const PDFModel = PDFGen(vendaCab[0], vendaDet);

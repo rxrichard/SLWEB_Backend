@@ -93,8 +93,8 @@ class FuturoFranqueadoController {
     }
   }
 
-  async FutureCod({ request, response }) {
-    const { cod } = request.only(["cod"]);
+  async FutureCod({ request, response, params }) {
+    const cod = params.cod
 
     try {
       const resposta = await Database.select("*")
@@ -113,7 +113,7 @@ class FuturoFranqueadoController {
       response.status(400).send();
       logger.error({
         token: null,
-        params: null,
+        params: params,
         payload: request.body,
         err: err,
         handler: 'FuturoFranqueadoController.FutureCod',
@@ -280,6 +280,9 @@ class FuturoFranqueadoController {
           break;
         case 'Kauê':
           emailConsultor = 'kaue.santos@pilaoprofessional.com.br'
+          break;
+        case 'Priscila':
+          emailConsultor = 'priscila.mattos@pilaoprofessional.com.br'
           break;
         case 'Richard':
           emailConsultor = 'richard.bastos@pilaoprofessional.com.br'

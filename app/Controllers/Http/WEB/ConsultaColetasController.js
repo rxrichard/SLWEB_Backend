@@ -62,6 +62,30 @@ class ConsultaColetasController {
     }
   }
 
+  async CalcMin({ request, response, params }) {
+    const token = request.header("authorization");
+    const Equicod = params.Equicod
+    
+    try {
+      const verified = seeToken(token);
+
+      const dadosParaCalculoDeMinimo = await Database.raw(queryCalculoDeMinimo, [verified.grpven, Equicod])
+
+      response.status(200).send({
+        DadosParaCalculoDeMinimo: dadosParaCalculoDeMinimo[0]
+      })
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'ConsultaColetasController.CalcMin',
+      })
+    }
+  }
+
   async NovaColetaOptions({ request, response, params }) {
     const token = request.header("authorization");
     const EquiCod = params.equicod
@@ -288,3 +312,5 @@ const queryUltimaColeta = "SELECT top(1) dbo.FichFatM.FfmDtColeta AS UltimaColet
 const queryLeiturasDisponiveis = "SELECT dbo.SLTELLeitura.LeituraId, dbo.SLTELLeitura.DataLeitura, dbo.SLTELLeitura.QuantidadeTotal AS Contador FROM dbo.SLTELLeitura INNER JOIN dbo.PontoVenda ON dbo.SLTELLeitura.Matricula = dbo.PontoVenda.EquiCod WHERE ( ((dbo.SLTELLeitura.LeituraId) >= ?) AND ((dbo.PontoVenda.EquiCod) = ?) AND ((dbo.PontoVenda.GrpVen) = ?) AND ((dbo.PontoVenda.PdvStatus) = 'A') AND ((dbo.PontoVenda.AnxId) = ?) ) order by LeituraId ASC"
 
 const queryLeituraDetalhes = "SELECT LS.Selecao, LS.QuantidadeVendaPaga, LS.QuantidadeVendaTeste, PV.PvpVvn1, PV.PvpVvn2, P.Produto, P.ProdId, PV.TveId FROM dbo.SLTEL_LeituraSelecao AS LS left join dbo.PVPROD as PV on LS.Selecao = PV.PvpSel left join dbo.Produtos as P on PV.ProdId  = P.ProdId WHERE LS.LeituraId = ? and PV.AnxId = ? and PV.PdvId = ? AND PV.GrpVen = ?"
+
+const queryCalculoDeMinimo = "select P.PdvConsMin, P.PdvConsValor, P.PdvConsDose, P.PdvSomaCompartilhado, A.CalcFatId, A.AnxDiaFecha, A.AnxProRata, A.AnxFatMinimo, A.AnxCalcMinPor, A.AnxTipMin, A.AnxMinMoeda, A.ProdId,A.AnxVlrUnitMin from dbo.PontoVenda as P inner join dbo.Anexos as A on P.AnxId = A.AnxId and P.GrpVen = A.GrpVen where P.GrpVen = ? and P.PdvStatus = 'A' and P.EquiCod = ?"
