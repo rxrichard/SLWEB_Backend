@@ -35,6 +35,8 @@ class Sl2TelController {
       //gero token tmt
       const tokenTMT = await GenTokenTMT(filial);
 
+      console.log('1')
+
       //trago os dados do cliente e pdv do slaplic e todos os clientes do tmt
       let [PDV, clientes] = await Promise.all([
         Database.raw("select * from dbo.PontoVenda as P inner join dbo.Cliente as C on P.CNPJ = C.CNPJ  where P.EquiCod = ? and P.PdvStatus = ?", [EquiCod, "A"]),
@@ -50,13 +52,18 @@ class Sl2TelController {
         ListSegmentos(tokenTMT.data.access_token),
       ])
 
+      //clientes novos cadastrados pelo slaplic não tem SATIV, isso da problema na hora de encontrar o segmento
+      const SATIV_Valida = PDV[0].A1_SATIV1 !== null ? PDV[0].A1_SATIV1 : '000113'
+
       //filtro pra trazer só a cidade e segmento que preciso
       let cidadeCorreta = cidades.filter(cidade => String(cidade.Nome).replace(/\p{Diacritic}/gu, "").toUpperCase().trim() === String(PDV[0].PdvCidadePV).normalize("NFD").replace(/\p{Diacritic}/gu, "").toUpperCase().trim())[0];
-      let segmentoCorreto = segmentos.filter(segmento => String(segmento.Codigo) === String(PDV[0].A1_SATIV1))[0]
+      let segmentoCorreto = segmentos.filter(segmento => String(segmento.Codigo) === String(SATIV_Valida))[0]
+
+      console.log('2')
 
       //se o cliente não existir no tmt, crio um novo, sejá existir atualizo
       if (IdGeral === null) {
-        await StoreClient(tokenTMT.data.access_token, PDV[0], cidadeCorreta ? cidadeCorreta : 1, tokenTMT.data.empresaId, segmentoCorreto.length > 0 ? segmentoCorreto[0].Id : 1)
+        await StoreClient(tokenTMT.data.access_token, PDV[0], cidadeCorreta ? cidadeCorreta : 1, tokenTMT.data.empresaId, typeof segmentoCorreto != 'undefined' && segmentoCorreto.length > 0 ? segmentoCorreto[0].Id : 1)
         /* preciso carregar todos os cliente do tmt novamente 
         e filtrar a lista mais uma vez para encontrar o ID 
         do cliente recem criado */
@@ -64,9 +71,11 @@ class Sl2TelController {
         IdGeral = returnClientID(clientes, PDV[0].CNPJ[0])
         
       } else {
-        await UpdateClient(tokenTMT.data.access_token, IdGeral, PDV[0], cidadeCorreta, tokenTMT.data.empresaId, segmentoCorreto.length > 0 ? segmentoCorreto[0].Id : 269)
+        await UpdateClient(tokenTMT.data.access_token, IdGeral, PDV[0], cidadeCorreta, tokenTMT.data.empresaId, typeof segmentoCorreto != 'undefined' && segmentoCorreto.length > 0 ? segmentoCorreto[0].Id : 1)
       }
       
+      console.log('3')
+
       //trago todas as máquinas e instalacoes de máquinas da filial no tmt
       let [maquinas, instalacoes] = await Promise.all([
         ListMaquinas(tokenTMT.data.access_token),
@@ -92,10 +101,14 @@ class Sl2TelController {
         }
       })
 
+      console.log('4')
+
       //se eu não encontrar nenhuma instalacao, crio uma nova, se sim, ignoro
       if (!alreadyLinkedToClient) {
         await StoreInstalacao(tokenTMT.data.access_token, tokenTMT.data.empresaId, ativoCorreto.Id, IdGeral)
       }
+
+      console.log('5')
 
       response.status(200).send({ message: "Atualizado com sucesso" });
     } catch (err) {

@@ -95,16 +95,17 @@ Route.put("/equip/requests/admin", "WEB/EquipRequestController.SistemOptions").m
 Route.get("/administrar/franquia", "ADMIN/FranquiasController.Show").middleware('jwt');
 
 //Formulário de futuros franqueados
-Route.get("/form", "ADMIN/FuturoFranqueadoController.FutureCod"); //checa se o número do futuro franqueado existe no DB
+Route.get("/form/check/:cod", "ADMIN/FuturoFranqueadoController.FutureCod"); //checa se o número do futuro franqueado existe no DB
+Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show").middleware('jwt'); //retorna todos os formulários
+Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM"); //baixa o formulario .doc
+Route.get("/form/pdf/:CodCandidato", "ADMIN/FuturoFranqueadoController.GeneratePDF").middleware('jwt'); //retorna pdf do formulario
 Route.post("/form/solicitacao", "ADMIN/FuturoFranqueadoController.RequestCod"); //solicita código de acesso
 Route.post("/form/upload/:CodCandidato/:qfiles", "ADMIN/FuturoFranqueadoController.FileUpload"); //faz upload de arquivos
 Route.post("/form/:CodCandidato", "ADMIN/FuturoFranqueadoController.FormUpload"); //faz upload do formulario
-Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM"); //baixa o formulario .doc
-Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show").middleware('jwt'); //retorna todos os formulários
-Route.get("/form/pdf/:CodCandidato", "ADMIN/FuturoFranqueadoController.GeneratePDF").middleware('jwt'); //retorna pdf do formulario
 
 //Dashboard
 Route.get("/dashboard/filiais", "WEB/GeneralController.Filiais").middleware('jwt'); //retorna pdf do formulario
+Route.get("/dashboard/news", "WEB/GeneralController.News").middleware('jwt'); //retorna noticias
 
 //Monitor
 Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //retorna pdf do formulario
