@@ -1,14 +1,10 @@
 "use strict";
 
 const Database = use("Database");
+const Drive = use('Drive');
+const Helpers = use('Helpers');
 const Mail = use("Mail");
 const Env = use("Env");
-
-const TiposEmail = [
-  { id: 1, model: "Atualização de Equipamentos" },
-  { id: 2, model: "Declarar Vendas" },
-  { id: 3, model: "Notificação Extrajudicial" },
-];
 
 const logger = require("../../../../dump/index")
 const { seeToken } = require("../../../Services/jwtServices");
@@ -21,14 +17,19 @@ class MailerController {
       const verified = seeToken(token);
 
       if (verified.role === "Franquia") {
-        response.status(401).send();
+        throw new Error('Usuário não autorizado');
       }
 
       const log = await Database.select("*")
         .from("dbo.LogAvisos")
         .orderBy("DataOcor", "DESC");
 
-      response.status(200).send({ log, Modelos: TiposEmail });
+      const recipients = await Database.raw("select A1_GRPVEN, M0_CODFIL, Email from dbo.FilialEntidadeGrVenda where Inatv IS NULL and M0_CODFIL <> '0201' and M0_CODFIL <> '0203' order by A1_GRPVEN ASC")
+
+      response.status(200).send({
+        History: log,
+        AvailableRecipients: recipients
+      });
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -41,51 +42,56 @@ class MailerController {
     }
   }
 
-  async See({ request, response, params }) {
+  async DispatchEmail({ request, response }) {
     const token = request.header("authorization");
-    const HtmlModel = {};
-    const recipients = [];
+    const { subject, body, recipients, salvarNovoTemplate, nomeNovoTemplate } = request.only(['subject', 'body', 'recipients', 'salvarNovoTemplate', 'nomeNovoTemplate'])
 
     try {
       const verified = seeToken(token);
 
       if (verified.role === "Franquia") {
-        response.status(401).send();
+        throw new Error('Usuário não autorizado');
       }
 
-      // switch(params.model){
-      //   case 1:
-      //     HtmlModel = email
-      //     recipients = await Database.select('*').from('dbo.FilialEntidadeGrVenda')
-      //     break;
-      //   case 2:
-      //     HtmlModel = email
-      //     recipients = await Database.select('*').from('dbo.FilialEntidadeGrVenda')
-      //     break;
-      //   case 3:
-      //     HtmlModel = email
-      //     recipients = await Database.select('*').from('dbo.FilialEntidadeGrVenda')
-      //     break;
-      // }
+      //converter texto bruto para edge(html) com as tags
+      const rawBodyToEdge = FromRawMailToEdgeFormat(body);
+      let templateName = null
+      let templateCaminho = null
 
-      response.status(200).send({
-        model: HtmlModel,
-        Destinatarios: recipients
-      });
-    } catch (err) {
-      response.status(400).send();
-      logger.error({
-        token: token,
-        params: params,
-        payload: request.body,
-        err: err,
-        handler: 'MailerController.See',
-      })
-    }
-  }
+      if (salvarNovoTemplate) {
+        console.log('salvar e enviar')
+        templateName = `${nomeNovoTemplate}-${new Date().getTime()}`
+        templateCaminho = Helpers.resourcesPath(`/views/emails/custom/${templateName}.edge`)
 
-  async DispararEmail({ request, response }) {
-    try {
+        await Drive.put(templateCaminho, Buffer.from(rawBodyToEdge))
+
+        recipients.forEach(async (recipient) => {
+          await Mail.send(
+            `emails.custom.${templateName}`,
+            null,
+            (message) => {
+              message
+                .to(recipient)
+                .from(Env.get("MAIL_USERNAME"), "Pilão Professional")
+                .subject(subject);
+            }
+          );
+        })
+      } else {
+        console.log('só enviar')
+        recipients.forEach(async (recipient) => {
+          await Mail.raw(
+            rawBodyToEdge,
+            (message) => {
+              message
+                .to(recipient)
+                .from(Env.get("MAIL_USERNAME"), "Pilão Professional")
+                .subject(subject);
+            }
+          );
+        })
+      }
+
       // await Mail.connection("smtp_mass").send(
       //   "emails.notificacao_equipamentos",
       //   { Nome: "Voitila" },
@@ -97,7 +103,7 @@ class MailerController {
       //       .subject('Atualização de Ativos');
       //   }
       // );
-      response.status(200).send("enviado");
+      response.status(200).send();
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -109,59 +115,16 @@ class MailerController {
       })
     }
   }
-
-  async DispararNotificacao({ response }) {
-    try {
-      //OBS: ESSA QUERY TA RETORNANDO MUITOS CLIENTES NOVOS
-      const ListaNotificados = await Database.select("Email", "GrupoVenda")
-        .from("dbo.FilialEntidadeGrVenda")
-        .where({
-          Dominio: null,
-          Inatv: null,
-        });
-
-      // fazer um map com a lista de notificacao pendente
-      // ListaNotificados.map(async (Cliente) => {
-      //   if (Cliente.Email !== null) {
-      //     await Mail.send(
-      //       "emails.notificacao",
-      //       { Franqueado: Cliente.GrupoVenda.trim() },
-      //       (message) => {
-      //         message
-      //           .to(Cliente.Email.trim())
-      //           .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-      //           .subject("Aviso da franqueadora");
-      //       }
-      //     );
-      //   }
-      // });
-
-      //testes...
-      // await Mail.send(
-      //   "emails.notificacao",
-      //   { Franqueado: 'Voitila'.trim() },
-      //   (message) => {
-      //     message
-      //       .to('voitila.araujo@pilaoprofessional.com.br'.trim())
-      //       .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-      //       .subject("Aviso da franqueadora");
-      //   }
-      // );
-
-      // response.status(200).send("Tudo Enviado");
-      response.status(200).send(ListaNotificados);
-    } catch (err) {
-      response.status(400).send();
-      logger.error({
-        token: null,
-        params: null,
-        payload: null,
-        err: err,
-        handler: 'MailerController.DispararNotificacao',
-      })
-    }
-    //fazer um insert na lista de notificacoes dos emails mandados
-  }
 }
 
 module.exports = MailerController;
+
+function FromRawMailToEdgeFormat(rawBody) {
+  let Formated = '<label>' + String(rawBody)
+
+  Formated = Formated.replace(/\n/g, "</label><br><label>")
+
+  Formated = Formated.concat("</label>")
+
+  return Formated
+}

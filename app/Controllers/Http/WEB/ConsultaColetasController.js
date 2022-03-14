@@ -207,7 +207,7 @@ class ConsultaColetasController {
         FfmDtGeracao: Margem.ate,
         FfmDtColetaAnt: Detalhes.UltimaColeta,
         FfmDtColeta: Margem.ate,
-        FfmCNTAnt: Detalhes.ContadorAnterior,
+        FfmCNTAnt: Detalhes.ContadorAnterior === null ? 0 : Detalhes.ContadorAnterior,
         FfmCNT: Margem.ateCont,
         FfmContadorDiferenca: 0,
         FfmSomaGratis: 0,
@@ -256,30 +256,30 @@ class ConsultaColetasController {
     }
   }
 
-  async Delete({ request, response }) {
+  async Delete({ request, response, params }) {
     const token = request.header("authorization");
 
-    const { EquiCod, AnxId, PdvId, FfmSeq } = request.only(['EquiCod', 'AnxId', 'PdvId', 'FfmSeq'])
+    const { EquiCod, AnxId, PdvId, FfmSeq } = params
 
     try {
       const verified = seeToken(token);
 
       await Database.table("dbo.FichFatM")
         .where({
+          GrpVen: verified.grpven,
           EquiCod: EquiCod,
           AnxId: AnxId,
           PdvId: PdvId,
-          FfmSeq: FfmSeq,
-          GrpVen: verified.grpven
+          FfmSeq: FfmSeq
         })
         .delete();
 
       await Database.table("dbo.FichFatD")
         .where({
+          GrpVen: verified.grpven,
           AnxId: AnxId,
           PdvId: PdvId,
-          FfmSeq: FfmSeq,
-          GrpVen: verified.grpven
+          FfmSeq: FfmSeq
         })
         .delete();
 
@@ -290,7 +290,7 @@ class ConsultaColetasController {
       response.status(400).send()
       logger.error({
         token: token,
-        params: null,
+        params: params,
         payload: request.body,
         err: err,
         handler: 'ConsultaColetasController.Delete',

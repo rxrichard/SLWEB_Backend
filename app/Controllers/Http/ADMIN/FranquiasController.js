@@ -13,6 +13,10 @@ class FranquiasController {
     try {
       const verified = seeToken(token);
 
+      if (verified.role === "Franquia") {
+        throw new Error('Usuário não autorizado');
+      }
+
       //verificar se o token é de ADM > 
 
       const filiais = await Database.select("*")

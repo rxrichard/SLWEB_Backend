@@ -44,7 +44,7 @@ class GeneralController {
     try {
       const news = await Database.select('*').from('dbo.NewsSLWEB').where({
         BannerStatus: 'A'
-      })
+      }).orderBy('NewsId', 'DESC')
 
       response.status(200).send({
         News: news
@@ -57,6 +57,64 @@ class GeneralController {
         payload: request.body,
         err: err,
         handler: 'GeneralController.News',
+      })
+    }
+  }
+
+  async StoreNews({ request, response }) {
+    const token = request.header("authorization");
+    const { news } = request.only(['news'])
+
+    try {
+      const verified = seeToken(token);
+
+      if (verified.role === 'Franquia') {
+        throw new Error('Acesso negado')
+      }
+
+      await Database.insert({
+        BannerTitle: news.BannerTitle,
+        BannerDescription: news.BannerDescription,
+        BannerAlign: news.BannerAlign,
+        ModalHeaderTitle: news.ModalHeaderTitle,
+        ModalContent: news.ModalContent,
+      }).into('dbo.FuturaFranquia')
+
+      response.status(200).send()
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'GeneralController.StoreNews',
+      })
+    }
+  }
+
+  async Destroy({ request, response, params }) {
+    const token = request.header("authorization");
+    const id = params.id
+
+    try {
+      await Database.table("dbo.NewsSLWEB")
+        .where({
+          NewsId: id,
+        })
+        .update({
+          BannerStatus: 'I',
+        });
+
+      response.status(200).send()
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'GeneralController.Destroy',
       })
     }
   }

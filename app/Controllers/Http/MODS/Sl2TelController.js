@@ -31,6 +31,8 @@ class Sl2TelController {
       filial = verified.user_code
     }
 
+    console.log(`ATT ${EquiCod}`)
+
     try {
       //gero token tmt
       const tokenTMT = await GenTokenTMT(filial);
