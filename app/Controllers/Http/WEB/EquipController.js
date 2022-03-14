@@ -20,14 +20,18 @@ class EquipController {
 
       const confirmPeriod = await Database.raw(confirmEquipPeriod, []);
 
-      const jaReportou = await Database
-        .select('*')
-        .from('dbo.RepoEquip')
-        .where({
-          GrpVen: verified.grpven,
-          RepoAno: moment().get('year'),
-          RepoMes: moment().get('month') + 1,
-        })
+      let jaReportou = []
+
+      if (confirmPeriod[0]) {
+        jaReportou = await Database
+          .select('*')
+          .from('dbo.RepoEquip')
+          .where({
+            GrpVen: verified.grpven,
+            RepoAno: moment(confirmPeriod[0].de).get('year'),
+            RepoMes: moment(confirmPeriod[0].de).get('month') + 1,
+          })
+      }
 
       response.status(200).send({
         Ativos: ativos,
@@ -313,21 +317,29 @@ class EquipController {
 
   async ConfirmAddresses({ request, response }) {
     const token = request.header("authorization");
-    const { Addresses } = request.only("Addresses");
+    const { Addresses, RefMes, RefAno } = request.only(["Addresses", "RefMes", "RefAno"]);
 
     try {
       const verified = seeToken(token);
 
       Addresses.forEach(async (address) => {
         await Database.insert({
-          RepoAno: moment().get('year'),
-          RepoMes: moment().get('month') + 1,
+          RepoAno: RefAno,
+          RepoMes: RefMes,
           GrpVen: verified.grpven,
           EquiCod: address.EquiCod,
           CNPJn: Number(address.CNPJ),
           RepoTMS: moment().format('YYYY-MM-DD HH:mm:ss'),
         }).into("dbo.RepoEquip");
       })
+
+      await Database.table("dbo.FilialEntidadeGrVenda")
+        .where({
+          A1_GRPVEN: verified.grpven,
+        })
+        .update({
+          Equip: 'N',
+        });
 
       response.status(200).send()
     } catch (err) {

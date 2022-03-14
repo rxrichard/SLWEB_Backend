@@ -19,7 +19,7 @@ Route.get("/vpn/pin", "MODS/AwsController.See").middleware('jwt');
 
 //Disparar Emails
 Route.get("/emails/history", "ADMIN/MailerController.Show").middleware('jwt')
-Route.get("/emails/recipients/:model", "ADMIN/MailerController.See").middleware('jwt')
+Route.post("/emails/dispatch/", "ADMIN/MailerController.DispatchEmail").middleware('jwt')
 
 //Sessão
 Route.post("/auth", "UserController.Login");
@@ -57,6 +57,7 @@ Route.get("/compras/retriveboleto/:ID/:P", "WEB/CompraController.RetriveBoleto")
 Route.get("/compras/retrivenfe/:ID", "WEB/CompraController.RetriveNota").middleware('jwt'); //retorna o pdf do pedido
 Route.post("/compras/comprar", "WEB/CompraController.Comprar").middleware('jwt'); //retorna detalhes do pedido
 Route.post("/compras/duplicatas/report/", "WEB/CompraController.Compensar").middleware('jwt'); //salva arquivo de duplicatas
+Route.get("/compras/pedidos/PDF/detalhes/:pedidoid/:status", "WEB/CompraController.GenPDFCompra").middleware('jwt'); //retorna pdf de venda
 
 //Vendas
 Route.get("/vendas/produtos", "WEB/VendaController.Produtos").middleware('jwt'); //retorna lista de produtos compraveis
@@ -106,6 +107,8 @@ Route.post("/form/:CodCandidato", "ADMIN/FuturoFranqueadoController.FormUpload")
 //Dashboard
 Route.get("/dashboard/filiais", "WEB/GeneralController.Filiais").middleware('jwt'); //retorna pdf do formulario
 Route.get("/dashboard/news", "WEB/GeneralController.News").middleware('jwt'); //retorna noticias
+Route.post("/dashboard/news/", "WEB/GeneralController.StoreNews").middleware('jwt'); //guarda nova noticia
+Route.delete("/dashboard/news/:id", "WEB/GeneralController.Destroy").middleware('jwt'); //inativa uma noticia
 
 //Monitor
 Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //retorna pdf do formulario
@@ -118,6 +121,8 @@ Route.get("/coletas/detalhes/minimo/:Equicod", "WEB/ConsultaColetasController.Ca
 Route.get("/coletas/historico/:equicod/:anxid", "WEB/ConsultaColetasController.NovaColetaOptions").middleware('jwt'); //retorna info sobre a última coleta do eq
 Route.get("/coletas/novacoleta/:l1id/:l2id/:anxid/:pdvid", "WEB/ConsultaColetasController.CalcColetas").middleware('jwt'); //retorna qtd de doses em x tempo
 Route.post("/coletas/novacoleta/", "WEB/ConsultaColetasController.GravaColeta").middleware('jwt'); //grava nova coleta
+Route.delete("/coletas/detalhes/apagar/:EquiCod/:AnxId/:PdvId/:FfmSeq", "WEB/ConsultaColetasController.Delete").middleware('jwt'); //deleta coleta
+
 
 //Pontos de Venda
 Route.get("/pontosdevenda", "WEB/PontosDeVendaController.Show").middleware('jwt'); //retorna todos os pontos de venda do franqueado

@@ -7,6 +7,22 @@ const Helpers = use("Helpers");
 const { seeToken } = require("../../../Services/jwtServices");
 const moment = require("moment");
 const logger = require("../../../../dump/index")
+const PdfPrinter = require("pdfmake");
+const toArray = require('stream-to-array')
+const fs = require("fs");
+const { PDFGen } = require("../../../../resources/pdfModels/detalhesCompra_pdfModel");
+moment.locale("pt-br");
+
+var fonts = {
+  Roboto: {
+    normal: Helpers.resourcesPath("fonts/OpenSans-Regular.ttf"),
+    bold: Helpers.resourcesPath("fonts/OpenSans-Bold.ttf"),
+    italics: Helpers.resourcesPath("fonts/OpenSans-RegularItalic.ttf"),
+    bolditalics: Helpers.resourcesPath("fonts/OpenSans-BoldItalic.ttf"),
+  },
+};
+
+const printer = new PdfPrinter(fonts);
 
 class CompraController {
   /** @param {object} ctx
@@ -131,12 +147,6 @@ class CompraController {
       };
 
       if (Status === "Faturado") {
-        //busca nos pedidos atendidos
-        // PedidoDet = await Database.raw(queryPedidosAtendidosDetPorPedidoID, [
-        //   verified.grpven,
-        //   verified.user_code,
-        //   PedidoID,
-        // ]);
         PedidoDet = await Database.raw(
           `execute ProcPedidosCompraAtendidosDet @GrpVen=?, @Filial =?, @PedidoId=?`,
           [verified.grpven, verified.user_code, PedidoID]
@@ -246,7 +256,7 @@ class CompraController {
 
   async Comprar({ request, response }) {
     const token = request.header("authorization");
-    const { Items, Obs, Retira, AVista } = request.only(["Items", "Obs", "Retira", 'AVista']);
+    const { Items, Obs, Retira, AVista, Desconto } = request.only(["Items", "Obs", "Retira", 'AVista', 'Desconto']);
 
     try {
       const verified = seeToken(token);
@@ -270,7 +280,7 @@ class CompraController {
       Items.map(
         (item) =>
         (TotalDoPedido +=
-          Number(item.QCompra) * (Number(item.QtMin) * (Number(item.VlrUn) * (AVista ? 0.95 : 1))))
+          Number(item.QCompra) * (Number(item.QtMin) * (Number(item.VlrUn) * ((AVista ? 0.95 : 1) + (Desconto && item.ProdRoy === 1 ? Desconto : 1) - 1))))
       );
 
       if (
@@ -333,8 +343,8 @@ class CompraController {
             DataEntrega: null,
             CodigoProduto: `00000${item.Cód}`.slice(-5),
             QtdeVendida: item.QCompra * item.QtMin,
-            PrecoUnitarioLiquido: item.VlrUn * (AVista ? 0.95 : 1),
-            PrecoTotal: item.QCompra * (item.QtMin * item.VlrUn) * (AVista ? 0.95 : 1),
+            PrecoUnitarioLiquido: item.VlrUn * ((AVista ? 0.95 : 1) + (Desconto && item.ProdRoy === 1 ? Desconto : 1) - 1),
+            PrecoTotal: item.QCompra * (item.QtMin * item.VlrUn) * ((AVista ? 0.95 : 1) + (Desconto && item.ProdRoy === 1 ? Desconto : 1) - 1),
             Limite: null,
             CodigoTotvs: null,
             DataCriacao: new Date(moment().subtract(3, "hours").format()),
@@ -595,12 +605,62 @@ class CompraController {
       })
     }
   }
+
+  async GenPDFCompra({ request, response, params }) {
+    const token = request.header("authorization");
+    const pedidoid = params.pedidoid;
+    const status = params.status;
+    const path = Helpers.publicPath(`/tmp`);
+    const PathWithName = `${path}/${pedidoid}-${new Date().getTime()}.pdf`;
+
+    try {
+      const verified = seeToken(token);
+
+      let compraCab = []
+      let compraDet = []
+
+      if(status === 'Processando'){
+        compraCab = await Database.raw("select C.Nome_Fantasia, PC.PedidoId as PvcID, C.CNPJss, PC.DataCriacao, C.TPessoa from dbo.PedidosCompraCab as PC inner join dbo.Cliente as C on PC.GrpVen = C.GrpVen and C.A1_SATIV1 = '000113' and A1Tipo = 'R' where PC.PedidoId = ? and PC.GrpVen = ?", [pedidoid, verified.grpven]);
+  
+        compraDet = await Database.raw("select PV.CodigoProduto as ProdId, P.Produto, PV.QtdeVendida as PvdQtd, PV.PrecoUnitarioLiquido as PvdVlrUnit, P.PrCompra,PV.PrecoTotal as PvdVlrTotal from dbo.PedidosVenda as PV inner join dbo.Produtos as P on PV.CodigoProduto = P.ProdId where PV.PedidoID = ? and PV.GrpVen = ?", [pedidoid, verified.grpven])
+      }else if(status === 'Faturado'){
+        compraCab = await Database.raw("select C.Nome_Fantasia, PC.PedidoId as PvcID, C.CNPJss, PC.DataCriacao, C.TPessoa from dbo.PedidosCompraCab as PC inner join dbo.Cliente as C on PC.GrpVen = C.GrpVen and C.A1_SATIV1 = '000113' and A1Tipo = 'R' where PC.C5NUM = ? and PC.GrpVen = ?", [pedidoid, verified.grpven])
+        
+        if(!compraCab[0]){
+          compraCab = await Database.raw("SELECT distinct C.Nome_Fantasia, S.Pedido as PvcID, C.CNPJss, S.DtEmissao as DataCriacao, C.TPessoa FROM dbo.SDBase as S inner join dbo.Cliente as C on S.SA1_GRPVEN = C.GrpVen and C.A1_SATIV1 = '000113' and C.A1Tipo = 'R' WHERE S.Pedido = ? and S.GRPVEN = ?", [pedidoid, verified.grpven])
+        }
+
+        compraDet = await Database.raw("select S.D_COD as ProdId, P.Produto, S.D_QUANT as PvdQtd, S.D_PRCVEN PvdVlrUnit, P.PrCompra, S.D_TOTAL as PvdVlrTotal from dbo.SDBase as S inner join dbo.Produtos as P on S.ProdId = P.ProdId where Pedido = ? and GRPVEN = ?", [pedidoid, verified.grpven])
+      }
+
+      const PDFModel = PDFGen(compraCab[0], compraDet);
+
+      var pdfDoc = printer.createPdfKitDocument(PDFModel);
+      pdfDoc.pipe(fs.createWriteStream(PathWithName));
+      pdfDoc.end();
+
+      const enviarDaMemóriaSemEsperarSalvarNoFS = await toArray(pdfDoc).then(parts => {
+        return Buffer.concat(parts);
+      })
+
+      response.status(200).send(enviarDaMemóriaSemEsperarSalvarNoFS)
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.GenPDFCompra',
+      })
+    }
+  }
 }
 
 module.exports = CompraController;
 
 const queryProdutos =
-  "SELECT dbo.PrecoCompra.ProdId AS Cód, dbo.PrecoCompra.Produto, dbo.Produtos.ProdQtMinCompra AS QtMin, dbo.Produtos.PrCompra AS VlrUn, [ProdQtMinCompra]*[PrCompra] AS Vlr, dbo.Produtos.FatConversao FROM dbo.PrecoCompra INNER JOIN dbo.Produtos ON dbo.PrecoCompra.ProdId = dbo.Produtos.ProdId WHERE dbo.Produtos.Compra = 'S' ORDER BY dbo.PrecoCompra.Produto";
+  "SELECT dbo.PrecoCompra.ProdId AS Cód, dbo.PrecoCompra.Produto, dbo.Produtos.ProdQtMinCompra AS QtMin, dbo.Produtos.PrCompra AS VlrUn, [ProdQtMinCompra]*[PrCompra] AS Vlr, dbo.Produtos.FatConversao, dbo.Produtos.ProdRoy FROM dbo.PrecoCompra INNER JOIN dbo.Produtos ON dbo.PrecoCompra.ProdId = dbo.Produtos.ProdId WHERE dbo.Produtos.Compra = 'S' ORDER BY dbo.PrecoCompra.Produto";
 
 const queryGigante1 =
   "SELECT dbo.FilialEntidadeGrVenda.LimiteCredito, IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) as LimExtraCredito, dbo.FilialEntidadeGrVenda.Retira, dbo.FilialEntidadeGrVenda.VlrMinCompra, SE1_GrpVenT.Avencer, SE1_GrpVenT.Vencida, SE1_ComprasNVencidas.Compras, IIf( [Compras] > 0, [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) - [Compras], [LimiteCredito] + IIF( IIF( dbo.FilialEntidadeGrVenda.DtExtraCredito is null, DATEADD(HOUR, -24, GETDATE()), DATEDIFF( hour, dbo.FilialEntidadeGrVenda.DtExtraCredito, GETDATE() ) ) > 24, 0, IIF( dbo.FilialEntidadeGrVenda.LimExtraCredito is null, 0, dbo.FilialEntidadeGrVenda.LimExtraCredito ) ) ) AS LimiteAtual FROM ( ( dbo.FilialEntidadeGrVenda LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(IIf([SE1DtVencR] > GETDATE(), 0, [E1_SALDO])) AS Avencer, Sum(IIf([SE1DtVencR] < GETDATE(), [E1_SALDO], 0)) AS Vencida FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) AND (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_GrpVenT ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_GrpVenT.GrpVen ) LEFT JOIN ( SELECT dbo.SE1_GrpVen.GrpVen, Sum(dbo.SE1_GrpVen.E1_SALDO) AS Compras FROM ( dbo.SE1_GrpVen INNER JOIN SE1_Class ON (dbo.SE1_GrpVen.E1_TIPO = SE1_Class.E1_TIPO) AND (dbo.SE1_GrpVen.E1_PREFIXO = SE1_Class.E1_PREFIXO) ) LEFT JOIN dbo.SE1DtVenc ON dbo.SE1_GrpVen.DtVenc = dbo.SE1DtVenc.SE1DtVenc WHERE (((SE1_Class.E1Desc) = 'Compra')) GROUP BY dbo.SE1_GrpVen.GrpVen ) as SE1_ComprasNVencidas ON dbo.FilialEntidadeGrVenda.A1_GRPVEN = SE1_ComprasNVencidas.GrpVen ) WHERE (dbo.FilialEntidadeGrVenda.A1_GRPVEN = ?)";

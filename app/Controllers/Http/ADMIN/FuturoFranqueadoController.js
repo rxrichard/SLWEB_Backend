@@ -30,7 +30,9 @@ class FuturoFranqueadoController {
     try {
       const verified = await seeToken(token);
 
-      if (verified.role === "Franquia") throw Error;
+      if (verified.role === "Franquia") {
+        throw new Error('Usuário não autorizado');
+      }
 
       const formularios = await Database
         .select("*")
