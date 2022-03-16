@@ -78,7 +78,8 @@ class GeneralController {
         BannerAlign: news.BannerAlign,
         ModalHeaderTitle: news.ModalHeaderTitle,
         ModalContent: news.ModalContent,
-      }).into('dbo.FuturaFranquia')
+        BannerStatus: 'A',
+      }).into('dbo.NewsSLWEB')
 
       response.status(200).send()
     } catch (err) {
