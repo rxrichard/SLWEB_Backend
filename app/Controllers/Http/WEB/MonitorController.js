@@ -62,7 +62,9 @@ class MonitorController {
         Bairro: DTO.Endereco.Bairro,
         Municipio: DTO.Endereco.Cidade,
         UF: DTO.Endereco.UF,
-        CEP: DTO.Endereco.CEP
+        CEP: DTO.Endereco.CEP,
+        ChamadoFechado: false,
+        DtChamadoFechado: null
       }).into('dbo.ChamadosSL2MiFix')
 
       await Mail.send(
@@ -82,7 +84,8 @@ class MonitorController {
           GrpVen: verified.grpven,
           EquiCod: DTO.Ativo,
           DtAberturaChamado: null,
-          ChamadoAberto: false
+          ChamadoAberto: false,
+          ChamadoFechado: false
         })
         .update({
           DtAberturaChamado: moment().subtract(3, "hours").toDate(),
@@ -105,4 +108,4 @@ class MonitorController {
 
 module.exports = MonitorController
 
-const QueryTelemetrias = "SELECT bog.GrpVen, bog.EquiCod, P.AnxDesc, bog.MáxDeDataLeitura, bog.[Ql-4], bog.[Ql-3], bog.[Ql-2], bog.[Ql-1], bog.Ql0, bog.[Con-4], bog.[Con-3], bog.[Con-2], bog.[Con-1], bog.Con0, bog.Prd3, bog.Prd2, bog.Prd1, bog.Prd, bog.LeitOk, F.GrupoVenda, F.Email, E.EquiDesc, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvBairroPV, P.PdvComplementoPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP, MAX(C.DtAberturaChamado) as UltChamado FROM dbo.bogf_Leituras_QtdGrpT as bog inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = bog.GrpVen inner join dbo.Equipamento as E on E.EquiCod = bog.EquiCod left join dbo.PontoVenda as P on P.EquiCod = bog.EquiCod and P.PdvStatus = 'A' left join dbo.ChamadosSL2MiFix as C on C.EquiCod = bog.EquiCod and C.ChamadoAberto = '1' WHERE (((bog.GrpVen) = ?)) group by bog.GrpVen, bog.EquiCod, P.AnxDesc, bog.MáxDeDataLeitura, bog.[Ql-4], bog.[Ql-3], bog.[Ql-2], bog.[Ql-1], bog.Ql0, bog.[Con-4], bog.[Con-3], bog.[Con-2], bog.[Con-1], bog.Con0, bog.Prd3, bog.Prd2, bog.Prd1, bog.Prd, bog.LeitOk, F.GrupoVenda, F.Email, E.EquiDesc, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvBairroPV, P.PdvComplementoPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP order by EquiCod DESC"
+const QueryTelemetrias = "SELECT bog.GrpVen, bog.EquiCod, P.AnxDesc, bog.MáxDeDataLeitura, bog.[Ql-4], bog.[Ql-3], bog.[Ql-2], bog.[Ql-1], bog.Ql0, bog.[Con-4], bog.[Con-3], bog.[Con-2], bog.[Con-1], bog.Con0, bog.Prd3, bog.Prd2, bog.Prd1, bog.Prd, bog.LeitOk, F.GrupoVenda, F.Email, E.EquiDesc, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvBairroPV, P.PdvComplementoPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP, MAX(C.DtAberturaChamado) as UltChamado FROM dbo.bogf_Leituras_QtdGrpT as bog inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = bog.GrpVen inner join dbo.Equipamento as E on E.EquiCod = bog.EquiCod left join dbo.PontoVenda as P on P.EquiCod = bog.EquiCod and P.PdvStatus = 'A' left join dbo.ChamadosSL2MiFix as C on C.EquiCod = bog.EquiCod and C.ChamadoAberto = '1' and C.ChamadoFechado = '0' WHERE (((bog.GrpVen) = ?)) group by bog.GrpVen, bog.EquiCod, P.AnxDesc, bog.MáxDeDataLeitura, bog.[Ql-4], bog.[Ql-3], bog.[Ql-2], bog.[Ql-1], bog.Ql0, bog.[Con-4], bog.[Con-3], bog.[Con-2], bog.[Con-1], bog.Con0, bog.Prd3, bog.Prd2, bog.Prd1, bog.Prd, bog.LeitOk, F.GrupoVenda, F.Email, E.EquiDesc, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvBairroPV, P.PdvComplementoPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP order by EquiCod DESC"
