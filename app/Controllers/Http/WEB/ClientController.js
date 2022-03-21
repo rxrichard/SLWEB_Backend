@@ -227,34 +227,71 @@ class ClientController {
     }
   }
 
-  // async Destroy({ request, response }) {
-  //   const token = request.header("authorization");
-  //   const { CNPJ } = request.only(["CNPJ"]);
+  async Destroy({ request, response, params }) {
+    const token = request.header("authorization");
 
-  //   try {
-  //     const verified = seeToken(token);
+    const CNPJ = params.CNPJ
+    const COD = params.COD
+    const LOJA = params.LOJA
 
-  //     const hasTransaction = await Database.select("*")
-  //       .from("dbo.SDBase")
-  //       .where({
-  //         GRPVEN: verified.grpven,
-  //         A1_CGC: CNPJ,
-  //       });
+    try {
+      const verified = seeToken(token);
 
-  //     //se o cara não tiver movimentação, pode deletar cliente, contrato, anexo, PdV
+      const hasTransaction = await Database.select("A1_CGC")
+        .from("dbo.SDBase")
+        .where({
+          GRPVEN: verified.grpven,
+          A1_CGC: CNPJ,
+        });
 
-  //     response.status(200).send();
-  //   } catch (err) {
-  //     response.status(400).send();
-  //     logger.error({
-  //       token: token,
-  //       params: null,
-  //       payload: request.body,
-  //       err: err,
-  //       handler: 'ClientController.Destroy',
-  //     })
-  //   }
-  // }
+      if (hasTransaction.length > 0) {
+        throw new Error('Cliente possui transações associadas.');
+      }
+
+      const hasAnnex = await Database.select("CNPJ")
+        .from("dbo.Anexos")
+        .where({
+          GrpVen: verified.grpven,
+          CNPJ: CNPJ,
+        });
+
+      if (hasAnnex.length > 0) {
+        throw new Error('Cliente possui anexos associados.');
+      }
+
+      const hasPdv = await Database.select("CNPJ")
+        .from("dbo.PontoVenda")
+        .where({
+          GrpVen: verified.grpven,
+          CNPJ: CNPJ,
+        });
+
+      if (hasPdv.length > 0) {
+        throw new Error('Cliente possui PDVs associados.');
+      }
+
+      //se passar nos testes, pode deletar cliente, contrato, anexo, PdV
+      await Database.table("dbo.Cliente")
+        .where({
+          GrpVen: verified.grpven,
+          CNPJ: CNPJ,
+          A1_COD: COD,
+          A1_LOJA: LOJA
+        })
+        .delete();
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'ClientController.Destroy',
+      })
+    }
+  }
 }
 
 module.exports = ClientController;

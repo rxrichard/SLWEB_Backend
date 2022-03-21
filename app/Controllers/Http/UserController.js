@@ -55,7 +55,7 @@ class UserController {
 
         //envia a senha do franqueado por email
         await Mail.send(
-          "emails.forgot",
+          "emails.forgotPassword",
           { checkUser, password: senha[0].Senha },
           (message) => {
             message

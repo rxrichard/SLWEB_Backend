@@ -12,8 +12,8 @@ exports.PDFGen = (Cab, Det) => {
         { text: detalhe.ProdId, alignment: 'left' },
         { text: detalhe.Produto, alignment: 'left' },
         { text: detalhe.PvdQtd, alignment: 'right' },
-        { text: `R$ ${Number(detalhe.PvdVlrUnit).toFixed(2)}`, alignment: 'left' },
         { text: `R$ ${Number(detalhe.PrCompra).toFixed(2)}`, alignment: 'left' },
+        { text: `R$ ${Number(detalhe.PvdVlrUnit).toFixed(2)}`, alignment: 'left' },
         { text: `R$ ${Number(detalhe.PvdVlrTotal).toFixed(2)}`, alignment: 'left' }
       ]
     )
@@ -76,8 +76,8 @@ exports.PDFGen = (Cab, Det) => {
               { text: 'Cód.', style: 'tableHeader' },
               { text: 'Produto', style: 'tableHeader' },
               { text: 'Qtd.', style: 'tableHeader' },
-              { text: 'Valor Un.', style: 'tableHeader' },
-              { text: 'Valor Bruto', style: 'tableHeader' },
+              { text: 'Valor', style: 'tableHeader' },
+              { text: 'Valor c/ Desc.', style: 'tableHeader' },
               { text: 'Valor Total', style: 'tableHeader' }
             ],
             ...detalhes,

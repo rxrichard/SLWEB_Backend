@@ -20,6 +20,7 @@ Route.get("/vpn/pin", "MODS/AwsController.See").middleware('jwt');
 //Disparar Emails
 Route.get("/emails/history", "ADMIN/MailerController.Show").middleware('jwt')
 Route.post("/emails/dispatch/", "ADMIN/MailerController.DispatchEmail").middleware('jwt')
+Route.get("/emails/dispatch/", "ADMIN/MailerController.See").middleware('jwt')
 
 //Sessão
 Route.post("/auth", "UserController.Login");
@@ -46,6 +47,7 @@ Route.put("/client", "WEB/ClientController.Update").middleware('jwt'); //atualiz
 Route.get("/client/:CNPJ/:Tipo", "WEB/ClientController.See").middleware('jwt'); //mostra contagem de dados
 Route.post("/client/new", "WEB/ClientController.Store").middleware('jwt'); //adicionar cliente
 Route.put("/client/inativar", "WEB/ClientController.Inativar").middleware('jwt'); //inativa cliente
+Route.delete("/client/deletar/:CNPJ/:COD/:LOJA", "WEB/ClientController.Destroy").middleware('jwt'); //apaga cliente se possivel
 
 //Compras
 Route.get("/compras/produtos", "WEB/CompraController.Produtos").middleware('jwt'); //retorna lista de produtos compraveis
