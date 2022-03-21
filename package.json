@@ -37,7 +37,9 @@
     "winston": "^3.5.1",
     "xlsx": "0.16.9"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@adonisjs/cli": "4.0.13"
+  },
   "autoload": {
     "App": "./app"
   }
