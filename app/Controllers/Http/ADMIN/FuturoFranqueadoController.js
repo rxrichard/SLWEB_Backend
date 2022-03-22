@@ -141,6 +141,11 @@ class FuturoFranqueadoController {
         (message) => {
           message
             .to(email.trim())
+            .cc([
+              Env.get("EMAIL_COMERCIAL_2"), 
+              Env.get("EMAIL_COMERCIAL_3"),
+              Env.get("EMAIL_SUPORTE"),
+            ])
             .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
             .subject("Código de acesso ao Formulário");
         }

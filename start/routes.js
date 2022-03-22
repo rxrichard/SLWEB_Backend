@@ -86,6 +86,7 @@ Route.get("/equip/requests/own", "WEB/EquipRequestController.Show").middleware('
 Route.get("/equip/requests/adresses", "WEB/EquipRequestController.See").middleware('jwt'); //retorna endereços, máquinas, configurações
 Route.get("/equip/requests/default/:id", "WEB/EquipRequestController.SearchDefaultConfig").middleware('jwt'); //busca as configurações padrão da máquina
 Route.get("/equip/requests/retrive", "WEB/EquipRequestController.RetriveOS").middleware('jwt'); //retorna o PDF da OS
+Route.get("/equip/payment/card/information", "WEB/EquipRequestController.GetCardInformation").middleware('jwt'); //retorna informações do sistema de pagamento cartão
 Route.post("/equip/requests", "WEB/EquipRequestController.Store").middleware('jwt'); //Solicita maquina
 
 //Administração das Solicitações de Equipamento
