@@ -148,7 +148,7 @@ class CompraController {
 
       if (Status === "Faturado") {
         PedidoDet = await Database.raw(
-          `execute ProcPedidosCompraAtendidosDet @GrpVen=?, @Filial =?, @PedidoId=?`,
+          `execute ProcPedidosCompraAtendidosDet @GrpVen=?, @Filial=?, @PedidoId=?`,
           [verified.grpven, verified.user_code, PedidoID]
         );
 
