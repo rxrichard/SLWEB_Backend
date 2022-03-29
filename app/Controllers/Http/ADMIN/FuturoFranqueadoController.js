@@ -142,7 +142,7 @@ class FuturoFranqueadoController {
           message
             .to(email.trim())
             .cc([
-              Env.get("EMAIL_COMERCIAL_2"), 
+              Env.get("EMAIL_COMERCIAL_2"),
               Env.get("EMAIL_COMERCIAL_3"),
               Env.get("EMAIL_SUPORTE"),
             ])
@@ -349,22 +349,23 @@ class FuturoFranqueadoController {
     }
   }
 
-  async FileUpload({ request, response, params }) {
-    const candidato = params.CodCandidato;
-    const QFiles = params.qfiles;
+  async FileUpload({ request, response }) {
+    const COD = request.input('cod')
+    const MULTI = request.input('multiple')
     const formData = request.file("formData", {
       types: ["image", "pdf"],
       size: "10mb",
     });
-    const path = Helpers.publicPath(`/DOCS/${candidato}`);
+    const path = Helpers.publicPath(`/DOCS/${COD}`);
+    let newFileName = ''
     let filenames = [];
     let file = null
 
     try {
-      if (Number(QFiles) === 0) {
-        response.status(200).send("nenhum arquivo para salvar");
-      } else if (Number(QFiles) === 1) {
-        let newFileName = `upload-SINGLE-${new Date().getTime()}.${formData.subtype}`;
+      
+      if (MULTI === 'N') {
+
+        newFileName = `upload-SINGLE-${new Date().getTime()}.${formData.subtype}`;
 
         await formData.move(path, {
           name: newFileName,
@@ -381,11 +382,9 @@ class FuturoFranqueadoController {
           `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${candidato}\\${newFileName}`,
           file
         );
-
-        response.status(200).send("Arquivos Salvos");
       } else {
         await formData.moveAll(path, (file, i) => {
-          let newFileName = `upload-${i}-${new Date().getTime()}.${file.subtype}`;
+          newFileName = `upload-${i + 1}-${new Date().getTime()}.${file.subtype}`;
           filenames.push(newFileName);
 
           return {
@@ -398,7 +397,6 @@ class FuturoFranqueadoController {
           return formData.errors();
         }
 
-        //Não consigo salvar diretamente na rede(por motivos de tipagem), então salvo na pasta mesmo do servidor e depois copio para o .250
         filenames.map(async (name) => {
           file = await Drive.get(`${path}/${name}`);
           Drive.put(
@@ -406,14 +404,14 @@ class FuturoFranqueadoController {
             file
           );
         });
-
-        response.status(200).send("Arquivos Salvos");
       }
+
+      response.status(200).send("Arquivos Salvos");
     } catch (err) {
       response.status(400).send();
       logger.error({
         token: null,
-        params: params,
+        params: null,
         payload: request.body,
         err: err,
         handler: 'FuturoFranqueadoController.FileUpload',

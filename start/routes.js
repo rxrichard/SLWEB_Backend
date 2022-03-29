@@ -104,7 +104,7 @@ Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show").middleware('jwt'
 Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM"); //baixa o formulario .doc
 Route.get("/form/pdf/:CodCandidato", "ADMIN/FuturoFranqueadoController.GeneratePDF").middleware('jwt'); //retorna pdf do formulario
 Route.post("/form/solicitacao", "ADMIN/FuturoFranqueadoController.RequestCod"); //solicita código de acesso
-Route.post("/form/upload/:CodCandidato/:qfiles", "ADMIN/FuturoFranqueadoController.FileUpload"); //faz upload de arquivos
+Route.post("/form/upload/", "ADMIN/FuturoFranqueadoController.FileUpload"); //faz upload de arquivos
 Route.post("/form/:CodCandidato", "ADMIN/FuturoFranqueadoController.FormUpload"); //faz upload do formulario
 
 //Dashboard
