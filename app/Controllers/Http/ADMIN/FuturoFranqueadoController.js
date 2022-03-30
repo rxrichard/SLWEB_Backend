@@ -99,18 +99,23 @@ class FuturoFranqueadoController {
     const cod = params.cod
 
     try {
-      const resposta = await Database.select("*")
-        .from("dbo.FuturaFranquia")
-        .where({
-          CodCandidato: cod,
-          PREENCHIDO: 0,
-        });
+      let resposta = await Database.raw(QUERY_FUTURO_FRANQUEADO, [cod])
 
       if (resposta.length === 0) {
         throw Error;
       }
 
-      response.status(200).send("ok");
+      if (resposta[0].Prioridade === null) {
+        resposta[0].Prioridade = new Array(11)
+      } else {
+        resposta[0].Prioridade = resposta[0].Prioridade.split(',')
+      }
+
+      response.status(200).send({
+        SECAO: resposta[0].SECAO,
+        CONCLUÍDO: resposta[0].PREENCHIDO,
+        FORM: resposta[0]
+      });
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -165,7 +170,7 @@ class FuturoFranqueadoController {
   }
 
   async FormUpload({ request, response, params }) {
-    const { form } = request.only(["form"]);
+    const { form, secao } = request.only(["form", "secao"]);
     const candidato = params.CodCandidato;
     const path = Helpers.publicPath(`/tmp`);
     const PathWithName = `${path}/${candidato}-${new Date().getTime()}.pdf`;
@@ -200,12 +205,12 @@ class FuturoFranqueadoController {
           break;
       }
 
-      //tem que trocar isso aqui pra update com base no número do candidato
       const resposta = await Database.table("dbo.FuturaFranquia")
         .where({ CodCandidato: candidato })
         .update({
-          PREENCHIDO: 1,
-          DtPreenchimento: dateCheck(),
+          PREENCHIDO: secao === 9 ? 1 : 0,
+          SECAO: secao,
+          DtPreenchimento: secao === 9 ? dateCheck() : null,
           NomeCompleto: String(form.Nome_Completo).slice(0, 250),
           DtNascimento: String(form.DtNascimento).slice(0, 250),
           RG: String(form.RG).slice(0, 250),
@@ -218,18 +223,18 @@ class FuturoFranqueadoController {
           Estado: String(form.Estado).slice(0, 250),
           CEP: String(form.CEP).slice(0, 250),
           Email: String(form.Email).slice(0, 250),
-          TelResidencial: String(form.Tel_Residencial).slice(0, 250),
+          TelResidencial: form.Tel_Residencial,
           Celular: String(form.Celular).slice(0, 250),
           EstCivil: estado_civil,
           NomeConj: String(form.Conj_Nome).slice(0, 250),
-          DtNascConj: String(form.Conj_DtNascimento).slice(0, 250),
+          DtNascConj: form.Conj_DtNascimento,
           TempoUni: String(form.TUnião).slice(0, 250),
-          CPFConj: String(form.Conj_CPF).slice(0, 250),
-          RGConj: String(form.Conj_RG).slice(0, 250),
+          CPFConj: form.Conj_CPF,
+          RGConj: form.Conj_RG,
           RendMenConj: String(form.Conj_RendMensal).slice(0, 250),
           CLT: form.CLT,
           RendMensal: String(form.Rend_Mensal).slice(0, 250),
-          PFilhos: String(form.Tem_filhos).slice(0, 250),
+          PFilhos: form.Tem_filhos,
           QFilhos: String(form.Qtd_filhos).slice(0, 250),
           IFilhos: form.Idd_filhos,
           TResidencia: form.T_Residencia,
@@ -259,7 +264,7 @@ class FuturoFranqueadoController {
           SociedadeExp: String(form.Exp_Sociedade).slice(0, 250),
           InvestMenInic: form.Cob_Desp,
           ConhecPilao: String(form.Conhece_Pilao).slice(0, 250),
-          Notas: form.Prioridade.toString(),
+          Notas: form.Prioridade[0] === null ? null : form.Prioridade.toString(),
           CaracEscolha: String(form.Caracteristica_Peso).slice(0, 250),
           ConcRegras: form.Com_Regra,
           LucroMin: form.Com_Med,
@@ -267,73 +272,75 @@ class FuturoFranqueadoController {
           Consultor: form.Consultor,
         });
 
-      await Mail.send(
-        "emails.FormFranquiaPreenchidoFF",
-        { Destinatario: String(form.Nome_Completo).split(" ")[0] },
-        (message) => {
-          message
-            .to(String(form.Email).slice(0, 250))
-            .cc(Env.get("EMAIL_SUPORTE"))
-            .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-            .subject("Formulário de Franquia recebido")
-        }
-      );
-
-      let emailConsultor = null
-
-      switch (form.Consultor) {
-        case 'Alessandro':
-          emailConsultor = 'alessandro.pinheiro@pilaoprofessional.com.br'
-          break;
-        case 'Kauê':
-          emailConsultor = 'kaue.santos@pilaoprofessional.com.br'
-          break;
-        case 'Priscila':
-          emailConsultor = 'priscila.mattos@pilaoprofessional.com.br'
-          break;
-        case 'Richard':
-          emailConsultor = 'richard.bastos@pilaoprofessional.com.br'
-          break;
-        case 'Tatiane':
-          emailConsultor = 'tatiane.silva@pilaoprofessional.com.br'
-          break;
-        default:
-          emailConsultor = null
-          break;
-      }
-
-      const Form = await Database
-        .select("*")
-        .from("dbo.FuturaFranquia")
-        .where({
-          CodCandidato: candidato,
-        })
-
-      const PDFModel = PDFGen(Form[0]);
-
-      var pdfDoc = printer.createPdfKitDocument(PDFModel);
-      pdfDoc.pipe(fs.createWriteStream(PathWithName));
-      pdfDoc.end();
-
-      if (emailConsultor !== null) {
+      if (secao === 9) {
         await Mail.send(
-          "emails.FormFranquiaPreenchidoConsultor",
-          {
-            Consultor: form.Consultor,
-            INTERESSADO: String(form.Nome_Completo).split(" ")[0],
-            Frontend: Env.get('CLIENT_URL')
-          },
+          "emails.FormFranquiaPreenchidoFF",
+          { Destinatario: String(form.Nome_Completo).split(" ")[0] },
           (message) => {
             message
-              .to(emailConsultor)
+              .to(String(form.Email).slice(0, 250))
               .cc(Env.get("EMAIL_SUPORTE"))
               .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
-              .subject("Formulário de Franquia preenchido")
-              .attach(PathWithName, {
-                filename: `Formulário de Perfil_${candidato}.pdf`,
-              })
+              .subject("Formulário de Franquia recebido")
           }
         );
+
+        let emailConsultor = null
+
+        switch (form.Consultor) {
+          case 'Alessandro':
+            emailConsultor = 'alessandro.pinheiro@pilaoprofessional.com.br'
+            break;
+          case 'Kauê':
+            emailConsultor = 'kaue.santos@pilaoprofessional.com.br'
+            break;
+          case 'Priscila':
+            emailConsultor = 'priscila.mattos@pilaoprofessional.com.br'
+            break;
+          case 'Richard':
+            emailConsultor = 'richard.bastos@pilaoprofessional.com.br'
+            break;
+          case 'Tatiane':
+            emailConsultor = 'tatiane.silva@pilaoprofessional.com.br'
+            break;
+          default:
+            emailConsultor = null
+            break;
+        }
+
+        const Form = await Database
+          .select("*")
+          .from("dbo.FuturaFranquia")
+          .where({
+            CodCandidato: candidato,
+          })
+
+        const PDFModel = PDFGen(Form[0]);
+
+        var pdfDoc = printer.createPdfKitDocument(PDFModel);
+        pdfDoc.pipe(fs.createWriteStream(PathWithName));
+        pdfDoc.end();
+
+        if (emailConsultor !== null) {
+          await Mail.send(
+            "emails.FormFranquiaPreenchidoConsultor",
+            {
+              Consultor: form.Consultor,
+              INTERESSADO: String(form.Nome_Completo).split(" ")[0],
+              Frontend: Env.get('CLIENT_URL')
+            },
+            (message) => {
+              message
+                .to(emailConsultor)
+                .cc(Env.get("EMAIL_SUPORTE"))
+                .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
+                .subject("Formulário de Franquia preenchido")
+                .attach(PathWithName, {
+                  filename: `Formulário de Perfil_${candidato}.pdf`,
+                })
+            }
+          );
+        }
       }
 
       response.status(201).send(resposta);
@@ -362,7 +369,7 @@ class FuturoFranqueadoController {
     let file = null
 
     try {
-      
+
       if (MULTI === 'N') {
 
         newFileName = `upload-SINGLE-${new Date().getTime()}.${formData.subtype}`;
@@ -445,3 +452,5 @@ class FuturoFranqueadoController {
 }
 
 module.exports = FuturoFranqueadoController;
+
+const QUERY_FUTURO_FRANQUEADO = "select PREENCHIDO, SECAO, NomeCompleto as Nome_Completo, DtNascimento as DtNascimento, RG as RG, CPF as CPF, Logradouro as Logradouro, Número as Número, Complemento as Complemento, Bairro as Bairro, Municipio as Municipio, Estado as Estado, CEP as CEP, Email as Email, TelResidencial as Tel_Residencial, Celular as Celular, EstCivil as estado_civil, NomeConj as Conj_Nome, DtNascConj as Conj_DtNascimento, TempoUni as TUnião, CPFConj as Conj_CPF, RGConj as Conj_RG, RendMenConj as Conj_RendMensal, CLT as CLT, RendMensal as Rend_Mensal, PFilhos as Tem_filhos, QFilhos as Qtd_filhos, IFilhos as Idd_filhos, TResidencia as T_Residencia, ValResidencia as Residencia_Mensal, PVeiculo as P_Veiculo, PImovel as P_Imovel, ExpectRetorno as Expect, PRecolhimento as Recolhimento, QRecolhimento as Recolhimento_QTD, OrigemCapital as Origem_Capital, RendaFamiliar as Renda_Familiar, CRendaFamiliar as Renda_Composta, DispInvest as Disp_Invest, TEmpresaExp as T_Empresa, EspcEmpresa as Detalhes_Atividade, FormEscolar as Form_Escolar, UltExp as Ult_exp, HavSociedade as Sociedade, NomeSocio as Nome_Socio, VincSocio as Socio_Vinculo, TempConhece as Tempo_ConheceSocio, Realizacoes as Realizou_Socio, TSocio as Cond_Socio, SocioInvest as Part_invest, InvestProp as Prop_Invest, TeveSociedade as T_Empreendimento, SociedadeExp as Exp_Sociedade, InvestMenInic as Cob_Desp, ConhecPilao as Conhece_Pilao, Notas as Prioridade, CaracEscolha as Caracteristica_Peso, ConcRegras as Com_Regra, LucroMin as Com_Med, CompInformar as Com_Inf, Consultor as Consultor from dbo.FuturaFranquia where CodCandidato = ?"
