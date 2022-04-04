@@ -223,6 +223,11 @@ const GetPart3 = (Form) => {
     {
       width: '50%',
       margin: [0, 5, 0, 0],
+      text: `Profissão: ${Form.Profissao}`,
+    },
+    {
+      width: '50%',
+      margin: [0, 5, 0, 0],
       text: `Vinculo CLT: ${Form.CLT}`,
     },
     Form.CLT === 'Sim' ?

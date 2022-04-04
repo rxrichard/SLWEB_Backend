@@ -174,42 +174,22 @@ class FuturoFranqueadoController {
     const candidato = params.CodCandidato;
     const path = Helpers.publicPath(`/tmp`);
     const PathWithName = `${path}/${candidato}-${new Date().getTime()}.pdf`;
+    let Form
 
     try {
-      let estado_civil;
 
-      switch (Number(form.Est_Civil)) {
-        case 1:
-          estado_civil = "Casado(Comunhão Universal)";
-          break;
-        case 2:
-          estado_civil = "Casado(Comunhão Parcial)";
-          break;
-        case 3:
-          estado_civil = "Casado(Separação Total)";
-          break;
-        case 4:
-          estado_civil = "Solteiro(a)";
-          break;
-        case 5:
-          estado_civil = "Divorciado(a)";
-          break;
-        case 6:
-          estado_civil = "Separado Judicialmente";
-          break;
-        case 7:
-          estado_civil = "Viúvo(a)";
-          break;
-        default:
-          estado_civil = "Desconhecido";
-          break;
-      }
+      Form = await Database
+        .select("*")
+        .from("dbo.FuturaFranquia")
+        .where({
+          CodCandidato: candidato,
+        })
 
-      const resposta = await Database.table("dbo.FuturaFranquia")
+      await Database.table("dbo.FuturaFranquia")
         .where({ CodCandidato: candidato })
         .update({
-          PREENCHIDO: secao === 9 ? 1 : 0,
-          SECAO: secao,
+          PREENCHIDO: Form[0].SECAO >= 9 || secao >= 9 ? 1 : 0,
+          SECAO: Form[0].SECAO < secao ? secao : Form[0].SECAO,
           DtPreenchimento: secao === 9 ? dateCheck() : null,
           NomeCompleto: String(form.Nome_Completo).slice(0, 250),
           DtNascimento: String(form.DtNascimento).slice(0, 250),
@@ -225,13 +205,14 @@ class FuturoFranqueadoController {
           Email: String(form.Email).slice(0, 250),
           TelResidencial: form.Tel_Residencial,
           Celular: String(form.Celular).slice(0, 250),
-          EstCivil: estado_civil,
+          EstCivil: String(form.Est_Civil).slice(0, 250),
           NomeConj: String(form.Conj_Nome).slice(0, 250),
           DtNascConj: form.Conj_DtNascimento,
           TempoUni: String(form.TUnião).slice(0, 250),
           CPFConj: form.Conj_CPF,
           RGConj: form.Conj_RG,
           RendMenConj: String(form.Conj_RendMensal).slice(0, 250),
+          Profissao: String(form.Profissao).slice(0, 250),
           CLT: form.CLT,
           RendMensal: String(form.Rend_Mensal).slice(0, 250),
           PFilhos: form.Tem_filhos,
@@ -272,6 +253,7 @@ class FuturoFranqueadoController {
           Consultor: form.Consultor,
         });
 
+      //se for o fim do formulário envio os emails
       if (secao === 9) {
         await Mail.send(
           "emails.FormFranquiaPreenchidoFF",
@@ -308,7 +290,7 @@ class FuturoFranqueadoController {
             break;
         }
 
-        const Form = await Database
+        Form = await Database
           .select("*")
           .from("dbo.FuturaFranquia")
           .where({
@@ -343,7 +325,7 @@ class FuturoFranqueadoController {
         }
       }
 
-      response.status(201).send(resposta);
+      response.status(201).send();
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -453,4 +435,4 @@ class FuturoFranqueadoController {
 
 module.exports = FuturoFranqueadoController;
 
-const QUERY_FUTURO_FRANQUEADO = "select PREENCHIDO, SECAO, NomeCompleto as Nome_Completo, DtNascimento as DtNascimento, RG as RG, CPF as CPF, Logradouro as Logradouro, Número as Número, Complemento as Complemento, Bairro as Bairro, Municipio as Municipio, Estado as Estado, CEP as CEP, Email as Email, TelResidencial as Tel_Residencial, Celular as Celular, EstCivil as Est_Civil, NomeConj as Conj_Nome, DtNascConj as Conj_DtNascimento, TempoUni as TUnião, CPFConj as Conj_CPF, RGConj as Conj_RG, RendMenConj as Conj_RendMensal, CLT as CLT, RendMensal as Rend_Mensal, PFilhos as Tem_filhos, QFilhos as Qtd_filhos, IFilhos as Idd_filhos, TResidencia as T_Residencia, ValResidencia as Residencia_Mensal, PVeiculo as P_Veiculo, PImovel as P_Imovel, ExpectRetorno as Expect, PRecolhimento as Recolhimento, QRecolhimento as Recolhimento_QTD, OrigemCapital as Origem_Capital, RendaFamiliar as Renda_Familiar, CRendaFamiliar as Renda_Composta, DispInvest as Disp_Invest, TEmpresaExp as T_Empresa, EspcEmpresa as Detalhes_Atividade, FormEscolar as Form_Escolar, UltExp as Ult_exp, HavSociedade as Sociedade, NomeSocio as Nome_Socio, VincSocio as Socio_Vinculo, TempConhece as Tempo_ConheceSocio, Realizacoes as Realizou_Socio, TSocio as Cond_Socio, SocioInvest as Part_invest, InvestProp as Prop_Invest, TeveSociedade as T_Empreendimento, SociedadeExp as Exp_Sociedade, InvestMenInic as Cob_Desp, ConhecPilao as Conhece_Pilao, Notas as Prioridade, CaracEscolha as Caracteristica_Peso, ConcRegras as Com_Regra, LucroMin as Com_Med, CompInformar as Com_Inf, Consultor as Consultor from dbo.FuturaFranquia where CodCandidato = ?"
+const QUERY_FUTURO_FRANQUEADO = "select PREENCHIDO, SECAO, NomeCompleto as Nome_Completo, DtNascimento as DtNascimento, RG as RG, CPF as CPF, Logradouro as Logradouro, Número as Número, Complemento as Complemento, Bairro as Bairro, Municipio as Municipio, Estado as Estado, CEP as CEP, Email as Email, TelResidencial as Tel_Residencial, Celular as Celular, EstCivil as Est_Civil, NomeConj as Conj_Nome, DtNascConj as Conj_DtNascimento, TempoUni as TUnião, CPFConj as Conj_CPF, RGConj as Conj_RG, RendMenConj as Conj_RendMensal, Profissao as Profissao, CLT as CLT, RendMensal as Rend_Mensal, PFilhos as Tem_filhos, QFilhos as Qtd_filhos, IFilhos as Idd_filhos, TResidencia as T_Residencia, ValResidencia as Residencia_Mensal, PVeiculo as P_Veiculo, PImovel as P_Imovel, ExpectRetorno as Expect, PRecolhimento as Recolhimento, QRecolhimento as Recolhimento_QTD, OrigemCapital as Origem_Capital, RendaFamiliar as Renda_Familiar, CRendaFamiliar as Renda_Composta, DispInvest as Disp_Invest, TEmpresaExp as T_Empresa, EspcEmpresa as Detalhes_Atividade, FormEscolar as Form_Escolar, UltExp as Ult_exp, HavSociedade as Sociedade, NomeSocio as Nome_Socio, VincSocio as Socio_Vinculo, TempConhece as Tempo_ConheceSocio, Realizacoes as Realizou_Socio, TSocio as Cond_Socio, SocioInvest as Part_invest, InvestProp as Prop_Invest, TeveSociedade as T_Empreendimento, SociedadeExp as Exp_Sociedade, InvestMenInic as Cob_Desp, ConhecPilao as Conhece_Pilao, Notas as Prioridade, CaracEscolha as Caracteristica_Peso, ConcRegras as Com_Regra, LucroMin as Com_Med, CompInformar as Com_Inf, Consultor as Consultor from dbo.FuturaFranquia where CodCandidato = ?"
