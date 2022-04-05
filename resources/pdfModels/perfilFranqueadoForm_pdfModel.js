@@ -220,11 +220,14 @@ const GetPart2 = (Form) => {
 const GetPart3 = (Form) => {
   return [
     { text: 'Rendimento e Experiência', style: "subheader" },
-    {
-      width: '50%',
-      margin: [0, 5, 0, 0],
-      text: `Profissão: ${Form.Profissao}`,
-    },
+    Form.Profissao !== null ?
+      {
+        width: '50%',
+        margin: [0, 5, 0, 0],
+        text: `Profissão: ${Form.Profissao}`,
+      }
+      : null
+    ,
     {
       width: '50%',
       margin: [0, 5, 0, 0],

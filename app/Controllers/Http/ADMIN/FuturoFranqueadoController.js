@@ -8,6 +8,7 @@ const Env = use("Env");
 const PdfPrinter = require("pdfmake");
 const fs = require("fs");
 const toArray = require('stream-to-array')
+const moment = require('moment')
 const logger = require("../../../../dump/index")
 const { seeToken, dateCheck } = require("../../../Services/jwtServices");
 const { PDFGen } = require("../../../../resources/pdfModels/perfilFranqueadoForm_pdfModel");
@@ -22,6 +23,7 @@ var fonts = {
 };
 
 const printer = new PdfPrinter(fonts);
+moment.locale("pt-br");
 
 class FuturoFranqueadoController {
   async Show({ request, response }) {
@@ -190,9 +192,9 @@ class FuturoFranqueadoController {
         .update({
           PREENCHIDO: Form[0].SECAO >= 9 || secao >= 9 ? 1 : 0,
           SECAO: Form[0].SECAO < secao ? secao : Form[0].SECAO,
-          DtPreenchimento: secao === 9 ? dateCheck() : null,
+          DtPreenchimento: Form[0].SECAO >= 9 || secao >= 9 ? dateCheck() : null,
           NomeCompleto: String(form.Nome_Completo).slice(0, 250),
-          DtNascimento: String(form.DtNascimento).slice(0, 250),
+          DtNascimento: rawDateToMomentValidObject(form.DtNascimento),
           RG: String(form.RG).slice(0, 250),
           CPF: String(form.CPF).slice(0, 250),
           Logradouro: String(form.Logradouro).slice(0, 250),
@@ -207,7 +209,7 @@ class FuturoFranqueadoController {
           Celular: String(form.Celular).slice(0, 250),
           EstCivil: String(form.Est_Civil).slice(0, 250),
           NomeConj: String(form.Conj_Nome).slice(0, 250),
-          DtNascConj: form.Conj_DtNascimento,
+          DtNascConj: rawDateToMomentValidObject(form.Conj_DtNascimento),
           TempoUni: String(form.TUnião).slice(0, 250),
           CPFConj: form.Conj_CPF,
           RGConj: form.Conj_RG,
@@ -254,7 +256,7 @@ class FuturoFranqueadoController {
         });
 
       //se for o fim do formulário envio os emails
-      if (secao === 9) {
+      if (secao === 9 && Form[0].SECAO < 9) {
         await Mail.send(
           "emails.FormFranquiaPreenchidoFF",
           { Destinatario: String(form.Nome_Completo).split(" ")[0] },
@@ -341,6 +343,7 @@ class FuturoFranqueadoController {
   async FileUpload({ request, response }) {
     const COD = request.input('cod')
     const MULTI = request.input('multiple')
+    const DOC = request.input('doc')
     const formData = request.file("formData", {
       types: ["image", "pdf"],
       size: "10mb",
@@ -351,10 +354,9 @@ class FuturoFranqueadoController {
     let file = null
 
     try {
-
       if (MULTI === 'N') {
 
-        newFileName = `upload-SINGLE-${new Date().getTime()}.${formData.subtype}`;
+        newFileName = `upload-SINGLE-${DOC}-${new Date().getTime()}.${formData.subtype}`;
 
         await formData.move(path, {
           name: newFileName,
@@ -368,12 +370,12 @@ class FuturoFranqueadoController {
         file = await Drive.get(`${path}/${newFileName}`);
 
         Drive.put(
-          `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${candidato}\\${newFileName}`,
+          `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${COD}\\${newFileName}`,
           file
         );
       } else {
         await formData.moveAll(path, (file, i) => {
-          newFileName = `upload-${i + 1}-${new Date().getTime()}.${file.subtype}`;
+          newFileName = `upload-MULTIPLE-${DOC}-${i + 1}-${new Date().getTime()}.${file.subtype}`;
           filenames.push(newFileName);
 
           return {
@@ -389,13 +391,13 @@ class FuturoFranqueadoController {
         filenames.map(async (name) => {
           file = await Drive.get(`${path}/${name}`);
           Drive.put(
-            `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${candidato}\\${name}`,
+            `\\\\192.168.1.250\\dados\\Franquia\\SLWEB\\DOCS\\${COD}\\${name}`,
             file
           );
         });
       }
 
-      response.status(200).send("Arquivos Salvos");
+      response.status(200).send();
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -430,6 +432,25 @@ class FuturoFranqueadoController {
         handler: 'FuturoFranqueadoController.RetriveWORDFORM',
       })
     }
+  }
+}
+
+const rawDateToMomentValidObject = (rawDate) => {
+  if (rawDate === null || typeof rawDate === 'undefined' || String(rawDate).trim === '') {
+    return null
+  }
+
+  if (moment(rawDate).isValid()) {
+    return moment(rawDate).format('DD/MM/YYYY')
+  } else {
+    const MomentValidObj = moment()
+    const destructecRawDate = String(rawDate).split('/')
+
+    MomentValidObj.date(destructecRawDate[0])
+    MomentValidObj.month(destructecRawDate[1] - 1)
+    MomentValidObj.year(destructecRawDate[2])
+
+    return MomentValidObj.format('DD/MM/YYYY')
   }
 }
 

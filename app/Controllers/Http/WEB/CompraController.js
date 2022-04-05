@@ -35,12 +35,21 @@ class CompraController {
       seeToken(token);
 
       const Produtos = await Database.raw(queryProdutos);
+      const Desconto = await Database
+        .select('ParamVlr')
+        .from('dbo.Parametros')
+        .where({
+          ParamId: 'DESCONTO_COMPRA_GERAL'
+        })
 
       let aux = [];
 
       Produtos.map((element) => aux.push({ ...element, QCompra: 0 }));
 
-      response.status(200).send(aux);
+      response.status(200).send({
+        Produtos: aux,
+        Desconto: Desconto[0].ParamVlr > 1 ? 0 : Desconto[0].ParamVlr
+      });
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -619,14 +628,14 @@ class CompraController {
       let compraCab = []
       let compraDet = []
 
-      if(status === 'Processando'){
+      if (status === 'Processando') {
         compraCab = await Database.raw("select C.Nome_Fantasia, PC.PedidoId as PvcID, C.CNPJss, PC.DataCriacao, C.TPessoa from dbo.PedidosCompraCab as PC inner join dbo.Cliente as C on PC.GrpVen = C.GrpVen and C.A1_SATIV1 = '000113' and A1Tipo = 'R' where PC.PedidoId = ? and PC.GrpVen = ?", [pedidoid, verified.grpven]);
-  
+
         compraDet = await Database.raw("select PV.CodigoProduto as ProdId, P.Produto, PV.QtdeVendida as PvdQtd, PV.PrecoUnitarioLiquido as PvdVlrUnit, P.PrCompra,PV.PrecoTotal as PvdVlrTotal from dbo.PedidosVenda as PV inner join dbo.Produtos as P on PV.CodigoProduto = P.ProdId where PV.PedidoID = ? and PV.GrpVen = ? order by PV.PedidoItemID ASC", [pedidoid, verified.grpven])
-      }else if(status === 'Faturado'){
+      } else if (status === 'Faturado') {
         compraCab = await Database.raw("select C.Nome_Fantasia, PC.PedidoId as PvcID, C.CNPJss, PC.DataCriacao, C.TPessoa from dbo.PedidosCompraCab as PC inner join dbo.Cliente as C on PC.GrpVen = C.GrpVen and C.A1_SATIV1 = '000113' and A1Tipo = 'R' where PC.C5NUM = ? and PC.GrpVen = ?", [pedidoid, verified.grpven])
-        
-        if(!compraCab[0]){
+
+        if (!compraCab[0]) {
           compraCab = await Database.raw("SELECT distinct C.Nome_Fantasia, S.Pedido as PvcID, C.CNPJss, S.DtEmissao as DataCriacao, C.TPessoa FROM dbo.SDBase as S inner join dbo.Cliente as C on S.SA1_GRPVEN = C.GrpVen and C.A1_SATIV1 = '000113' and C.A1Tipo = 'R' WHERE S.Pedido = ? and S.GRPVEN = ? order by D_ITEM ASC", [pedidoid, verified.grpven])
         }
 
