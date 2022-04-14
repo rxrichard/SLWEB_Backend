@@ -86,6 +86,10 @@ class CompraController {
 
       const ComprasAoAno = await Database.raw(queryComprasAno, verified.grpven);
 
+      const Reputacao = await Database.select('Confiavel').from('dbo.FilialEntidadeGrVenda').where({
+        A1_GRPVEN: verified.grpven
+      })
+
       const Geral = {
         ...Object.assign(InfoCompras[0], InfoBloqueado[0]),
         Compras: InfoCompras[0].Compras + PedidosNaoFaturados[0].Total,
@@ -97,6 +101,7 @@ class CompraController {
         Duplicatas: DuplicatasAberto,
         ComprasAno: ComprasAoAno,
         AFaturar: PedidosNaoFaturados,
+        Confiavel: Reputacao[0].Confiavel
       });
     } catch (err) {
       response.status(400).send();
