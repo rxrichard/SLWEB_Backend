@@ -206,8 +206,8 @@ class FuturoFranqueadoController {
           CEP: String(form.CEP).slice(0, 250),
           Email: String(form.Email).slice(0, 250),
           TelResidencial: form.Tel_Residencial,
-          Celular: String(form.Celular).slice(0, 250),
-          EstCivil: String(form.Est_Civil).slice(0, 250),
+          Celular: form.Celular,
+          EstCivil: form.Est_Civil,
           NomeConj: String(form.Conj_Nome).slice(0, 250),
           DtNascConj: rawDateToMomentValidObject(form.Conj_DtNascimento),
           TempoUni: String(form.TUnião).slice(0, 250),
@@ -436,12 +436,12 @@ class FuturoFranqueadoController {
 }
 
 const rawDateToMomentValidObject = (rawDate) => {
-  if (rawDate === null || typeof rawDate === 'undefined' || String(rawDate).trim === '') {
+  if (rawDate === null || typeof rawDate === 'undefined' || String(rawDate).trim() === '') {
     return null
   }
 
-  if (moment(rawDate).isValid()) {
-    return moment(rawDate).format('DD/MM/YYYY')
+  if (moment(rawDate, 'DD/MM/YYYY').isValid()) {
+    return moment(rawDate, 'DD/MM/YYYY').format('DD/MM/YYYY')
   } else {
     const MomentValidObj = moment()
     const destructecRawDate = String(rawDate).split('/')

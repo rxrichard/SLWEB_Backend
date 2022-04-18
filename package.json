@@ -38,7 +38,7 @@
     "xlsx": "0.16.9"
   },
   "devDependencies": {
-    "@adonisjs/cli": "4.0.13"
+    "@adonisjs/cli": "^4.0.13"
   },
   "autoload": {
     "App": "./app"
