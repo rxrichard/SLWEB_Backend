@@ -187,6 +187,9 @@ class FuturoFranqueadoController {
           CodCandidato: candidato,
         })
 
+      console.log(form.DtNascimento)
+      console.log(form.DtNascimento)
+
       await Database.table("dbo.FuturaFranquia")
         .where({ CodCandidato: candidato })
         .update({
@@ -440,8 +443,8 @@ const rawDateToMomentValidObject = (rawDate) => {
     return null
   }
 
-  if (moment(rawDate, 'DD/MM/YYYY').isValid()) {
-    return moment(rawDate, 'DD/MM/YYYY').format('DD/MM/YYYY')
+  if (moment(rawDate).isValid()) {
+    return moment(rawDate).format('DD/MM/YYYY')
   } else {
     const MomentValidObj = moment()
     const destructecRawDate = String(rawDate).split('/')
