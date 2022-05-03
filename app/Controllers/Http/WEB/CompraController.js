@@ -11,6 +11,8 @@ const PdfPrinter = require("pdfmake");
 const toArray = require('stream-to-array')
 const fs = require("fs");
 const { PDFGen } = require("../../../../resources/pdfModels/detalhesCompra_pdfModel");
+const xlsx = require('xlsx');
+
 moment.locale("pt-br");
 
 var fonts = {
@@ -48,7 +50,7 @@ class CompraController {
 
       response.status(200).send({
         Produtos: aux,
-        Desconto: Desconto[0].ParamVlr > 1 ? 0 : Desconto[0].ParamVlr
+        Desconto: Desconto[0].ParamVlr > 1 ? 0 : Desconto[0].ParamVlr,
       });
     } catch (err) {
       response.status(400).send();
@@ -669,9 +671,199 @@ class CompraController {
       })
     }
   }
+
+  async ConsultaRota({ request, response, params }) {
+    const token = request.header("authorization");
+    let CEPManual = params.CEP
+    let CEPDefault = null
+    let CEPTarget = null
+
+    try {
+      const verified = seeToken(token);
+
+      if (CEPManual === 'WYSI') {
+        CEPDefault = await Database.raw(
+          "select C.CEP from dbo.FilialEntidadeGrVenda as F left join dbo.Cliente as C on F.A1_COD = C.A1_COD and F.A1_GRPVEN = C.GrpVen and C.TPessoa = 'J' where F.M0_CODFIL = ?",
+          [verified.user_code]
+        )
+
+        CEPTarget = CEPDefault[0].CEP
+      } else {
+        CEPTarget = CEPManual
+      }
+
+      const excel = xlsx.readFile('\\\\192.168.1.250\\dados\\Franquia\\FERNANDA\\Faturamento\\Area Entrega por cliente.xlsx')
+
+      const segundaAba = excel.Sheets[excel.SheetNames[1]]
+
+      const segundaAbaSoCEP = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.includes('A')))
+      const segundaAbaSoRegiaoCidade = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.includes('B')))
+      const segundaAbaSoFaturamento = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.includes('C')))
+      const segundaAbaSoRota = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.includes('D')))
+
+      let CEPS = []
+      let RegiaoCidade = []
+      let Faturar = []
+      let Rota = []
+
+      Object.keys(segundaAbaSoCEP).forEach(keyName => { if (segundaAbaSoCEP[keyName].v !== 'CEP') { CEPS.push(String(segundaAbaSoCEP[keyName].v)) } })
+      Object.keys(segundaAbaSoRegiaoCidade).forEach(keyName => { if (segundaAbaSoRegiaoCidade[keyName].v !== 'REGIÃO / CIDADE') { RegiaoCidade.push(String(segundaAbaSoRegiaoCidade[keyName].v)) } })
+      Object.keys(segundaAbaSoFaturamento).forEach(keyName => { if (segundaAbaSoFaturamento[keyName].v !== 'FATURAR EM') { Faturar.push(String(segundaAbaSoFaturamento[keyName].v)) } })
+      Object.keys(segundaAbaSoRota).forEach(keyName => { if (segundaAbaSoRota[keyName].v !== 'ROTA') { Rota.push(String(segundaAbaSoRota[keyName].v)) } })
+
+      const matchIndexes = matchCEPWithRanges(CEPTarget, CEPS)
+
+      if (matchIndexes.length === 0) {
+        //fazer alguma coisa caso a gente não encontre nenhuma rota automaticamente
+      }
+
+      response.status(200).send({
+        Faturamento: {
+          CEP: CEPTarget,
+          Regiao: RegiaoCidade[matchIndexes[0]],
+          PrevFaturamento: returnNextAvailableDate(Faturar[matchIndexes[0]]),
+          PrevRota: returnNextAvailableDate(Rota[matchIndexes[0]])
+        }
+      });
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'CompraController.ConsultaRota',
+      })
+    }
+  }
 }
 
 module.exports = CompraController;
+
+const matchCEPWithRanges = (targetCEP, CEPRanges) => {
+  const matchIndex = []
+
+  CEPRanges.forEach((range, index) => {
+    let result = testCEPMatch(targetCEP, range)
+
+    if (result === true) {
+      matchIndex.push(index)
+    }
+
+  })
+
+  return matchIndex
+}
+
+const testCEPMatch = (targetCEP, CEPRange) => {
+  //tem "a"
+  let isRange = String(CEPRange).includes('a') || String(CEPRange).includes('A')
+
+  //tem "/"
+  let isMultipleExact = String(CEPRange).includes('/')
+
+  //cep exato
+  let isSingleExact = !String(CEPRange).includes('/') && !String(CEPRange).includes('a') && !String(CEPRange).includes('A') && String(CEPRange).trim() !== '' && CEPRange !== null && typeof CEPRange !== 'undefined'
+
+  //tem "a" e "/"
+  let isRangeAndExact = String(CEPRange).includes('/') && (String(CEPRange).includes('a') || String(CEPRange).includes('A'))
+
+  let aux = null
+  let deuMatch = false
+
+  if (isRangeAndExact) {
+    let secondaryRange = []
+
+    aux = String(CEPRange).split('/')
+
+    aux.forEach((item, index) => {
+      if (String(item).includes('a') || String(item).includes('A')) {
+        secondaryRange.push(item)
+        aux.splice(index, 1)
+      }
+    })
+
+    aux.forEach((item) => {
+      if (String(targetCEP).includes(String(item))) {
+        deuMatch = true
+      }
+    })
+
+    // console.log(secondaryRange)
+    // console.log(Number(formatCEP(secondaryRange[0].split(/[a]/i)[0].trim())))
+    // console.log(Number(formatCEP(secondaryRange[0].split(/[a]/i)[1].trim())))
+    // console.log(Number(formatCEP(targetCEP)))
+
+    if (Number(formatCEP(secondaryRange[0].split(/[a]/i)[0].trim())) <= Number(formatCEP(targetCEP)) && Number(formatCEP(secondaryRange[0].split(/[a]/i)[1].trim())) >= Number(formatCEP(targetCEP))) {
+      deuMatch = true
+    }
+
+    return deuMatch
+  } else if (isMultipleExact || isSingleExact) {
+    aux = String(CEPRange).split('/')
+
+    aux.forEach((item) => {
+      if (String(targetCEP).includes(item)) {
+        deuMatch = true
+      }
+    })
+
+    return deuMatch
+  } else if (isRange) {
+    // console.log(formatCEP(String(CEPRange).split(/[a]/i)[1].trim()))
+    aux = String(CEPRange).split(/[a]/i)
+
+    // console.log(formatCEP(aux[0].trim()))
+    // console.log(formatCEP(aux[1].trim()))
+
+    if (Number(formatCEP(aux[0].trim())) <= Number(formatCEP(targetCEP)) && Number(formatCEP(aux[1].trim())) >= Number(formatCEP(targetCEP))) {
+      deuMatch = true
+    }
+
+    return deuMatch
+  } else {
+    return deuMatch
+  }
+}
+
+const formatCEP = (CEP) => {
+  let newCEP = String(CEP)
+
+  if (newCEP.length < 5) {
+    newCEP = newCEP.padStart(5, '0')
+  }
+
+  if (newCEP.length < 8) {
+    newCEP = newCEP.padEnd(8, '0')
+  }
+
+  return newCEP
+}
+
+const convertWeekDayToInteger = (weekday) => {
+  switch (weekday) {
+    case 'SEGUNDA':
+      return 1
+    case 'TERÇA':
+      return 2
+    case 'QUARTA':
+      return 3
+    case 'QUINTA':
+      return 4
+    case 'SEXTA':
+      return 5
+  }
+}
+
+const returnNextAvailableDate = (rawWeekday) => {
+  const today = moment().isoWeekday();
+
+  if (today < convertWeekDayToInteger(rawWeekday)) {
+    return moment().isoWeekday(convertWeekDayToInteger(rawWeekday)).format('LL');
+  } else {
+    return moment().add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday)).format('LL');
+  }
+}
 
 const queryProdutos =
   "SELECT dbo.Produtos.ProdId AS Cód, dbo.Produtos.Produto, dbo.Produtos.ProdQtMinCompra AS QtMin, dbo.Produtos.PrCompra AS VlrUn, [ProdQtMinCompra] * [PrCompra] AS Vlr, dbo.Produtos.FatConversao, dbo.Produtos.ProdRoy FROM dbo.Produtos WHERE dbo.Produtos.Compra = 'S' ORDER BY dbo.Produtos.Produto";

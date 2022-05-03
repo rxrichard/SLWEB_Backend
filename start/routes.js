@@ -60,6 +60,7 @@ Route.get("/compras/retrivenfe/:ID", "WEB/CompraController.RetriveNota").middlew
 Route.post("/compras/comprar", "WEB/CompraController.Comprar").middleware('jwt'); //retorna detalhes do pedido
 Route.post("/compras/duplicatas/report/", "WEB/CompraController.Compensar").middleware('jwt'); //salva arquivo de duplicatas
 Route.get("/compras/pedidos/PDF/detalhes/:pedidoid/:status", "WEB/CompraController.GenPDFCompra").middleware('jwt'); //retorna pdf de venda
+Route.get("/compras/faturamento/rotas/:CEP", "WEB/CompraController.ConsultaRota").middleware('jwt'); //retorna previsão de faturamento e rota
 
 //Vendas
 Route.get("/vendas/produtos", "WEB/VendaController.Produtos").middleware('jwt'); //retorna lista de produtos compraveis
