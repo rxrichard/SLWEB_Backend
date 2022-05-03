@@ -683,13 +683,31 @@ class CompraController {
 
       if (CEPManual === 'WYSI') {
         CEPDefault = await Database.raw(
-          "select C.CEP from dbo.FilialEntidadeGrVenda as F left join dbo.Cliente as C on F.A1_COD = C.A1_COD and F.A1_GRPVEN = C.GrpVen and C.TPessoa = 'J' where F.M0_CODFIL = ?",
+          "select C.CEP, F.UF, C.Município from dbo.FilialEntidadeGrVenda as F left join dbo.Cliente as C on F.A1_COD = C.A1_COD and F.A1_GRPVEN = C.GrpVen and C.TPessoa = 'J' where F.M0_CODFIL = ?",
           [verified.user_code]
         )
 
-        CEPTarget = CEPDefault[0].CEP
+        if (String(CEPDefault[0].UF).trim() !== 'SP') {
+          CEPTarget = null
+        } else {
+          CEPTarget = CEPDefault[0].CEP
+        }
       } else {
         CEPTarget = CEPManual
+      }
+
+      if(CEPTarget === null){
+        response.status(200).send({
+          Faturamento: {
+            CEP: CEPDefault[0].CEP,
+            Regiao: CEPDefault[0].Município,
+            Faturamento: 'Sem previsão',
+            Rota: 'Sem rota',
+            PrevFaturamento: '',
+            PrevRota: ''
+          }
+        });
+        return
       }
 
       const excel = xlsx.readFile('\\\\192.168.1.250\\dados\\Franquia\\FERNANDA\\Faturamento\\Area Entrega por cliente.xlsx')
@@ -721,8 +739,10 @@ class CompraController {
         Faturamento: {
           CEP: CEPTarget,
           Regiao: RegiaoCidade[matchIndexes[0]],
-          PrevFaturamento: returnNextAvailableDate(Faturar[matchIndexes[0]]),
-          PrevRota: returnNextAvailableDate(Rota[matchIndexes[0]])
+          Faturamento: Faturar[matchIndexes[0]],
+          Rota: Rota[matchIndexes[0]],
+          PrevFaturamento: returnNextAvailableDate(Faturar[matchIndexes[0]]).format('LL'),
+          PrevRota: returnNextAvailableDate(Rota[matchIndexes[0]], returnNextAvailableDate(Faturar[matchIndexes[0]])).format('LL')
         }
       });
     } catch (err) {
@@ -855,13 +875,19 @@ const convertWeekDayToInteger = (weekday) => {
   }
 }
 
-const returnNextAvailableDate = (rawWeekday) => {
-  const today = moment().isoWeekday();
+const returnNextAvailableDate = (rawWeekday, countSince = null) => {
+  let today
+
+  if(countSince === null){
+    today = moment().isoWeekday();
+  }else{
+    today = countSince
+  }
 
   if (today < convertWeekDayToInteger(rawWeekday)) {
-    return moment().isoWeekday(convertWeekDayToInteger(rawWeekday)).format('LL');
+    return moment().isoWeekday(convertWeekDayToInteger(rawWeekday));
   } else {
-    return moment().add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday)).format('LL');
+    return moment().add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
   }
 }
 
