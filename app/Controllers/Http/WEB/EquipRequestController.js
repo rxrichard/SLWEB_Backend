@@ -890,6 +890,33 @@ class EquipRequestController {
       })
     }
   }
+
+  async GetCardInformation({ request, response }) {
+    const token = request.header("authorization");
+
+    try {
+      const information = await Database
+      .select('ParamTxt')
+      .from('dbo.Parametros')
+      .where({
+        GrpVen: '000000',
+        ParamId: 'INSTRUCOESCARTAO',
+      })
+
+      response.status(200).send({
+        Instrucoes: information[0].ParamTxt
+      })
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'EquipRequestController.GetCardInformation',
+      })
+    }
+  }
 }
 
 module.exports = EquipRequestController;

@@ -15,7 +15,9 @@ exports.GenTokenTMT = async (filial) => {
   Formulario.append("filial", filial);
 
   try {
-    return await con.post("/Token", Formulario);
+    const response = await con.post("/Token", Formulario)
+    
+    return response
   } catch (err) {
     logger.error({
       token: null,

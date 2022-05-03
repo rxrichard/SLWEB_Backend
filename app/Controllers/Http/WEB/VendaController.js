@@ -526,7 +526,7 @@ class VendaController {
     try {
       const verified = seeToken(token);
 
-      const numeroExterno = await Database.select("PedidoId")
+      const numeroExterno = await Database.select('PedidoId', 'PedidoN')
         .from("dbo.PedidosVendaCab")
         .where({
           GrpVen: verified.grpven,
@@ -543,6 +543,8 @@ class VendaController {
           localestoque: verified.user_code,
         });
 
+      const nfeTarget = NFe.length > 0 ? NFe[0].num_pedido : numeroExterno[0].PedidoN
+
       const prefixoCancelamento = "110111";
       const prefixoCartaDeCorrecao = "110110";
       /*o 01 é a ordem do evento, 
@@ -553,11 +555,11 @@ class VendaController {
 
       const names = {
         nomeDanfe:
-          `000000000000000000000000000000${NFe[0].num_pedido}_nfe_-DANFE.pdf`.slice(
+          `000000000000000000000000000000${nfeTarget}_nfe_-DANFE.pdf`.slice(
             -45
           ),
         nomeXml:
-          `000000000000000000000000000000${NFe[0].num_pedido}_nfe_.xml`.slice(
+          `000000000000000000000000000000${nfeTarget}_nfe_.xml`.slice(
             -39
           ),
         nomeCancelamento: `${prefixoCancelamento}${NFe[0].chave_de_acesso}${sulfixoComum}`,

@@ -60,6 +60,7 @@ Route.get("/compras/retrivenfe/:ID", "WEB/CompraController.RetriveNota").middlew
 Route.post("/compras/comprar", "WEB/CompraController.Comprar").middleware('jwt'); //retorna detalhes do pedido
 Route.post("/compras/duplicatas/report/", "WEB/CompraController.Compensar").middleware('jwt'); //salva arquivo de duplicatas
 Route.get("/compras/pedidos/PDF/detalhes/:pedidoid/:status", "WEB/CompraController.GenPDFCompra").middleware('jwt'); //retorna pdf de venda
+Route.get("/compras/faturamento/rotas/:CEP", "WEB/CompraController.ConsultaRota").middleware('jwt'); //retorna previsão de faturamento e rota
 
 //Vendas
 Route.get("/vendas/produtos", "WEB/VendaController.Produtos").middleware('jwt'); //retorna lista de produtos compraveis
@@ -86,6 +87,7 @@ Route.get("/equip/requests/own", "WEB/EquipRequestController.Show").middleware('
 Route.get("/equip/requests/adresses", "WEB/EquipRequestController.See").middleware('jwt'); //retorna endereços, máquinas, configurações
 Route.get("/equip/requests/default/:id", "WEB/EquipRequestController.SearchDefaultConfig").middleware('jwt'); //busca as configurações padrão da máquina
 Route.get("/equip/requests/retrive", "WEB/EquipRequestController.RetriveOS").middleware('jwt'); //retorna o PDF da OS
+Route.get("/equip/payment/card/information", "WEB/EquipRequestController.GetCardInformation").middleware('jwt'); //retorna informações do sistema de pagamento cartão
 Route.post("/equip/requests", "WEB/EquipRequestController.Store").middleware('jwt'); //Solicita maquina
 
 //Administração das Solicitações de Equipamento
@@ -103,7 +105,7 @@ Route.get("/form/all", "ADMIN/FuturoFranqueadoController.Show").middleware('jwt'
 Route.get("/form/original", "ADMIN/FuturoFranqueadoController.RetriveWORDFORM"); //baixa o formulario .doc
 Route.get("/form/pdf/:CodCandidato", "ADMIN/FuturoFranqueadoController.GeneratePDF").middleware('jwt'); //retorna pdf do formulario
 Route.post("/form/solicitacao", "ADMIN/FuturoFranqueadoController.RequestCod"); //solicita código de acesso
-Route.post("/form/upload/:CodCandidato/:qfiles", "ADMIN/FuturoFranqueadoController.FileUpload"); //faz upload de arquivos
+Route.post("/form/upload/", "ADMIN/FuturoFranqueadoController.FileUpload"); //faz upload de arquivos
 Route.post("/form/:CodCandidato", "ADMIN/FuturoFranqueadoController.FormUpload"); //faz upload do formulario
 
 //Dashboard

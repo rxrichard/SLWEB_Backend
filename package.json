@@ -1,6 +1,6 @@
 {
   "name": "adonis-api-app",
-  "version": "9.1.0",
+  "version": "9.3.0",
   "adonis-version": "4.1.0",
   "description": "Adonisjs boilerplate for API server with pre-configured JWT",
   "main": "index.js",
@@ -37,7 +37,9 @@
     "winston": "^3.5.1",
     "xlsx": "0.16.9"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@adonisjs/cli": "^4.0.13"
+  },
   "autoload": {
     "App": "./app"
   }
