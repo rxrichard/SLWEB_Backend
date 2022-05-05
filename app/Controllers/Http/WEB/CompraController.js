@@ -696,7 +696,7 @@ class CompraController {
         CEPTarget = CEPManual
       }
 
-      if(CEPTarget === null){
+      if (CEPTarget === null) {
         response.status(200).send({
           Faturamento: {
             CEP: CEPDefault[0].CEP,
@@ -878,14 +878,21 @@ const convertWeekDayToInteger = (weekday) => {
 const returnNextAvailableDate = (rawWeekday, countSince = null) => {
   let today
 
-  if(countSince === null){
+  if (countSince === null) {
     today = moment().isoWeekday();
-  }else{
-    today = countSince
+  } else {
+    today = countSince.isoWeekday()
   }
 
-  if (today < convertWeekDayToInteger(rawWeekday)) {
+  console.log(countSince)
+  console.log(today)
+
+  if (today < convertWeekDayToInteger(rawWeekday) && countSince !== null) {
+    return countSince.isoWeekday(convertWeekDayToInteger(rawWeekday));
+  } else if (today < convertWeekDayToInteger(rawWeekday)) {
     return moment().isoWeekday(convertWeekDayToInteger(rawWeekday));
+  } else if (countSince !== null) {
+    return countSince.add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
   } else {
     return moment().add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
   }
