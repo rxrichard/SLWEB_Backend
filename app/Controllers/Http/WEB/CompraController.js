@@ -809,11 +809,6 @@ const testCEPMatch = (targetCEP, CEPRange) => {
       }
     })
 
-    // console.log(secondaryRange)
-    // console.log(Number(formatCEP(secondaryRange[0].split(/[a]/i)[0].trim())))
-    // console.log(Number(formatCEP(secondaryRange[0].split(/[a]/i)[1].trim())))
-    // console.log(Number(formatCEP(targetCEP)))
-
     if (Number(formatCEP(secondaryRange[0].split(/[a]/i)[0].trim())) <= Number(formatCEP(targetCEP)) && Number(formatCEP(secondaryRange[0].split(/[a]/i)[1].trim())) >= Number(formatCEP(targetCEP))) {
       deuMatch = true
     }
@@ -830,11 +825,7 @@ const testCEPMatch = (targetCEP, CEPRange) => {
 
     return deuMatch
   } else if (isRange) {
-    // console.log(formatCEP(String(CEPRange).split(/[a]/i)[1].trim()))
     aux = String(CEPRange).split(/[a]/i)
-
-    // console.log(formatCEP(aux[0].trim()))
-    // console.log(formatCEP(aux[1].trim()))
 
     if (Number(formatCEP(aux[0].trim())) <= Number(formatCEP(targetCEP)) && Number(formatCEP(aux[1].trim())) >= Number(formatCEP(targetCEP))) {
       deuMatch = true
@@ -883,9 +874,6 @@ const returnNextAvailableDate = (rawWeekday, countSince = null) => {
   } else {
     today = countSince.isoWeekday()
   }
-
-  console.log(countSince)
-  console.log(today)
 
   if (today < convertWeekDayToInteger(rawWeekday) && countSince !== null) {
     return countSince.isoWeekday(convertWeekDayToInteger(rawWeekday));
