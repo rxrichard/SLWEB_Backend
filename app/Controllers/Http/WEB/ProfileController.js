@@ -28,6 +28,8 @@ class ProfileController {
           String(Certificado.rows[0].valor).indexOf('datavenctocertificado=') + 22,
           String(Certificado.rows[0].valor).indexOf('datavenctocertificado=') + 32
         )
+      }else{
+        throw new Error('Join perfil falhou')
       }
 
       response.status(200).send({

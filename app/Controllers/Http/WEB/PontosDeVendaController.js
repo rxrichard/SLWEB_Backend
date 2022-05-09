@@ -14,14 +14,21 @@ class PontosDeVendaController {
     try {
       const verified = seeToken(token);
 
-      const PDVs = await Database
-        .select('*')
-        .from('dbo.PontoVenda')
-        .where({
-          GrpVen: verified.grpven
-        }).orderBy('PdvDataAtivacao', 'desc')
+      const pdvs = await Database.raw(QUERY_PDVS, [verified.grpven, verified.grpven])
 
-      response.status(200).send(PDVs);
+      const depositos = await Database.select('*').from('dbo.Deposito').where({
+        GrpVen: verified.grpven
+      })
+
+      const configuracoes = await Database.select('*').from('dbo.CfgCad').where({
+        GrpVen: verified.grpven
+      })
+
+      response.status(200).send({
+        PDVs: pdvs,
+        Depositos: depositos,
+        Configuracoes: configuracoes
+      });
     } catch (err) {
       response.status(400).send()
       logger.error({
@@ -36,3 +43,5 @@ class PontosDeVendaController {
 }
 
 module.exports = PontosDeVendaController;
+
+const QUERY_PDVS = "select P.*, A.AnxFatMinimo, A.AnxCalcMinPor, A.AnxTipMin from dbo.PontoVenda as P inner join dbo.Anexos as A on P.AnxId = A.AnxId and A.GrpVen = ? where P.GrpVen = ? order by PdvDataAtivacao DESC"
