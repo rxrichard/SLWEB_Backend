@@ -130,6 +130,8 @@ Route.delete("/coletas/detalhes/apagar/:EquiCod/:AnxId/:PdvId/:FfmSeq", "WEB/Con
 
 //Pontos de Venda
 Route.get("/pontosdevenda", "WEB/PontosDeVendaController.Show").middleware('jwt'); //retorna todos os pontos de venda do franqueado
+Route.put("/pontosdevenda/inativar", "WEB/PontosDeVendaController.InativPDV").middleware('jwt'); //inativa pdv
+Route.put("/pontosdevenda/atualizar", "WEB/PontosDeVendaController.Update").middleware('jwt'); //atualiza dados do pdv
 
 
 //quebra galho
