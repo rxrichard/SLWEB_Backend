@@ -51,7 +51,7 @@ exports.genToken = async (user_code, password) => {
     return {
       nome: name[0].GrupoVenda,
       token,
-      role: "Franquia"
+      role: "Franquia",
     };
 
   } else {
@@ -84,7 +84,11 @@ exports.genTokenAdmWithFilial = async (user_code, tokenAdmDecrypted) => {
     }
   );
 
-  return { nome: user[0].GrupoVenda, token, role: tokenAdmDecrypted.role };
+  return {
+    nome: user[0].GrupoVenda,
+    token,
+    role: tokenAdmDecrypted.role
+  };
 };
 
 exports.genTokenAdm = async (admin_code, admin_password) => {
@@ -139,7 +143,11 @@ exports.genTokenExternal = async (code) => {
       { expiresIn: "2h" }
     );
 
-    return { nome: dados[0].GrupoVenda, token, role: "Franquia" }
+    return { 
+      nome: dados[0].GrupoVenda, 
+      token, 
+      role: "Franquia" 
+    }
   } catch (err) {
     logger.error({
       token: null,
