@@ -187,9 +187,6 @@ class FuturoFranqueadoController {
           CodCandidato: candidato,
         })
 
-      console.log(form.DtNascimento)
-      console.log(form.DtNascimento)
-
       await Database.table("dbo.FuturaFranquia")
         .where({ CodCandidato: candidato })
         .update({

@@ -19,7 +19,7 @@ class LeadController {
 
       //busca leads disponiveis
       const LeadsGeral = await Database.raw(
-        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Insercao from (select * from dbo.Leads as L left join (select LeadId, COUNT(GrpVen) as Atribuicoes from dbo.LeadsAttr where Ativo = 1 group by LeadId) as C on L.Id = C.LeadId left join (select ParamVlr as MaxAtribuicoes from dbo.Parametros where ParamId = 'LeadMax') as P on P.MaxAtribuicoes <> 0 where Atribuicoes IS NULL OR Atribuicoes < MaxAtribuicoes and L.Disponivel = 1) as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.Id not in (select LeadId from dbo.LeadsAttr where GrpVen = ? group by LeadId) and L.Insercao <= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)) and (F.UF = L.Estado OR F.M0_CODFIL = '0201' OR F.M0_CODFIL = '0203') order by L.Insercao DESC",
+        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Insercao from (select * from dbo.Leads as L left join (select LeadId, COUNT(GrpVen) as Atribuicoes from dbo.LeadsAttr where Ativo = 1 group by LeadId) as C on L.Id = C.LeadId left join (select ParamVlr as MaxAtribuicoes from dbo.Parametros where ParamId = 'LeadMax') as P on P.MaxAtribuicoes <> 0 where Atribuicoes IS NULL OR Atribuicoes < MaxAtribuicoes and L.Disponivel = 1) as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.Id not in (select LeadId from dbo.LeadsAttr where GrpVen = ? group by LeadId) and L.Insercao <= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)) and DATEDIFF(D, L.Insercao, GETDATE()) <= 45 and (F.UF = L.Estado OR F.M0_CODFIL = '0201' OR F.M0_CODFIL = '0203') order by L.Insercao DESC",
         [verified.grpven, verified.grpven]
       );
 
@@ -47,6 +47,34 @@ class LeadController {
     }
   }
 
+  async ShowADM({ request, response }) {
+    const token = request.header("authorization");
+
+    try {
+      const verified = seeToken(token);
+      let Leads = []
+
+      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
+        Leads = await Database.raw("select L.Id, Nome_Fantasia, Razao_Social, Estado, Municipio, AtividadeDesc, Mensagem, Insercao, Disponivel, LA.Filial from dbo.Leads as L left join dbo.LeadsAttr as LA on LA.LeadId = L.Id and LA.Ativo = 1 order by Insercao DESC", [])
+      } else {
+        throw new Errow('Usuário não permitido')
+      }
+
+      response.status(200).send({
+        Leads: Leads
+      })
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.ShowADM',
+      })
+    }
+  }
+
   async See({ request, response, params }) {
     const token = request.header("authorization");
     const LeadId = params.lead
@@ -65,6 +93,51 @@ class LeadController {
         payload: request.body,
         err: err,
         handler: 'LeadController.See',
+      })
+    }
+  }
+
+  async SeeADM({ request, response, params }) {
+    const token = request.header("authorization");
+    const LeadId = params.lead
+
+    try {
+      const verified = seeToken(token);
+      let info = null
+      let hist = null
+
+      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
+        info = await Database
+          .select('*')
+          .from('dbo.Leads')
+          .where({
+            Id: LeadId
+          })
+
+        hist = await Database
+          .select('LeadId', 'Filial', 'DataHora', 'Ativo', 'Desistiu', 'Motivo', 'Expirou', 'Negociacao', 'DataFechamento')
+          .from('dbo.LeadsAttr')
+          .where({
+            LeadId: LeadId
+          })
+          .orderBy('DataHora', 'DESC')
+
+      } else {
+        throw new Errow('Usuário não permitido')
+      }
+
+      response.status(200).send({
+        Info: info[0],
+        Historico: hist
+      })
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.SeeADM',
       })
     }
   }
@@ -140,6 +213,36 @@ class LeadController {
         payload: request.body,
         err: err,
         handler: 'LeadController.Update',
+      })
+    }
+  }
+
+  async ActiveInactive({ request, response, params }) {
+    const token = request.header("authorization");
+    const LeadId = params.lead
+    const Status = params.status
+
+    try {
+      const verified = seeToken(token);
+
+      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
+        await Database.table("dbo.Leads")
+          .where({ Id: LeadId })
+          .update({
+            Disponivel: Status === 'A' ? true : false
+          })
+      } else {
+        throw new Error('Usuário não permitido')
+      }
+      response.status(200).send()
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.SeeADM',
       })
     }
   }

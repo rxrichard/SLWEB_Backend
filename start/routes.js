@@ -37,8 +37,11 @@ Route.put("profile/tax", "WEB/ProfileController.ChangeTax").middleware('jwt');
 
 //Leads
 Route.get("/leads", "WEB/LeadController.Show").middleware('jwt');
+Route.get("/leads/adm", "WEB/LeadController.ShowADM").middleware('jwt');
 Route.get("/leads/:lead", "WEB/LeadController.See").middleware('jwt');
+Route.get("/leads/adm/:lead", "WEB/LeadController.SeeADM").middleware('jwt');
 Route.put("/leads", "WEB/LeadController.Update").middleware('jwt');
+Route.put("/leads/:lead/:status", "WEB/LeadController.ActiveInactive").middleware('jwt');
 Route.post("/leads", "WEB/LeadController.Store").middleware('jwt');
 
 //Clientes
@@ -130,6 +133,8 @@ Route.delete("/coletas/detalhes/apagar/:EquiCod/:AnxId/:PdvId/:FfmSeq", "WEB/Con
 
 //Pontos de Venda
 Route.get("/pontosdevenda", "WEB/PontosDeVendaController.Show").middleware('jwt'); //retorna todos os pontos de venda do franqueado
+Route.put("/pontosdevenda/inativar", "WEB/PontosDeVendaController.InativPDV").middleware('jwt'); //inativa pdv
+Route.put("/pontosdevenda/atualizar", "WEB/PontosDeVendaController.Update").middleware('jwt'); //atualiza dados do pdv
 
 
 //quebra galho
