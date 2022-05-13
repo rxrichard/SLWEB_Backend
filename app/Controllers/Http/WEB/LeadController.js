@@ -47,6 +47,34 @@ class LeadController {
     }
   }
 
+  async ShowADM({ request, response }) {
+    const token = request.header("authorization");
+
+    try {
+      const verified = seeToken(token);
+      let Leads = []
+
+      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
+        Leads = await Database.raw("select L.Id, Nome_Fantasia, Razao_Social, Estado, Municipio, AtividadeDesc, Mensagem, Insercao, Disponivel, LA.Filial from dbo.Leads as L left join dbo.LeadsAttr as LA on LA.LeadId = L.Id and LA.Ativo = 1 order by Insercao DESC", [])
+      } else {
+        throw new Errow('Usuário não permitido')
+      }
+
+      response.status(200).send({
+        Leads: Leads
+      })
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.ShowADM',
+      })
+    }
+  }
+
   async See({ request, response, params }) {
     const token = request.header("authorization");
     const LeadId = params.lead
@@ -65,6 +93,51 @@ class LeadController {
         payload: request.body,
         err: err,
         handler: 'LeadController.See',
+      })
+    }
+  }
+
+  async SeeADM({ request, response, params }) {
+    const token = request.header("authorization");
+    const LeadId = params.lead
+
+    try {
+      const verified = seeToken(token);
+      let info = null
+      let hist = null
+
+      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
+        info = await Database
+          .select('*')
+          .from('dbo.Leads')
+          .where({
+            Id: LeadId
+          })
+
+        hist = await Database
+          .select('LeadId', 'Filial', 'DataHora', 'Ativo', 'Desistiu', 'Motivo', 'Expirou', 'Negociacao', 'DataFechamento')
+          .from('dbo.LeadsAttr')
+          .where({
+            LeadId: LeadId
+          })
+          .orderBy('DataHora', 'DESC')
+
+      } else {
+        throw new Errow('Usuário não permitido')
+      }
+
+      response.status(200).send({
+        Info: info[0],
+        Historico: hist
+      })
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.SeeADM',
       })
     }
   }
@@ -140,6 +213,36 @@ class LeadController {
         payload: request.body,
         err: err,
         handler: 'LeadController.Update',
+      })
+    }
+  }
+
+  async ActiveInactive({ request, response, params }) {
+    const token = request.header("authorization");
+    const LeadId = params.lead
+    const Status = params.status
+
+    try {
+      const verified = seeToken(token);
+
+      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
+        await Database.table("dbo.Leads")
+          .where({ Id: LeadId })
+          .update({
+            Disponivel: Status === 'A' ? true : false
+          })
+      } else {
+        throw new Error('Usuário não permitido')
+      }
+      response.status(200).send()
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'LeadController.SeeADM',
       })
     }
   }
