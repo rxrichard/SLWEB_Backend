@@ -37,8 +37,11 @@ Route.put("profile/tax", "WEB/ProfileController.ChangeTax").middleware('jwt');
 
 //Leads
 Route.get("/leads", "WEB/LeadController.Show").middleware('jwt');
+Route.get("/leads/adm", "WEB/LeadController.ShowADM").middleware('jwt');
 Route.get("/leads/:lead", "WEB/LeadController.See").middleware('jwt');
+Route.get("/leads/adm/:lead", "WEB/LeadController.SeeADM").middleware('jwt');
 Route.put("/leads", "WEB/LeadController.Update").middleware('jwt');
+Route.put("/leads/:lead/:status", "WEB/LeadController.ActiveInactive").middleware('jwt');
 Route.post("/leads", "WEB/LeadController.Store").middleware('jwt');
 
 //Clientes

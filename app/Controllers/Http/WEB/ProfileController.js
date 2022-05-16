@@ -23,13 +23,14 @@ class ProfileController {
 
       let vencimento = null
 
+      //formato a data do certificado
       if (Certificado.rows[0]) {
         vencimento = String(Certificado.rows[0].valor).substring(
           String(Certificado.rows[0].valor).indexOf('datavenctocertificado=') + 22,
           String(Certificado.rows[0].valor).indexOf('datavenctocertificado=') + 32
         )
-      }else{
-        throw new Error('Join perfil falhou')
+      } else {
+        vencimento = 'Desconhecido'
       }
 
       response.status(200).send({
