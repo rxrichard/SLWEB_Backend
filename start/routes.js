@@ -113,9 +113,10 @@ Route.post("/form/:CodCandidato", "ADMIN/FuturoFranqueadoController.FormUpload")
 
 //Dashboard
 Route.get("/dashboard/filiais", "WEB/GeneralController.Filiais").middleware('jwt'); //retorna pdf do formulario
-Route.get("/dashboard/news", "WEB/GeneralController.News").middleware('jwt'); //retorna noticias
+Route.get("/dashboard/news", "WEB/GeneralController.ShowNews").middleware('jwt'); //retorna noticias
 Route.post("/dashboard/news/", "WEB/GeneralController.StoreNews").middleware('jwt'); //guarda nova noticia
-Route.delete("/dashboard/news/:id", "WEB/GeneralController.Destroy").middleware('jwt'); //inativa uma noticia
+Route.post("/dashboard/news/check", "WEB/GeneralController.CheckNews").middleware('jwt'); //da um check que a noticia foi vizualizada
+Route.delete("/dashboard/news/:id", "WEB/GeneralController.DestroyNews").middleware('jwt'); //inativa uma noticia
 
 //Monitor
 Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //retorna pdf do formulario

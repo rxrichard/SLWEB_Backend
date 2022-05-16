@@ -38,13 +38,13 @@ class GeneralController {
     }
   }
 
-  async News({ request, response }) {
+  async ShowNews({ request, response }) {
     const token = request.header("authorization");
 
     try {
-      const news = await Database.select('*').from('dbo.NewsSLWEB').where({
-        BannerStatus: 'A'
-      }).orderBy('NewsId', 'DESC')
+      const verified = seeToken(token);
+
+      const news = await Database.raw("select NS.*, NSC.DtConfirmacao from dbo.NewsSLWEB as NS left join dbo.NewsSLWEBConfirmacao as NSC on NS.NewsId = NSC.NewsId and NSC.GrpVen = ? where NS.BannerStatus = 'A' order by NS.NewsId DESC", [verified.grpven])
 
       response.status(200).send({
         News: news
@@ -79,6 +79,8 @@ class GeneralController {
         ModalHeaderTitle: news.ModalHeaderTitle,
         ModalContent: news.ModalContent,
         BannerStatus: 'A',
+        ReadConfirm: news.Comfirm,
+        ModalPrompt: news.Prompt,
       }).into('dbo.NewsSLWEB')
 
       response.status(200).send()
@@ -94,7 +96,7 @@ class GeneralController {
     }
   }
 
-  async Destroy({ request, response, params }) {
+  async DestroyNews({ request, response, params }) {
     const token = request.header("authorization");
     const id = params.id
 
@@ -116,6 +118,46 @@ class GeneralController {
         payload: request.body,
         err: err,
         handler: 'GeneralController.Destroy',
+      })
+    }
+  }
+
+  async CheckNews({ request, response }) {
+    const token = request.header("authorization");
+    const { newsId } = request.only(['newsId'])
+
+    try {
+      const verified = seeToken(token);
+
+      const hoje = new Date()
+
+      const jaChecou = await Database
+        .select('*')
+        .from('dbo.NewsSLWEBConfirmacao')
+        .where({
+          GrpVen: verified.grpven,
+          NewsId: newsId,
+        })
+
+      if (jaChecou.length === 0) {
+        await Database.insert({
+          GrpVen: verified.grpven,
+          NewsId: newsId,
+          DtVisualizacao: hoje,
+          DtConfirmacao: hoje
+        }).into('dbo.NewsSLWEBConfirmacao')
+      }
+
+
+      response.status(200).send()
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'GeneralController.CheckNews',
       })
     }
   }
