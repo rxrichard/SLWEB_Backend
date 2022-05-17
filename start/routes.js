@@ -119,8 +119,9 @@ Route.post("/dashboard/news/check", "WEB/GeneralController.CheckNews").middlewar
 Route.delete("/dashboard/news/:id", "WEB/GeneralController.DestroyNews").middleware('jwt'); //inativa uma noticia
 
 //Monitor
-Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //retorna pdf do formulario
-Route.post("/monitor/telemetrias/chamado", "WEB/MonitorController.AbrirChamado").middleware('jwt'); //retorna pdf do formulario
+Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //Exibe ativos
+Route.post("/monitor/telemetrias/chamado", "WEB/MonitorController.AbrirChamado").middleware('jwt'); //Abrir chamado
+Route.put("/monitor/telemetrias/chamado", "WEB/MonitorController.FecharChamado").middleware('jwt'); //Fechar chamado
 
 //Consulta Coletas
 Route.get("/coletas", "WEB/ConsultaColetasController.Show").middleware('jwt'); //retorna todas as coletas do franqueado
