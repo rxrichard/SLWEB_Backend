@@ -27,6 +27,7 @@ Route.post("/auth", "UserController.Login");
 Route.post("/forgot", "UserController.Forgot");
 Route.post("/admAuth/full", "UserController.AdmFullLogin");
 Route.post("/admAuth/partial", "UserController.AdmPartialLogin");
+Route.get("/admAuth/logout", "UserController.AdmLogoutFilial");
 Route.post("/checkAuth", "UserController.ExternalAuth");
 
 //Usuário

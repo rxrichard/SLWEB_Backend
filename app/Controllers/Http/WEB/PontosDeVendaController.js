@@ -16,21 +16,18 @@ class PontosDeVendaController {
 
       const pdvs = await Database.raw(QUERY_PDVS, [verified.grpven, verified.grpven])
 
-      const depositos = await Database.select('*').from('dbo.Deposito').where({
-        GrpVen: verified.grpven
-      })
+      // const depositos = await Database.select('*').from('dbo.Deposito').where({
+      //   GrpVen: verified.grpven
+      // })
 
-      const configuracoes = await Database.select('*').from('dbo.CfgCad').where({
-        GrpVen: verified.grpven
-      })
+      // const configuracoes = await Database.select('*').from('dbo.CfgCad').where({
+      //   GrpVen: verified.grpven
+      // })
 
-      const EquipsDisp = await Database.raw(QUERY_EQSDISP, [verified.grpven])
+      // const EquipsDisp = await Database.raw(QUERY_EQSDISP, [verified.grpven])
 
       response.status(200).send({
         PDVs: pdvs,
-        Depositos: depositos,
-        Configuracoes: configuracoes,
-        EqsDisp: EquipsDisp
       });
     } catch (err) {
       response.status(400).send()
@@ -139,6 +136,6 @@ class PontosDeVendaController {
 
 module.exports = PontosDeVendaController;
 
-const QUERY_PDVS = "select P.*, A.AnxFatMinimo, A.AnxCalcMinPor, A.AnxTipMin from dbo.PontoVenda as P inner join dbo.Anexos as A on P.AnxId = A.AnxId and A.GrpVen = ? where P.GrpVen = ? order by PdvDataAtivacao DESC"
+const QUERY_PDVS = "select P.PdvId, P.AnxDesc, P.EquiCod, P.PdvDataAtivacao, P.PdvStatus from dbo.PontoVenda as P where P.GrpVen = ? order by PdvDataAtivacao DESC"
 
 const QUERY_EQSDISP = "select EquiCod from dbo.Equipamento where EquiCod not in ( select EquiCod from dbo.PontoVenda where PdvStatus = 'A' ) and GrpVen = ?"
