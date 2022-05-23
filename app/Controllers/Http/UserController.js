@@ -3,7 +3,7 @@
 const Database = use("Database");
 const Mail = use("Mail");
 const Env = use("Env");
-const { genToken, genTokenAdm, genTokenAdmWithFilial, genTokenExternal, seeToken } = require("../../Services/jwtServices");
+const { genToken, genTokenAdm, genTokenAdmWithFilial, genTokenExternal, seeToken, genTokenAdmLogout } = require("../../Services/jwtServices");
 const logger = require("../../../dump/index")
 
 class UserController {
@@ -16,7 +16,7 @@ class UserController {
     try {
       //testa usuario + senha informados
       const token = await genToken(user_code, password);
-      
+
       response.status(202).send(token); //Retorno do token
     } catch (err) {
       response.status(401).send();
@@ -124,6 +124,31 @@ class UserController {
         payload: request.body,
         err: err,
         handler: 'UserController.AdmFullLogin',
+      })
+    }
+  }
+
+  async AdmLogoutFilial({ request, response }) {
+    const token = request.header("authorization");
+
+    try {
+      const verified = seeToken(token);
+
+      if (verified.role === 'Franquia') {
+        throw new Error('Acesso negado')
+      }
+
+      const admTokenLogout = await genTokenAdmLogout(verified.admin_code, verified.role);
+
+      response.status(200).send(admTokenLogout);
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'UserController.AdmLogoutFilial',
       })
     }
   }

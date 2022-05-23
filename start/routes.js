@@ -27,6 +27,7 @@ Route.post("/auth", "UserController.Login");
 Route.post("/forgot", "UserController.Forgot");
 Route.post("/admAuth/full", "UserController.AdmFullLogin");
 Route.post("/admAuth/partial", "UserController.AdmPartialLogin");
+Route.get("/admAuth/logout", "UserController.AdmLogoutFilial");
 Route.post("/checkAuth", "UserController.ExternalAuth");
 
 //Usuário
@@ -113,13 +114,15 @@ Route.post("/form/:CodCandidato", "ADMIN/FuturoFranqueadoController.FormUpload")
 
 //Dashboard
 Route.get("/dashboard/filiais", "WEB/GeneralController.Filiais").middleware('jwt'); //retorna pdf do formulario
-Route.get("/dashboard/news", "WEB/GeneralController.News").middleware('jwt'); //retorna noticias
+Route.get("/dashboard/news", "WEB/GeneralController.ShowNews").middleware('jwt'); //retorna noticias
 Route.post("/dashboard/news/", "WEB/GeneralController.StoreNews").middleware('jwt'); //guarda nova noticia
-Route.delete("/dashboard/news/:id", "WEB/GeneralController.Destroy").middleware('jwt'); //inativa uma noticia
+Route.post("/dashboard/news/check", "WEB/GeneralController.CheckNews").middleware('jwt'); //da um check que a noticia foi vizualizada
+Route.delete("/dashboard/news/:id", "WEB/GeneralController.DestroyNews").middleware('jwt'); //inativa uma noticia
 
 //Monitor
-Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //retorna pdf do formulario
-Route.post("/monitor/telemetrias/chamado", "WEB/MonitorController.AbrirChamado").middleware('jwt'); //retorna pdf do formulario
+Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //Exibe ativos
+Route.post("/monitor/telemetrias/chamado", "WEB/MonitorController.AbrirChamado").middleware('jwt'); //Abrir chamado
+Route.put("/monitor/telemetrias/chamado", "WEB/MonitorController.FecharChamado").middleware('jwt'); //Fechar chamado
 
 //Consulta Coletas
 Route.get("/coletas", "WEB/ConsultaColetasController.Show").middleware('jwt'); //retorna todas as coletas do franqueado
@@ -133,6 +136,7 @@ Route.delete("/coletas/detalhes/apagar/:EquiCod/:AnxId/:PdvId/:FfmSeq", "WEB/Con
 
 //Pontos de Venda
 Route.get("/pontosdevenda", "WEB/PontosDeVendaController.Show").middleware('jwt'); //retorna todos os pontos de venda do franqueado
+Route.get("/pontosdevenda/info/:pdvid/:anxid/:type", "WEB/PontosDeVendaController.See").middleware('jwt'); //retorna todos os pontos de venda do franqueado
 Route.put("/pontosdevenda/inativar", "WEB/PontosDeVendaController.InativPDV").middleware('jwt'); //inativa pdv
 Route.put("/pontosdevenda/atualizar", "WEB/PontosDeVendaController.Update").middleware('jwt'); //atualiza dados do pdv
 

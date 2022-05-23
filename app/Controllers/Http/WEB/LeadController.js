@@ -19,13 +19,13 @@ class LeadController {
 
       //busca leads disponiveis
       const LeadsGeral = await Database.raw(
-        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Insercao from (select * from dbo.Leads as L left join (select LeadId, COUNT(GrpVen) as Atribuicoes from dbo.LeadsAttr where Ativo = 1 group by LeadId) as C on L.Id = C.LeadId left join (select ParamVlr as MaxAtribuicoes from dbo.Parametros where ParamId = 'LeadMax') as P on P.MaxAtribuicoes <> 0 where Atribuicoes IS NULL OR Atribuicoes < MaxAtribuicoes and L.Disponivel = 1) as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.Id not in (select LeadId from dbo.LeadsAttr where GrpVen = ? group by LeadId) and L.Insercao <= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000)) and DATEDIFF(D, L.Insercao, GETDATE()) <= 45 and (F.UF = L.Estado OR F.M0_CODFIL = '0201' OR F.M0_CODFIL = '0203') order by L.Insercao DESC",
+        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Insercao from ( select * from dbo.Leads as L left join( select LeadId, COUNT(GrpVen) as Atribuicoes from dbo.LeadsAttr where Ativo = 1 or (Ativo = 0 and Negociacao = 1) group by LeadId ) as C on L.Id = C.LeadId left join( select ParamVlr as MaxAtribuicoes from dbo.Parametros where ParamId = 'LeadMax' ) as P on P.MaxAtribuicoes <> 0 where Atribuicoes IS NULL OR Atribuicoes < MaxAtribuicoes and L.Disponivel = 1 ) as L inner join dbo.FilialEntidadeGrVenda as F on F.A1_GRPVEN = ? where L.Id not in ( select LeadId from dbo.LeadsAttr where GrpVen = ? group by LeadId ) and L.Insercao <= ( SELECT DATETIMEFROMPARTS( DATEPART(YY, GETDATE()), DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), ( select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora' ), 00, 00, 000 ) ) and DATEDIFF(D, L.Insercao, GETDATE()) <= 45 and( F.UF = L.Estado OR F.M0_CODFIL = '0201' OR F.M0_CODFIL = '0203' ) and L.Disponivel = 1 order by L.Insercao DESC",
         [verified.grpven, verified.grpven]
       );
 
       //busca leads assumidos pelo franqueado
       const LeadsFranqueado = await Database.raw(
-        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Contato, L.Fone_1, L.Fone_2, L.Email, A.DataHora, A.Ativo, A.DataFechamento, L.Insercao from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where A.GrpVen = ? and (A.Ativo = 1 or (A.Ativo = 0 and A.DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000))))",
+        "select L.Id, L.Nome_Fantasia, L.Razao_Social, L.Estado, L.Municipio, L.AtividadeDesc, L.Mensagem, L.Contato, L.Fone_1, L.Fone_2, L.Email, A.DataHora, A.Ativo, A.Desistiu, A.Expirou, A.Negociacao, A.DataFechamento, L.Insercao from dbo.Leads as L inner join dbo.LeadsAttr as A on L.Id = A.LeadId where A.GrpVen = ? and (A.Ativo = 1 or (A.Ativo = 0 and A.DataFechamento >= (SELECT DATETIMEFROMPARTS(DATEPART(YY, GETDATE()),DATEPART(MM, GETDATE()), DATEPART(DD, GETDATE()), (select top(1) ParamVlr from dbo.Parametros where ParamId = 'LeadLiberacaoHora'), 00, 00, 000))))",
         [verified.grpven]
       );
 
@@ -34,7 +34,21 @@ class LeadController {
         [verified.grpven, verified.grpven]
       );
 
-      response.status(200).send({ LeadsGeral, LeadsFranqueado, Limites });
+      response.status(200).send({
+        LeadsGeral: LeadsGeral.map(lead => ({ ...lead, status: 'Disponivel' })),
+        LeadsFranqueado: LeadsFranqueado.map(lead => {
+          if (lead.Ativo === true) {
+            return ({ ...lead, status: 'Resgatado' })
+          } else if (lead.Desistiu === true) {
+            return ({ ...lead, status: 'Desistido' })
+          } else if (lead.Expirou === true) {
+            return ({ ...lead, status: 'Expirado' })
+          } else if (lead.Negociacao === true) {
+            return ({ ...lead, status: 'Negociando' })
+          }
+        }),
+        Limites
+      });
     } catch (err) {
       response.status(400).send()
       logger.error({
@@ -199,7 +213,7 @@ class LeadController {
             Ativo: false,
             Desistiu: false,
             Negociacao: true,
-            Motivo: motivo,
+            Motivo: null,
             DataFechamento: moment().subtract(3, "hours").toDate(),
           });
 

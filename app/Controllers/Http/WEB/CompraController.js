@@ -311,7 +311,7 @@ class CompraController {
       }
 
       //busco dados do franqueado
-      const Franqueado = await Database.select("A1_COD", "A1_LOJA")
+      const Franqueado = await Database.select("A1_COD", "A1_LOJA", "CondPag")
         .from("dbo.FilialEntidadeGrVenda")
         .where({
           A1_GRPVEN: verified.grpven,
@@ -331,7 +331,7 @@ class CompraController {
         PedidoId: ProxId,
         STATUS: null,
         Filial: "0201",
-        CpgId: AVista ? '001' : "003",
+        CpgId: AVista ? '001' : Franqueado[0].CondPag,
         DataCriacao: new Date(moment().subtract(3, "hours").format()),
       }).into("dbo.PedidosCompraCab");
 
@@ -349,7 +349,7 @@ class CompraController {
             Filial: "0201",
             CodigoTabelaPreco: "462",
             CodigoVendedor: "000026",
-            CodigoCondicaoPagto: AVista ? '001' : "003",
+            CodigoCondicaoPagto: AVista ? '001' : Franqueado[0].CondPag,
             TipoFrete: "C",
             MsgNotaFiscal: null,
             MsgPadrao: null,
