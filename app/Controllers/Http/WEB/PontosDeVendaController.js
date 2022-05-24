@@ -128,56 +128,61 @@ class PontosDeVendaController {
     }
   }
 
-  async Update({ request, response }) {
+  async Update({ request, response, params }) {
     const token = request.header("authorization");
-    const { PDV } = request.only(['PDV'])
+
+    const PdvId = params.pdvid
+    const AnxId = params.anxid
+    const type = params.type
+
+    const { UpdatedData } = request.only(['UpdatedData'])
 
     try {
-      const verified = seeToken(token);
+      // const verified = seeToken(token);
 
-      await Database.table("dbo.PontoVenda")
-        .where({
-          GrpVen: verified.grpven,
-          PdvId: PDV.PdvId,
-          AnxId: PDV.AnxId,
-        })
-        .update({
-          DepId: PDV.DepId,
-          CfgId: PDV.CfgId,
-          PdvLogradouroPV: PDV.PdvLogradouroPV,
-          PdvNumeroPV: PDV.PdvNumeroPV,
-          PdvComplementoPV: PDV.PdvComplementoPV,
-          PdvBairroPV: PDV.PdvBairroPV,
-          PdvCidadePV: PDV.PdvCidadePV,
-          PdvUfPV: PDV.PdvUfPV,
-          PdvCEP: PDV.PdvCEP,
-          PdvDepartamento: PDV.PdvDepartamento,
-          PdvObs: PDV.PdvObs,
-          PdvMotivoEncerramento: PDV.PdvMotivoEncerramento,
-          PdvConsMin: PDV.PdvConsMin,
-          PdvConsValor: PDV.PdvConsValor,
-          PdvConsDose: PDV.PdvConsDose,
-          PdvSomaCompartilhado: PDV.PdvSomaCompartilhado,
-          PdvDataAlteracao: new Date()
-        });
+      // await Database.table("dbo.PontoVenda")
+      //   .where({
+      //     GrpVen: verified.grpven,
+      //     PdvId: PDV.PdvId,
+      //     AnxId: PDV.AnxId,
+      //   })
+      //   .update({
+      //     DepId: PDV.DepId,
+      //     CfgId: PDV.CfgId,
+      //     PdvLogradouroPV: PDV.PdvLogradouroPV,
+      //     PdvNumeroPV: PDV.PdvNumeroPV,
+      //     PdvComplementoPV: PDV.PdvComplementoPV,
+      //     PdvBairroPV: PDV.PdvBairroPV,
+      //     PdvCidadePV: PDV.PdvCidadePV,
+      //     PdvUfPV: PDV.PdvUfPV,
+      //     PdvCEP: PDV.PdvCEP,
+      //     PdvDepartamento: PDV.PdvDepartamento,
+      //     PdvObs: PDV.PdvObs,
+      //     PdvMotivoEncerramento: PDV.PdvMotivoEncerramento,
+      //     PdvConsMin: PDV.PdvConsMin,
+      //     PdvConsValor: PDV.PdvConsValor,
+      //     PdvConsDose: PDV.PdvConsDose,
+      //     PdvSomaCompartilhado: PDV.PdvSomaCompartilhado,
+      //     PdvDataAlteracao: new Date()
+      //   });
 
-      await Database.table("dbo.Anexos")
-        .where({
-          GrpVen: verified.grpven,
-          AnxId: PDV.AnxId,
-        })
-        .update({
-          AnxFatMinimo: PDV.AnxFatMinimo,
-          AnxCalcMinPor: PDV.AnxCalcMinPor,
-          AnxTipMin: PDV.AnxTipMin,
-        });
+      // await Database.table("dbo.Anexos")
+      //   .where({
+      //     GrpVen: verified.grpven,
+      //     AnxId: PDV.AnxId,
+      //   })
+      //   .update({
+      //     AnxFatMinimo: PDV.AnxFatMinimo,
+      //     AnxCalcMinPor: PDV.AnxCalcMinPor,
+      //     AnxTipMin: PDV.AnxTipMin,
+      //   });
 
       response.status(200).send()
     } catch (err) {
       response.status(400).send()
       logger.error({
         token: token,
-        params: null,
+        params: params,
         payload: request.body,
         err: err,
         handler: 'PontosDeVendaController.Update',
