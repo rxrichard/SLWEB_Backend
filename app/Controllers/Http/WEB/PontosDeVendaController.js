@@ -58,14 +58,14 @@ class PontosDeVendaController {
           let cpdv = await Database.raw(QUERY_CONFIG_PDV, [verified.grpven, PdvId, AnxId])
           let ccab = await Database.select('CfgId', 'CfgDesc').from('dbo.CfgCad').where({ GrpVen: verified.grpven, CfgStatus: 'A' })
           let cdet = await Database.select('CfgId', 'PvpSel as Sel', 'ProdId', 'TveId as TipoVenda', 'RecId').from('dbo.CfgDet').where({ GrpVen: verified.grpven })
-          
+
           let prodPCfg = await Database.raw(QUERY_PRODUTOS_CONFIGURACAO)
           let tiposVenda = await Database.select('TveId', 'TveDesc').from('dbo.TipoVenda')
           let receitas = await Database.select('RecId', 'RecDesc').from('dbo.Receita').where({ GrpVen: verified.grpven, RecStatus: 'A' })
 
           data = {
             CfgPdv: cpdv,
-            CfgPadrao: ccab.map(cab => { return ({ ...cab, Produtos: cdet.filter(det => det.CfgId === cab.CfgId)}) }),
+            CfgPadrao: ccab.map(cab => { return ({ ...cab, Produtos: cdet.filter(det => det.CfgId === cab.CfgId) }) }),
             Produtos: prodPCfg,
             TiposVenda: tiposVenda,
             Receitas: receitas
@@ -138,44 +138,80 @@ class PontosDeVendaController {
     const { UpdatedData } = request.only(['UpdatedData'])
 
     try {
-      // const verified = seeToken(token);
+      const verified = seeToken(token);
 
-      // await Database.table("dbo.PontoVenda")
-      //   .where({
-      //     GrpVen: verified.grpven,
-      //     PdvId: PDV.PdvId,
-      //     AnxId: PDV.AnxId,
-      //   })
-      //   .update({
-      //     DepId: PDV.DepId,
-      //     CfgId: PDV.CfgId,
-      //     PdvLogradouroPV: PDV.PdvLogradouroPV,
-      //     PdvNumeroPV: PDV.PdvNumeroPV,
-      //     PdvComplementoPV: PDV.PdvComplementoPV,
-      //     PdvBairroPV: PDV.PdvBairroPV,
-      //     PdvCidadePV: PDV.PdvCidadePV,
-      //     PdvUfPV: PDV.PdvUfPV,
-      //     PdvCEP: PDV.PdvCEP,
-      //     PdvDepartamento: PDV.PdvDepartamento,
-      //     PdvObs: PDV.PdvObs,
-      //     PdvMotivoEncerramento: PDV.PdvMotivoEncerramento,
-      //     PdvConsMin: PDV.PdvConsMin,
-      //     PdvConsValor: PDV.PdvConsValor,
-      //     PdvConsDose: PDV.PdvConsDose,
-      //     PdvSomaCompartilhado: PDV.PdvSomaCompartilhado,
-      //     PdvDataAlteracao: new Date()
-      //   });
+      switch (type) {
+        case 'basic':
+          await Database.table("dbo.PontoVenda")
+            .where({
+              GrpVen: verified.grpven,
+              PdvId: PdvId,
+              AnxId: AnxId,
+            })
+            .update({
+              DepId: UpdatedData.PDV.DepId,
+              CfgId: UpdatedData.PDV.CfgId,
+              PdvLogradouroPV: UpdatedData.PDV.PdvLogradouroPV,
+              PdvNumeroPV: UpdatedData.PDV.PdvNumeroPV,
+              PdvComplementoPV: UpdatedData.PDV.PdvComplementoPV,
+              PdvBairroPV: UpdatedData.PDV.PdvBairroPV,
+              PdvCidadePV: UpdatedData.PDV.PdvCidadePV,
+              PdvUfPV: UpdatedData.PDV.PdvUfPV,
+              PdvCEP: UpdatedData.PDV.PdvCEP,
+              PdvDepartamento: UpdatedData.PDV.PdvDepartamento,
+              PdvObs: UpdatedData.PDV.PdvObs,
+              PdvMotivoEncerramento: UpdatedData.PDV.PdvMotivoEncerramento,
+              PdvConsMin: UpdatedData.PDV.PdvConsMin,
+              PdvConsValor: UpdatedData.PDV.PdvConsValor,
+              PdvConsDose: UpdatedData.PDV.PdvConsDose,
+              PdvSomaCompartilhado: UpdatedData.PDV.PdvSomaCompartilhado,
+              PdvDataAlteracao: new Date()
+            });
 
-      // await Database.table("dbo.Anexos")
-      //   .where({
-      //     GrpVen: verified.grpven,
-      //     AnxId: PDV.AnxId,
-      //   })
-      //   .update({
-      //     AnxFatMinimo: PDV.AnxFatMinimo,
-      //     AnxCalcMinPor: PDV.AnxCalcMinPor,
-      //     AnxTipMin: PDV.AnxTipMin,
-      //   });
+          await Database.table("dbo.Anexos")
+            .where({
+              GrpVen: verified.grpven,
+              AnxId: AnxId,
+            })
+            .update({
+              AnxFatMinimo: UpdatedData.PDV.AnxFatMinimo,
+              AnxCalcMinPor: UpdatedData.PDV.AnxCalcMinPor,
+              AnxTipMin: UpdatedData.PDV.AnxTipMin,
+            });
+          break;
+        case 'config':
+          console.log(UpdatedData.CFG)
+
+          // await Database.table("dbo.PVPROD")
+          //   .where({
+          //     GrpVen: verified.grpven,
+          //     PdvId: PdvId,
+          //     AnxId: AnxId,
+          //   })
+          //   .delete();
+
+          // UpdatedData.CFG.forEach(cfg => {
+          //   await Database.insert({
+          //     GrpVen: verified.grpven,
+          //     AnxId: PdvId,
+          //     PdvId: AnxId,
+          //     PvpSel: cfg.Sel,
+          //     ProdId: cfg.ProdId,
+          //     TveId: cfg.TipoVenda,
+          //     PvpVvn1: cfg.Valor_1,
+          //     PvpVvn2: cfg.Valor_2,
+          //     FlgAlt: 'N',
+          //     RecId: cfg.RecId,
+          //   }).into('dbo.PVPROD');
+          // })
+
+          break;
+        case 'equip':
+          console.log(UpdatedData.NewEquip)
+
+          break;
+      }
+
 
       response.status(200).send()
     } catch (err) {
