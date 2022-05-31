@@ -69,7 +69,7 @@ class LeadController {
       let Leads = []
 
       if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
-        Leads = await Database.raw("select L.Id, Nome_Fantasia, Razao_Social, Estado, Municipio, AtividadeDesc, Mensagem, Insercao, Disponivel, LA.Filial from dbo.Leads as L left join dbo.LeadsAttr as LA on LA.LeadId = L.Id and LA.Ativo = 1 order by Insercao DESC", [])
+        Leads = await Database.raw("select L.Id, Nome_Fantasia, Razao_Social, Estado, Municipio, AtividadeDesc, Mensagem, Insercao, Disponivel, LA.Filial from dbo.Leads as L left join (select * from dbo.LeadsAttr where Ativo = 1 or Negociacao = 1) as LA on LA.LeadId = L.Id order by Insercao DESC", [])
       } else {
         throw new Errow('Usuário não permitido')
       }

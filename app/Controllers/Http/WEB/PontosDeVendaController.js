@@ -180,30 +180,28 @@ class PontosDeVendaController {
             });
           break;
         case 'config':
-          console.log(UpdatedData.CFG)
+          await Database.table("dbo.PVPROD")
+            .where({
+              GrpVen: verified.grpven,
+              PdvId: PdvId,
+              AnxId: AnxId,
+            })
+            .delete();
 
-          // await Database.table("dbo.PVPROD")
-          //   .where({
-          //     GrpVen: verified.grpven,
-          //     PdvId: PdvId,
-          //     AnxId: AnxId,
-          //   })
-          //   .delete();
-
-          // UpdatedData.CFG.forEach(cfg => {
-          //   await Database.insert({
-          //     GrpVen: verified.grpven,
-          //     AnxId: PdvId,
-          //     PdvId: AnxId,
-          //     PvpSel: cfg.Sel,
-          //     ProdId: cfg.ProdId,
-          //     TveId: cfg.TipoVenda,
-          //     PvpVvn1: cfg.Valor_1,
-          //     PvpVvn2: cfg.Valor_2,
-          //     FlgAlt: 'N',
-          //     RecId: cfg.RecId,
-          //   }).into('dbo.PVPROD');
-          // })
+          UpdatedData.CFG.forEach(async (cfg) => {
+            await Database.insert({
+              GrpVen: verified.grpven,
+              AnxId: AnxId,
+              PdvId: PdvId,
+              PvpSel: Number.parseInt(cfg.Sel),
+              ProdId: Number.parseInt(cfg.ProdId),
+              TveId: Number.parseInt(cfg.TipoVenda),
+              PvpVvn1: Number.parseFloat(cfg.Valor_1),
+              PvpVvn2: Number.parseFloat(cfg.Valor_2),
+              FlgAlt: 'N',
+              RecId: Number.parseInt(cfg.RecId),
+            }).into('dbo.PVPROD');
+          })
 
           break;
         case 'equip':
@@ -231,7 +229,7 @@ module.exports = PontosDeVendaController;
 
 const QUERY_PDVS = "select P.PdvId, P.AnxId, P.AnxDesc, P.EquiCod, P.PdvDataAtivacao, P.PdvStatus from dbo.PontoVenda as P where P.GrpVen = ? order by PdvDataAtivacao DESC"
 
-const QUERY_PDV = "select P.DepId, P.CfgId, P.EQUIPMOD_Desc, P.EquiCod, P.IMEI, P.AnxDesc, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvComplementoPV, P.PdvCidadePV, P.PdvCEP, P.PdvObs, P.PdvDataAtivacao, P.PdvDataEncerramento, P.PdvDataAlteracao, P.PdvMotivoEncerramento, P.PdvConsMin, P.PdvConsValor, P.PdvConsDose, P.PdvSomaCompartilhado, A.AnxFatMinimo, A.AnxCalcMinPor, A.AnxTipMin from dbo.PontoVenda as P inner join dbo.Anexos as A on P.AnxId = A.AnxId and A.GrpVen = ? where P.GrpVen = ? and P.PdvId = ? and P.AnxId = ?"
+const QUERY_PDV = "select P.DepId, P.CfgId, P.EQUIPMOD_Desc, P.EquiCod, P.IMEI, P.AnxDesc, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvBairroPV, P.PdvDepartamento, P.PdvComplementoPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP, P.PdvObs, P.PdvDataAtivacao, P.PdvDataEncerramento, P.PdvDataAlteracao, P.PdvMotivoEncerramento, P.PdvConsMin, P.PdvConsValor, P.PdvConsDose, P.PdvSomaCompartilhado, A.AnxFatMinimo, A.AnxCalcMinPor, A.AnxTipMin from dbo.PontoVenda as P inner join dbo.Anexos as A on P.AnxId = A.AnxId and A.GrpVen = ? where P.GrpVen = ? and P.PdvId = ? and P.AnxId = ?"
 const QUERY_EQSDISP = "select EquiCod from dbo.Equipamento where EquiCod not in ( select EquiCod from dbo.PontoVenda where PdvStatus = 'A' ) and GrpVen = ?"
 const QUERY_CONFIG_PDV = "select PvpSel as Sel, ProdId, TveId as TipoVenda, PvpVvn1 as Valor_1, PvpVvn2 as Valor_2, RecId from dbo.PVPROD where GrpVen = ? and PdvId = ? and AnxId = ?"
 const QUERY_PRODUTOS_CONFIGURACAO = "SELECT dbo.Produtos.ProdId, dbo.Produtos.Produto, dbo.Produtos.RecId FROM dbo.Produtos WHERE (((dbo.Produtos.PrGrupo) Like 'DOSE%') AND ((dbo.Produtos.Venda)='S')) OR (((dbo.Produtos.ProdId)='12709') AND ((dbo.Produtos.Venda)='S'))"
