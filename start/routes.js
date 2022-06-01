@@ -140,6 +140,8 @@ Route.get("/pontosdevenda/info/:pdvid/:anxid/:type", "WEB/PontosDeVendaControlle
 Route.put("/pontosdevenda/inativar", "WEB/PontosDeVendaController.InativPDV").middleware('jwt'); //inativa pdv
 Route.put("/pontosdevenda/atualizar/:pdvid/:anxid/:type", "WEB/PontosDeVendaController.Update").middleware('jwt'); //atualiza dados do pdv
 
+//Pedidos de compra
+Route.get('/pedidos/compra', 'ADMIN/PedidosDeCompra.Show').middleware('jwt');
 
 //quebra galho
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
