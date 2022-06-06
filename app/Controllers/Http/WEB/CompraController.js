@@ -81,7 +81,7 @@ class CompraController {
         verified.grpven
       );
 
-      const PedidosNaoFaturados = await Database.raw( "SELECT IIF(Sum(dbo.PedidosVenda.PrecoTotal) is null, 0, Sum(dbo.PedidosVenda.PrecoTotal)) AS Total FROM dbo.PedidosVenda INNER JOIN dbo.PedidosCompraCab ON (     dbo.PedidosVenda.Filial = dbo.PedidosCompraCab.Filial ) AND (     dbo.PedidosVenda.PedidoID = dbo.PedidosCompraCab.PedidoId ) WHERE (     ((dbo.PedidosCompraCab.NroNF) Is Null)     AND ((dbo.PedidosCompraCab.GrpVen) = ?)     AND (    (dbo.PedidosVenda.STATUS) <> 'C'    Or (dbo.PedidosVenda.STATUS) Is Null and dbo.PedidosCompraCab.STATUS <> 'C' or dbo.PedidosCompraCab.STATUS is null     ) )", [verified.grpven] );
+      const PedidosNaoFaturados = await Database.raw("SELECT IIF(Sum(dbo.PedidosVenda.PrecoTotal) is null, 0, Sum(dbo.PedidosVenda.PrecoTotal)) AS Total FROM dbo.PedidosVenda INNER JOIN dbo.PedidosCompraCab ON (     dbo.PedidosVenda.Filial = dbo.PedidosCompraCab.Filial ) AND (     dbo.PedidosVenda.PedidoID = dbo.PedidosCompraCab.PedidoId ) WHERE (     ((dbo.PedidosCompraCab.NroNF) Is Null)     AND ((dbo.PedidosCompraCab.GrpVen) = ?)     AND (    (dbo.PedidosVenda.STATUS) <> 'C'    Or (dbo.PedidosVenda.STATUS) Is Null and dbo.PedidosCompraCab.STATUS <> 'C' or dbo.PedidosCompraCab.STATUS is null     ) )", [verified.grpven]);
 
       const ComprasAoAno = await Database.raw(queryComprasAno, verified.grpven);
 
@@ -732,6 +732,9 @@ class CompraController {
         //fazer alguma coisa caso a gente não encontre nenhuma rota automaticamente
       }
 
+      console.log(Faturar)
+      console.log(Rota[matchIndexes[0]])
+
       response.status(200).send({
         Faturamento: {
           CEP: CEPTarget,
@@ -864,23 +867,23 @@ const convertWeekDayToInteger = (weekday) => {
 }
 
 const returnNextAvailableDate = (rawWeekday, countSince = null) => {
-  let today
+    let today
 
-  if (countSince === null) {
-    today = moment().isoWeekday();
-  } else {
-    today = countSince.isoWeekday()
-  }
+    if (countSince === null) {
+      today = moment().isoWeekday();
+    } else {
+      today = countSince.isoWeekday()
+    }
 
-  if (today < convertWeekDayToInteger(rawWeekday) && countSince !== null) {
-    return countSince.isoWeekday(convertWeekDayToInteger(rawWeekday));
-  } else if (today < convertWeekDayToInteger(rawWeekday)) {
-    return moment().isoWeekday(convertWeekDayToInteger(rawWeekday));
-  } else if (countSince !== null) {
-    return countSince.add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
-  } else {
-    return moment().add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
-  }
+    if (today < convertWeekDayToInteger(rawWeekday) && countSince !== null) {
+      return countSince.isoWeekday(convertWeekDayToInteger(rawWeekday));
+    } else if (today < convertWeekDayToInteger(rawWeekday)) {
+      return moment().isoWeekday(convertWeekDayToInteger(rawWeekday));
+    } else if (countSince !== null) {
+      return countSince.add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
+    } else {
+      return moment().add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
+    }
 }
 
 const queryProdutos =
