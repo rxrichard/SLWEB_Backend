@@ -45,7 +45,10 @@ class EquipRequestController {
         "UF"
       )
         .from("dbo.Cliente")
-        .where({ GrpVen: verified.grpven })
+        .where({ 
+          GrpVen: verified.grpven,
+          ClienteStatus: 'A'
+         })
         .orderBy("Nome_Fantasia");
 
       //prazo minimo para recebimento das máquinas

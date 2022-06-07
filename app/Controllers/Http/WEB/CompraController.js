@@ -711,10 +711,10 @@ class CompraController {
 
       const segundaAba = excel.Sheets[excel.SheetNames[1]]
 
-      const segundaAbaSoCEP = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.includes('A')))
-      const segundaAbaSoRegiaoCidade = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.includes('B')))
-      const segundaAbaSoFaturamento = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.includes('C')))
-      const segundaAbaSoRota = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.includes('D')))
+      const segundaAbaSoCEP = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'A'))
+      const segundaAbaSoRegiaoCidade = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'B'))
+      const segundaAbaSoFaturamento = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'C'))
+      const segundaAbaSoRota = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'D'))
 
       let CEPS = []
       let RegiaoCidade = []
@@ -729,11 +729,9 @@ class CompraController {
       const matchIndexes = matchCEPWithRanges(CEPTarget, CEPS)
 
       if (matchIndexes.length === 0) {
+        console.log('nenhum match para o CEP:' + CEPTarget)
         //fazer alguma coisa caso a gente não encontre nenhuma rota automaticamente
       }
-
-      console.log(Faturar)
-      console.log(Rota[matchIndexes[0]])
 
       response.status(200).send({
         Faturamento: {
@@ -867,23 +865,23 @@ const convertWeekDayToInteger = (weekday) => {
 }
 
 const returnNextAvailableDate = (rawWeekday, countSince = null) => {
-    let today
+  let today
 
-    if (countSince === null) {
-      today = moment().isoWeekday();
-    } else {
-      today = countSince.isoWeekday()
-    }
+  if (countSince === null) {
+    today = moment().isoWeekday();
+  } else {
+    today = countSince.isoWeekday()
+  }
 
-    if (today < convertWeekDayToInteger(rawWeekday) && countSince !== null) {
-      return countSince.isoWeekday(convertWeekDayToInteger(rawWeekday));
-    } else if (today < convertWeekDayToInteger(rawWeekday)) {
-      return moment().isoWeekday(convertWeekDayToInteger(rawWeekday));
-    } else if (countSince !== null) {
-      return countSince.add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
-    } else {
-      return moment().add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
-    }
+  if (today < convertWeekDayToInteger(rawWeekday) && countSince !== null) {
+    return countSince.isoWeekday(convertWeekDayToInteger(rawWeekday));
+  } else if (today < convertWeekDayToInteger(rawWeekday)) {
+    return moment().isoWeekday(convertWeekDayToInteger(rawWeekday));
+  } else if (countSince !== null) {
+    return countSince.add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
+  } else {
+    return moment().add(1, 'weeks').isoWeekday(convertWeekDayToInteger(rawWeekday));
+  }
 }
 
 const queryProdutos =
