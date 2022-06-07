@@ -31,7 +31,7 @@ Route.get("/admAuth/logout", "UserController.AdmLogoutFilial");
 Route.post("/checkAuth", "UserController.ExternalAuth");
 
 //Usuário
-Route.get("/profile", "WEB/ProfileController.Show").middleware('jwt');
+Route.get("/profile", "WEB/ProfileController.Show").middleware(['jwt', 'rastro']);
 Route.put("/profile/password", "WEB/ProfileController.ChangePassword").middleware('jwt');
 Route.put("/profile/email", "WEB/ProfileController.ChangeEmail").middleware('jwt');
 Route.put("profile/tax", "WEB/ProfileController.ChangeTax").middleware('jwt');
@@ -141,9 +141,12 @@ Route.put("/pontosdevenda/inativar", "WEB/PontosDeVendaController.InativPDV").mi
 Route.put("/pontosdevenda/atualizar/:pdvid/:anxid/:type", "WEB/PontosDeVendaController.Update").middleware('jwt'); //atualiza dados do pdv
 
 //Pedidos de compra
-Route.get('/pedidos/compra/:diff', 'ADMIN/PedidosDeCompra.Show').middleware('jwt');
-Route.put('/pedidos/compra/', 'ADMIN/PedidosDeCompra.Update').middleware('jwt');
+Route.get('/pedidos/compra/:diff', 'ADMIN/PedidosDeCompraController.Show').middleware('jwt');
+Route.put('/pedidos/compra/', 'ADMIN/PedidosDeCompraController.Update').middleware('jwt');
 
 //quebra galho
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
 Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jwt'); //cria a planilha que a cris pediu
+
+//rastros
+Route.post('/navegacao/', 'ADMIN/LogsController.Navegacao')

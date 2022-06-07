@@ -89,10 +89,13 @@ class PedidosDeCompra {
           CodigoTotvs: null,
         })
         .update({
-          MsgNotaFiscal: payload.MsgNFe,
-          QtdVolumes: payload.Volume,
-          TipoVolume: payload.Tipo,
-          Peso: payload.Peso
+          TipoVolume: payload.Tipo, 
+          QtdVolumes: payload.Qtd, 
+          EMISS: payload.Emissao, 
+          Transportadora: payload.Transportadora, 
+          DataEntrega: payload.Faturamento, 
+          Peso: payload.Peso, 
+          MsgNotaFiscal: payload.MsgNFe
         });
 
       response.status(200).send()
@@ -111,4 +114,4 @@ class PedidosDeCompra {
 
 module.exports = PedidosDeCompra;
 
-const QUERY_PEDIDOS_DE_COMPRA_EM_ABERTO = "SELECT dbo.FilialEntidadeGrVenda.UF, dbo.PedidosVenda.Filial, dbo.PedidosVenda.CodigoCliente, dbo.PedidosVenda.LojaCliente, dbo.PedidosVenda.PedidoID, IIF( dbo.PedidosVenda.CodigoTotvs is null, 'Aguardando', 'Processado' ) as Status, dbo.PedidosVenda.MsgBO, dbo.PedidosVenda.MsgNotaFiscal, dbo.PedidosVenda.MsgPadrao, dbo.PedidosVenda.TipoVolume, dbo.PedidosVenda.QtdVolumes, dbo.PedidosVenda.Peso, Count(dbo.PedidosVenda.PedidoItemID) AS ContarDePedidoItemID, dbo.PedidosVenda.DataCriacao, dbo.PedidosVenda.TipOp, Max(dbo.PedidosVenda.TES) AS MáxDeTES, Sum(dbo.PedidosVenda.PrecoTotal) AS SomaDePrecoTotal FROM dbo.PedidosVenda INNER JOIN dbo.FilialEntidadeGrVenda ON dbo.PedidosVenda.Filial = dbo.FilialEntidadeGrVenda.M0_CODFIL WHERE DATEDIFF(D, dbo.PedidosVenda.DataCriacao, GETDATE()) <= ? GROUP BY dbo.FilialEntidadeGrVenda.UF, dbo.PedidosVenda.STATUS, dbo.FilialEntidadeGrVenda.NASAJON, dbo.PedidosVenda.Filial, dbo.PedidosVenda.CodigoCliente, dbo.PedidosVenda.LojaCliente, dbo.PedidosVenda.PedidoID, dbo.PedidosVenda.CodigoTotvs, dbo.PedidosVenda.MsgBO, dbo.PedidosVenda.DataCriacao, dbo.PedidosVenda.DataIntegracao, dbo.PedidosVenda.TipOp, dbo.PedidosVenda.MsgNotaFiscal, dbo.PedidosVenda.MsgPadrao, dbo.PedidosVenda.TipoVolume, dbo.PedidosVenda.QtdVolumes, dbo.PedidosVenda.Peso, dbo.PedidosVenda.SERIE, dbo.PedidosVenda.EMISS HAVING ( ( (dbo.PedidosVenda.STATUS) Is Null and dbo.FilialEntidadeGrVenda.NASAJON = 'N' ) ) ORDER BY dbo.PedidosVenda.DataCriacao DESC"
+const QUERY_PEDIDOS_DE_COMPRA_EM_ABERTO = "SELECT dbo.FilialEntidadeGrVenda.UF, dbo.PedidosVenda.Filial, dbo.PedidosVenda.CodigoCliente, dbo.Cliente.Razão_Social, dbo.PedidosVenda.LojaCliente, dbo.PedidosVenda.PedidoID, IIF( dbo.PedidosVenda.CodigoTotvs is null, 'Aguardando', 'Processado' ) as Status, dbo.PedidosVenda.MsgBO, dbo.PedidosVenda.MsgNotaFiscal, dbo.PedidosVenda.MsgPadrao, dbo.PedidosVenda.TipoVolume, dbo.PedidosVenda.QtdVolumes, dbo.PedidosVenda.Peso, Count(dbo.PedidosVenda.PedidoItemID) AS ContarDePedidoItemID, dbo.PedidosVenda.DataCriacao, dbo.PedidosVenda.EMISS, Max(dbo.PedidosVenda.TES) AS MáxDeTES, Sum(dbo.PedidosVenda.PrecoTotal) AS SomaDePrecoTotal FROM dbo.PedidosVenda INNER JOIN dbo.FilialEntidadeGrVenda ON dbo.PedidosVenda.Filial = dbo.FilialEntidadeGrVenda.M0_CODFIL LEFT JOIN dbo.Cliente on dbo.PedidosVenda.CodigoCliente = dbo.Cliente.A1_COD and dbo.PedidosVenda.LojaCliente = dbo.Cliente.A1_LOJA WHERE DATEDIFF(D, dbo.PedidosVenda.DataCriacao, GETDATE()) <= ? GROUP BY dbo.FilialEntidadeGrVenda.UF, dbo.PedidosVenda.STATUS, dbo.FilialEntidadeGrVenda.NASAJON, dbo.PedidosVenda.Filial, dbo.PedidosVenda.CodigoCliente, dbo.PedidosVenda.LojaCliente, dbo.PedidosVenda.PedidoID, dbo.PedidosVenda.CodigoTotvs, dbo.PedidosVenda.MsgBO, dbo.PedidosVenda.DataCriacao, dbo.PedidosVenda.DataIntegracao, dbo.PedidosVenda.EMISS, dbo.PedidosVenda.MsgNotaFiscal, dbo.PedidosVenda.MsgPadrao, dbo.PedidosVenda.TipoVolume, dbo.Cliente.Razão_Social, dbo.PedidosVenda.QtdVolumes, dbo.PedidosVenda.Peso, dbo.PedidosVenda.SERIE, dbo.PedidosVenda.EMISS HAVING ( ( (dbo.PedidosVenda.STATUS) Is Null and dbo.FilialEntidadeGrVenda.NASAJON = 'N' ) ) ORDER BY dbo.PedidosVenda.DataCriacao DESC"

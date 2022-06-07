@@ -37,7 +37,8 @@ const globalMiddleware = [
 const namedMiddleware = {
   auth: 'Adonis/Middleware/Auth',
   guest: 'Adonis/Middleware/AllowGuestOnly',
-  jwt: 'App/Middleware/TokenValidate'
+  jwt: 'App/Middleware/TokenValidate',
+  rastro: 'App/Middleware/Rastros',
 }
 
 /*
