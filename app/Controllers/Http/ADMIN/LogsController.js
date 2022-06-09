@@ -1,6 +1,7 @@
 "use strict";
 
 const Database = use("Database");
+const moment = require('moment')
 const { seeToken } = require("../../../Services/jwtServices");
 const logger = require("../../../../dump/index")
 
@@ -15,11 +16,13 @@ class LogsController {
     try {
       const verified = seeToken(token);
 
-      await Database.insert({
-        Quem: verified.user_code,
-        Onde: url,
-        Quando: new Date()
-      }).into('dbo.NavegacaoWeb')
+      if (verified.role === 'Franqueado') {
+        await Database.insert({
+          Quem: verified.user_code,
+          Onde: url,
+          Quando: moment().subtract(3, 'hours').toDate()
+        }).into('dbo.NavegacaoWeb')
+      }
 
       response.status(200).send();
     } catch (err) {

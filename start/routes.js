@@ -31,7 +31,7 @@ Route.get("/admAuth/logout", "UserController.AdmLogoutFilial");
 Route.post("/checkAuth", "UserController.ExternalAuth");
 
 //Usuário
-Route.get("/profile", "WEB/ProfileController.Show").middleware(['jwt', 'rastro']);
+Route.get("/profile", "WEB/ProfileController.Show").middleware(['jwt', 'rastro:WEB/ProfileController.Show']);
 Route.put("/profile/password", "WEB/ProfileController.ChangePassword").middleware('jwt');
 Route.put("/profile/email", "WEB/ProfileController.ChangeEmail").middleware('jwt');
 Route.put("profile/tax", "WEB/ProfileController.ChangeTax").middleware('jwt');
@@ -90,7 +90,7 @@ Route.post("/equip/confirm/", "WEB/EquipController.ConfirmAddresses").middleware
 Route.get("/equip/requests/own", "WEB/EquipRequestController.Show").middleware('jwt'); //retorna todas as requisições do grupo
 Route.get("/equip/requests/adresses", "WEB/EquipRequestController.See").middleware('jwt'); //retorna endereços, máquinas, configurações
 Route.get("/equip/requests/default/:id", "WEB/EquipRequestController.SearchDefaultConfig").middleware('jwt'); //busca as configurações padrão da máquina
-Route.get("/equip/requests/retrive", "WEB/EquipRequestController.RetriveOS").middleware('jwt'); //retorna o PDF da OS
+Route.get("/equip/requests/retrive/:osid", "WEB/EquipRequestController.RetriveOS").middleware('jwt'); //retorna o PDF da OS
 Route.get("/equip/payment/card/information", "WEB/EquipRequestController.GetCardInformation").middleware('jwt'); //retorna informações do sistema de pagamento cartão
 Route.post("/equip/requests", "WEB/EquipRequestController.Store").middleware('jwt'); //Solicita maquina
 
