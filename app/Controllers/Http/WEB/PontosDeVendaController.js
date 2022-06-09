@@ -213,11 +213,28 @@ class PontosDeVendaController {
 
           break;
         case 'equip':
+          const equi = await Database
+            .select('*')
+            .from('dbo.Equipamento')
+            .where({
+              EquiCod: UpdatedData.NewEquip
+            })
+
           //inativa pdv's com a máquina
           await Database.table("dbo.PontoVenda")
             .where({
-              GrpVen: verified.grpven,
               EquiCod: UpdatedData.NewEquip,
+            })
+            .update({
+              PdvStatus: "I",
+            })
+
+          //inativa pdv com a máquina atual
+          await Database.table("dbo.PontoVenda")
+            .where({
+              GrpVen: verified.grpven,
+              PdvId: PdvId,
+              AnxId: AnxId,
             })
             .update({
               PdvStatus: "I",
@@ -231,7 +248,7 @@ class PontosDeVendaController {
           //copia o pdv novo
           await Database.raw(
             QUERY_UPDATE_PDV_1,
-            [maxPdvId[0].MaxPdvId, AnxId, verified.grpven, PdvId, AnxId]
+            [maxPdvId[0].MaxPdvId, AnxId, equi[0].EquiCod, equi[0].IMEI, equi[0].EquiCod, equi[0].EquiDesc, verified.grpven, PdvId, AnxId]
           )
 
           //atualiza alguns dados no pdv novo
@@ -275,6 +292,6 @@ const QUERY_CONFIG_PDV = "select PvpSel as Sel, ProdId, TveId as TipoVenda, PvpV
 const QUERY_PRODUTOS_CONFIGURACAO = "SELECT dbo.Produtos.ProdId, dbo.Produtos.Produto, dbo.Produtos.RecId FROM dbo.Produtos WHERE (((dbo.Produtos.PrGrupo) Like 'DOSE%') AND ((dbo.Produtos.Venda)='S')) OR (((dbo.Produtos.ProdId)='12709') AND ((dbo.Produtos.Venda)='S'))"
 const QUERY_PDVS_ATIVOS_COM_EQCOD = "select COUNT(EquiCod) as MaxPdvsAtivosComEquiCod from dbo.PontoVenda where EquiCod = ( select EquiCod from dbo.PontoVenda where GrpVen = ? and AnxId = ? and PdvId = ? ) and PdvStatus = 'A'"
 
-const QUERY_UPDATE_PDV_1 = "INSERT INTO dbo.PontoVenda ( GrpVen, PdvId, AnxId, ConId, AnxDesc, CNPJ, PdvStatus, EquiCod, IMEI, PdvDepartamento, PdvLogradouroPV, PdvNumeroPV, PdvComplementoPV, PdvBairroPV, PdvCidadePV, PdvUfPV, PdvCEP, DepId, CfgId, PdvConsMin, PdvConsValor, PdvConsDose, PdvDataSolicitacao, PdvDataInclusao, PdvDataAtivacao, PdvDataAlteracao, PdvDtSolicEncerra, PdvDataEncerramento, PdvDtEmisUFat, PdvDataUltFat, PdvMotivoEncerramento, PdvObs, GfaId, GsaId, PdvEmiteFicha, PdvAluguelVlr, pdvCodAnt, PdvGeraUltFat, PdvVlrAcessorios, PdvFoiTroca, PdvIniciaAutoCobraMin, PdvDtIniciaAutoCobraMin, CcuID, PdvTabelaPrecoSnacks, PdvSeq, PdvSomaCompartilhado, TAS_Id, TFC_ID, FlgAlt, POS, TprId, EquiMatr, EQUIPMOD_Desc ) SELECT P.GrpVen, ?, ?, P.ConId, P.AnxDesc, P.CNPJ, 'A', P.EquiCod, P.IMEI, P.PdvDepartamento, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvComplementoPV, P.PdvBairroPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP, P.DepId, P.CfgId, P.PdvConsMin, P.PdvConsValor, P.PdvConsDose, P.PdvDataSolicitacao, P.PdvDataInclusao, P.PdvDataAtivacao, P.PdvDataAlteracao, P.PdvDtSolicEncerra, P.PdvDataEncerramento, P.PdvDtEmisUFat, P.PdvDataUltFat, P.PdvMotivoEncerramento, P.PdvObs, P.GfaId, P.GsaId, P.PdvEmiteFicha, P.PdvAluguelVlr, P.pdvCodAnt, P.PdvGeraUltFat, P.PdvVlrAcessorios, P.PdvFoiTroca, P.PdvIniciaAutoCobraMin, P.PdvDtIniciaAutoCobraMin, P.CcuID, P.PdvTabelaPrecoSnacks, P.PdvSeq, P.PdvSomaCompartilhado, P.TAS_Id, P.TFC_ID, P.FlgAlt, P.POS, P.TprId, P.EquiMatr, P.EQUIPMOD_Desc FROM dbo.PontoVenda AS P WHERE P.GrpVen = ? AND P.PdvId = ? AND P.AnxId = ?"
+const QUERY_UPDATE_PDV_1 = "INSERT INTO dbo.PontoVenda ( GrpVen, PdvId, AnxId, ConId, AnxDesc, CNPJ, PdvStatus, EquiCod, IMEI, PdvDepartamento, PdvLogradouroPV, PdvNumeroPV, PdvComplementoPV, PdvBairroPV, PdvCidadePV, PdvUfPV, PdvCEP, DepId, CfgId, PdvConsMin, PdvConsValor, PdvConsDose, PdvDataSolicitacao, PdvDataInclusao, PdvDataAtivacao, PdvDataAlteracao, PdvDtSolicEncerra, PdvDataEncerramento, PdvDtEmisUFat, PdvDataUltFat, PdvMotivoEncerramento, PdvObs, GfaId, GsaId, PdvEmiteFicha, PdvAluguelVlr, pdvCodAnt, PdvGeraUltFat, PdvVlrAcessorios, PdvFoiTroca, PdvIniciaAutoCobraMin, PdvDtIniciaAutoCobraMin, CcuID, PdvTabelaPrecoSnacks, PdvSeq, PdvSomaCompartilhado, TAS_Id, TFC_ID, FlgAlt, POS, TprId, EquiMatr, EQUIPMOD_Desc ) SELECT P.GrpVen, ?, ?, P.ConId, P.AnxDesc, P.CNPJ, 'A', ?, ?, P.PdvDepartamento, P.PdvLogradouroPV, P.PdvNumeroPV, P.PdvComplementoPV, P.PdvBairroPV, P.PdvCidadePV, P.PdvUfPV, P.PdvCEP, P.DepId, P.CfgId, P.PdvConsMin, P.PdvConsValor, P.PdvConsDose, P.PdvDataSolicitacao, P.PdvDataInclusao, P.PdvDataAtivacao, P.PdvDataAlteracao, P.PdvDtSolicEncerra, P.PdvDataEncerramento, P.PdvDtEmisUFat, P.PdvDataUltFat, P.PdvMotivoEncerramento, P.PdvObs, P.GfaId, P.GsaId, P.PdvEmiteFicha, P.PdvAluguelVlr, P.pdvCodAnt, P.PdvGeraUltFat, P.PdvVlrAcessorios, P.PdvFoiTroca, P.PdvIniciaAutoCobraMin, P.PdvDtIniciaAutoCobraMin, P.CcuID, P.PdvTabelaPrecoSnacks, P.PdvSeq, P.PdvSomaCompartilhado, P.TAS_Id, P.TFC_ID, P.FlgAlt, P.POS, P.TprId, ?, ? FROM dbo.PontoVenda AS P WHERE P.GrpVen = ? AND P.PdvId = ? AND P.AnxId = ?"
 const QUERY_UPDATE_PDV_2 = "UPDATE dbo.PontoVenda SET PdvDataSolicitacao = ?, PdvDataInclusao = ?, PdvDataAtivacao = ?, PdvObs = 'Inserido pelo SLWEB', PdvMotivoEncerramento = '', PdvDataEncerramento = NULL WHERE GrpVen = ? AND PdvId = ? AND AnxId = ?"
 const QUERY_UPDATE_PDV_3 = "INSERT INTO dbo.PVPROD( GrpVen, AnxId, PdvId, PvpSel, ProdId, TveId, PvpVvn1, PvpVvn2, FlgAlt, RecId ) SELECT PV.GrpVen, ?, ?, PV.PvpSel, PV.ProdId, PV.TveId, PV.PvpVvn1, PV.PvpVvn2, PV.FlgAlt, PV.RecId FROM dbo.PVPROD AS PV WHERE PV.GrpVen = ? AND PV.PdvId = ? AND PV.AnxId = ?"

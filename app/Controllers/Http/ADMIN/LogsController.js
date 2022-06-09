@@ -16,7 +16,7 @@ class LogsController {
     try {
       const verified = seeToken(token);
 
-      if (verified.role === 'Franqueado') {
+      if (verified.role === 'Franquia') {
         await Database.insert({
           Quem: verified.user_code,
           Onde: url,

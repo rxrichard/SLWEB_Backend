@@ -31,7 +31,7 @@ Route.get("/admAuth/logout", "UserController.AdmLogoutFilial");
 Route.post("/checkAuth", "UserController.ExternalAuth");
 
 //Usuário
-Route.get("/profile", "WEB/ProfileController.Show").middleware(['jwt', 'rastro:WEB/ProfileController.Show']);
+Route.get("/profile", "WEB/ProfileController.Show").middleware('jwt');
 Route.put("/profile/password", "WEB/ProfileController.ChangePassword").middleware('jwt');
 Route.put("/profile/email", "WEB/ProfileController.ChangeEmail").middleware('jwt');
 Route.put("profile/tax", "WEB/ProfileController.ChangeTax").middleware('jwt');
@@ -150,3 +150,6 @@ Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jw
 
 //rastros
 Route.post('/navegacao/', 'ADMIN/LogsController.Navegacao')
+
+//Compartilhamento
+Route.get('/files/all', 'WEB/CompartilhamentoController.Show')
