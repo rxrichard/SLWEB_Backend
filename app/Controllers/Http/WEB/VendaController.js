@@ -30,8 +30,12 @@ class VendaController {
 
       const Produtos = await Database.raw(queryListaDeProdutos, []);
 
-      const Clientes = await Database.select("*").from("dbo.Cliente").where({
+      const Clientes = await Database
+      .select("*")
+      .from("dbo.Cliente")
+      .where({
         GrpVen: verified.grpven,
+        ClienteStatus: 'A'
       }).orderBy('Nome_Fantasia', 'ASC');
 
       const CodPag = await Database.select("CpgDesc", "CpgId")

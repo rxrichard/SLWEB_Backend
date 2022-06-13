@@ -90,7 +90,7 @@ Route.post("/equip/confirm/", "WEB/EquipController.ConfirmAddresses").middleware
 Route.get("/equip/requests/own", "WEB/EquipRequestController.Show").middleware('jwt'); //retorna todas as requisições do grupo
 Route.get("/equip/requests/adresses", "WEB/EquipRequestController.See").middleware('jwt'); //retorna endereços, máquinas, configurações
 Route.get("/equip/requests/default/:id", "WEB/EquipRequestController.SearchDefaultConfig").middleware('jwt'); //busca as configurações padrão da máquina
-Route.get("/equip/requests/retrive", "WEB/EquipRequestController.RetriveOS").middleware('jwt'); //retorna o PDF da OS
+Route.get("/equip/requests/retrive/:osid", "WEB/EquipRequestController.RetriveOS").middleware('jwt'); //retorna o PDF da OS
 Route.get("/equip/payment/card/information", "WEB/EquipRequestController.GetCardInformation").middleware('jwt'); //retorna informações do sistema de pagamento cartão
 Route.post("/equip/requests", "WEB/EquipRequestController.Store").middleware('jwt'); //Solicita maquina
 
@@ -141,8 +141,15 @@ Route.put("/pontosdevenda/inativar", "WEB/PontosDeVendaController.InativPDV").mi
 Route.put("/pontosdevenda/atualizar/:pdvid/:anxid/:type", "WEB/PontosDeVendaController.Update").middleware('jwt'); //atualiza dados do pdv
 
 //Pedidos de compra
-Route.get('/pedidos/compra', 'ADMIN/PedidosDeCompra.Show').middleware('jwt');
+Route.get('/pedidos/compra/:diff', 'ADMIN/PedidosDeCompraController.Show').middleware('jwt');
+Route.put('/pedidos/compra/', 'ADMIN/PedidosDeCompraController.Update').middleware('jwt');
 
 //quebra galho
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
 Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jwt'); //cria a planilha que a cris pediu
+
+//rastros
+Route.post('/navegacao/', 'ADMIN/LogsController.Navegacao')
+
+//Compartilhamento
+Route.get('/files/all', 'WEB/CompartilhamentoController.Show')

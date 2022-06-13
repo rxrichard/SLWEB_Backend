@@ -45,7 +45,10 @@ class EquipRequestController {
         "UF"
       )
         .from("dbo.Cliente")
-        .where({ GrpVen: verified.grpven })
+        .where({ 
+          GrpVen: verified.grpven,
+          ClienteStatus: 'A'
+         })
         .orderBy("Nome_Fantasia");
 
       //prazo minimo para recebimento das máquinas
@@ -395,9 +398,9 @@ class EquipRequestController {
 
   }
 
-  async RetriveOS({ request, response }) {
+  async RetriveOS({ request, response, params }) {
     const token = request.header("authorization");
-    const { OSID } = request.only(["OSID"]);
+    const OSID = params.osid
     const path = Helpers.publicPath(`/OS`);
 
     let PathWithName = ''
