@@ -36,26 +36,16 @@ class CompartilhamentoController {
         targetFolder = String(fixedFolder).replace(sub[0].path_alias, sub[0].path)
       }
 
-      let folderPath = path.join(targetFolder).replace('%20', ' ')
-      let folderAlias = path.join(...String(folder).split('_')).replace('%20', ' ')
+      let folderPath = decodeURI(path.join(targetFolder))
+      let folderAlias = decodeURI(path.join(...String(folder).split('_')))
 
       let res = fs.readdirSync(folderPath).map(fileName => {
         return fileName;
       })
 
       response.status(200).send({
-        arquivos: res.filter(arq => arq.includes('.')).map(filename => {
-          return ({
-            filename: filename,
-            path: path.join(folderAlias, filename)
-          })
-        }),
-        pastas: res.filter(arq => !arq.includes('.')).map(folder => {
-          return ({
-            folder: folder,
-            path: path.join(folderAlias, folder)
-          })
-        }),
+        arquivos: res.filter(arq => arq.includes('.')).map(filename => { return ({ filename: filename, path: path.join(folderAlias, filename) }) }),
+        pastas: res.filter(arq => !arq.includes('.')).map(folder => { return ({ folder: folder, path: path.join(folderAlias, folder) }) }),
         pathSegments: folderAlias.split('\\').filter(p => p !== '')
       });
     } catch (err) {
@@ -66,6 +56,31 @@ class CompartilhamentoController {
         payload: request.body,
         err: err,
         handler: 'CompartilhamentoController.Show',
+      })
+    }
+  }
+
+  async Download({ request, response, params }) {
+    const token = request.header("authorization");
+    const filePath = params.filepath
+
+    try {
+      const verified = seeToken(token);
+
+      console.log(filePath)
+
+      //verificar se o cara pode baixar o negocio
+      //baixar o negocio
+
+
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'CompartilhamentoController.Download',
       })
     }
   }
