@@ -152,4 +152,4 @@ Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jw
 Route.post('/navegacao/', 'ADMIN/LogsController.Navegacao')
 
 //Compartilhamento
-Route.get('/files/all', 'WEB/CompartilhamentoController.Show')
+Route.get('/files/:folder', 'WEB/CompartilhamentoController.Show')

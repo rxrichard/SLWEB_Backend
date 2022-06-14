@@ -7,39 +7,62 @@ const fs = require('fs');
 const path = require('path');
 
 class CompartilhamentoController {
-  async Show({ request, response }) {
+  async Show({ request, response, params }) {
     const token = request.header("authorization");
+    let folder = params.folder
 
     try {
       const verified = seeToken(token);
 
+      let targetFolder = null
 
-      // fs.readdir(`\\\\172.31.82.25\\Integratto2\\`,
-      //   { withFileTypes: true },
-      //   (err, files) => {
-      //     if (err)
-      //       console.log(err);
-      //     else {
-      //       files.forEach(file => {
-      //         console.log(file);
-      //       })
-      //     }
-      //   })
-      let folderPath = `\\\\172.31.82.25\\Integratto2\\`
+      //pego a raiz dos arquivos
+      const sub = await Database
+        .select('*')
+        .from('dbo.SLWEB_Compartilhamento_Index')
+        .where({
+          depth: 1
+        })
+
+      // verificar se houve solicitação de uma pasta em especifico
+      if (folder === 'all') {
+        targetFolder = sub[0].path
+        folder = sub[0].path_alias
+      } else {
+        //substituo _ por \ que havia sido invertido na URI
+        let fixedFolder = path.join(...String(folder).split('_'))
+
+        //substituo o apelido da raiz pela propria raiz
+        targetFolder = String(fixedFolder).replace(sub[0].path_alias, sub[0].path)
+      }
+
+      let folderPath = path.join(targetFolder).replace('%20', ' ')
+      let folderAlias = path.join(...String(folder).split('_')).replace('%20', ' ')
+
       let res = fs.readdirSync(folderPath).map(fileName => {
         return fileName;
       })
 
       response.status(200).send({
-        arquivos: res.filter(arq => arq.includes('.')),
-        pastas: res.filter(arq => !arq.includes('.')),
-        pathSegments: folderPath.split('\\').filter(p => p !== '')
+        arquivos: res.filter(arq => arq.includes('.')).map(filename => {
+          return ({
+            filename: filename,
+            path: path.join(folderAlias, filename)
+          })
+        }),
+        pastas: res.filter(arq => !arq.includes('.')).map(folder => {
+          return ({
+            folder: folder,
+            path: path.join(folderAlias, folder)
+          })
+        }),
+        pathSegments: folderAlias.split('\\').filter(p => p !== '')
       });
     } catch (err) {
       response.status(400).send();
       logger.error({
         token: token,
-        params: null,
+        params: params,
         payload: request.body,
         err: err,
         handler: 'CompartilhamentoController.Show',

@@ -712,10 +712,10 @@ class CompraController {
 
       const segundaAba = excel.Sheets[excel.SheetNames[1]]
 
-      const segundaAbaSoCEP = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'A'))
-      const segundaAbaSoRegiaoCidade = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'B'))
-      const segundaAbaSoFaturamento = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'C'))
-      const segundaAbaSoRota = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'D'))
+      const segundaAbaSoCEP = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'A' && !Number.isNaN(Number(key.charAt(1)))))
+      const segundaAbaSoRegiaoCidade = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'B' && !Number.isNaN(Number(key.charAt(1)))))
+      const segundaAbaSoFaturamento = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'C' && !Number.isNaN(Number(key.charAt(1)))))
+      const segundaAbaSoRota = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'D' && !Number.isNaN(Number(key.charAt(1)))))
 
       let CEPS = []
       let RegiaoCidade = []
