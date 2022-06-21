@@ -20,12 +20,7 @@ class CompartilhamentoController {
       const verified = seeToken(token);
 
       //pego a raiz dos arquivos
-      const root = await Database
-        .select('*')
-        .from('dbo.SLWEB_Compartilhamento_Index')
-        .where({
-          type: 'root'
-        })
+      let root = null
 
       //verificar permissão do usuário
       if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(folder, verified)) {
@@ -34,14 +29,29 @@ class CompartilhamentoController {
 
       // verificar se houve solicitação de uma pasta em especifico
       if (folder === 'root') {
+        root = await Database
+          .select('*')
+          .from('dbo.SLWEB_Compartilhamento_Index')
+          .where({
+            type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+          })
+
         folderPath = root[0].path
         folderAlias = root[0].path_alias
       } else {
+        root = await Database
+          .select('*')
+          .from('dbo.SLWEB_Compartilhamento_Index')
+          .where({
+            type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+          })
+
         //substituo o apelido da raiz pela propria raiz
         folderPath = decodeURI(folder).replace(root[0].path_alias, root[0].path)
 
         folderAlias = decodeURI(folder)
       }
+
 
       let dirMap = fs.readdirSync(folderPath).map(fileName => {
         return fileName;
@@ -61,14 +71,27 @@ class CompartilhamentoController {
         !arq.includes('.')
       ).map(folder => { return ({ folder: folder, path: path.join(folderAlias, folder) }) })
 
-
       folders = await somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser(folders, verified)
       files = await somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser(files, verified)
+
+      let controls = { security: false, upload: false }
+
+      if (verified.role === "Sistema") {
+        controls.security = true
+        controls.upload = true
+      } else if (verified.role === "Franquia") {
+        controls.security = false
+        controls.upload = false
+      } else {
+        controls.security = false
+        controls.upload = true
+      }
 
       response.status(200).send({
         arquivos: files,
         pastas: folders,
-        pathSegments: folderAlias.split('\\').filter(p => p !== '')
+        pathSegments: folderAlias.split('\\').filter(p => p !== ''),
+        controlModals: controls
       });
     } catch (err) {
       response.status(400).send();
@@ -99,7 +122,7 @@ class CompartilhamentoController {
         .select('*')
         .from('dbo.SLWEB_Compartilhamento_Index')
         .where({
-          type: 'root'
+          type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
         })
 
       const fullFilePath = decodeURI(filePath).replace(root[0].path_alias, root[0].path)
@@ -140,16 +163,18 @@ class CompartilhamentoController {
         throw new Error('Acesso bloqueado')
       }
 
-      const fullPathToFiles = `${uploadPath[0].path}\\${verified.role}\\${moment().format('LL')}`
+      const fullPathToFiles = `${uploadPath[0].path}\\MKT\\${moment().format('LL')}`
 
       //verificar se é um ou muitos arquivos
       if (multiples === 'N') {
         await formData.move(fullPathToFiles, {
+          name: `${formData.clientName.split('.')[0]}_D${new Date().getTime()}.${formData.subtype}`,
           overwrite: true
         });
       } else {
         await formData.moveAll(fullPathToFiles, (file) => {
           return {
+            name: `${file.clientName.split('.')[0]}_D${new Date().getTime()}.${file.subtype}`,
             overwrite: true,
           };
         })
@@ -176,23 +201,48 @@ class CompartilhamentoController {
 
       //verificar se o cara é usuário sistema
       if (!verified.role === "Sistema") {
-        throw new Errow('Usuário não permitido')
+        throw new Error('Usuário não permitido')
       }
 
       //retornar a lista das tela indexadas e o TipoOper
       const dir = await Database
         .select('*')
         .from('dbo.SLWEB_Compartilhamento_Index')
+        .orderBy('type', 'ASC')
 
       const TipoOperadores = await Database
         .select('*')
         .from('dbo.TipoOper')
         .orderBy('AccessLevel', 'ASC')
 
+      let aux = []
+
+      TipoOperadores.forEach(op => {
+        let index = null
+
+        aux.forEach((opr, i) => {
+          if (op.AccessLevel === opr.AccessLevel) {
+            index = i
+          }
+        })
+
+        if (index !== null) {
+          aux[index] = {
+            ...aux[index],
+            Members: aux[index].Members + `, ${op.TopeDes}`
+          }
+        } else {
+          aux.push({
+            AccessLevel: op.AccessLevel,
+            Group: `Nivel ${op.AccessLevel}`,
+            Members: op.TopeDes,
+          })
+        }
+      })
 
       response.status(200).send({
         indexedFolders: dir,
-        tipoOperadores: TipoOperadores
+        tipoOperadores: aux
       });
     } catch (err) {
       response.status(400).send();
@@ -202,6 +252,79 @@ class CompartilhamentoController {
         payload: request.body,
         err: err,
         handler: 'CompartilhamentoController.ShowIndexedFolders',
+      })
+    }
+  }
+
+  async UpdateIndexedFolder({ request, response }) {
+    const token = request.header("authorization");
+    const { path, newGroup } = request.only(['path', 'newGroup']);
+
+    try {
+      const verified = seeToken(token);
+
+      //verificar se é sistema
+      if (!verified.role === "Sistema") {
+        throw new Error('Usuário não permitido')
+      }
+
+      //fazer update
+      await Database.table("dbo.SLWEB_Compartilhamento_Index")
+        .where({
+          path: decodeURI(path),
+        })
+        .update({
+          AccessLevel: newGroup,
+        });
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompartilhamentoController.UpdateIndexedFolder',
+      })
+    }
+  }
+
+  async IndexFolder({ request, response }) {
+    const token = request.header("authorization");
+    const { path, type } = request.only(['path', 'type']);
+
+    try {
+      const verified = seeToken(token);
+
+      //verificar se é sistema
+      if (!verified.role === "Sistema") {
+        throw new Error('Usuário não permitido')
+      }
+
+      const root = await Database
+        .select('*')
+        .from('dbo.SLWEB_Compartilhamento_Index')
+        .where({
+          type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+        })
+
+      await Database.insert({
+        AccessLevel: 1,
+        path: decodeURI(path).replace(root[0].path_alias, root[0].path),
+        path_alias: decodeURI(path).replace(root[0].path_alias, root[0].path).split('\\')[decodeURI(path).replace(root[0].path_alias, root[0].path).split('\\').length - 1],
+        type: type,
+      }).into('dbo.SLWEB_Compartilhamento_Index')
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompartilhamentoController.IndexFolder',
       })
     }
   }
@@ -228,7 +351,7 @@ const somehowVerifyIfUserShouldHaveAccessToFileOrDirectory = async (filepath, de
   //verificar se esta tentando acessar a raiz dos arquivos
   if (filepath === 'root') {
     // verificar se a raiz dos arquivos pode ser acessada por ele
-    if (compartilhamentoIndex.filter(folder => folder.type === 'root')[0].AccessLevel <= OperAccessLevel[0].AccessLevel) {
+    if (compartilhamentoIndex.filter(folder => folder.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'))[0].AccessLevel <= OperAccessLevel[0].AccessLevel) {
       isBlockedFolder = false
     } else {
       isBlockedFolder = true
@@ -239,9 +362,17 @@ const somehowVerifyIfUserShouldHaveAccessToFileOrDirectory = async (filepath, de
 
     blockedFolders.forEach(BF => {
       if (String(
-        decodeURI(filepath).replace(compartilhamentoIndex[0].path_alias, compartilhamentoIndex[0].path)
+        decodeURI(filepath).replace(
+          compartilhamentoIndex
+            .filter(
+              index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
+            )[0].path_alias,
+          compartilhamentoIndex
+            .filter(
+              index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
+            )[0].path
+        )
       ).includes(BF)) {
-
         isBlockedFolder = true
       }
     })
@@ -258,7 +389,6 @@ const somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser = async (dir, decript
     .select('*')
     .from('dbo.SLWEB_Compartilhamento_Index')
 
-
   const OperAccessLevel = await Database
     .select('AccessLevel')
     .from('dbo.TipoOper')
@@ -271,7 +401,20 @@ const somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser = async (dir, decript
 
   dir.forEach(item => {
     let isBlockedItem = false
-    let formatedItemName = String(item.path).replace(compartilhamentoIndex[0].path_alias, compartilhamentoIndex[0].path)
+
+    let formatedItemName = String(item.path)
+      .replace(
+        compartilhamentoIndex
+          .filter(
+            index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
+          )[0].path_alias,
+        compartilhamentoIndex
+          .filter(
+            index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
+          )[0].path
+      )
+
+    console.log(blockedFolders)
 
     blockedFolders.forEach(blockedFolder => {
       if (formatedItemName.includes(blockedFolder)) {
