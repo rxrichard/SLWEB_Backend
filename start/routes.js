@@ -152,5 +152,7 @@ Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jw
 Route.post('/navegacao/', 'ADMIN/LogsController.Navegacao')
 
 //Compartilhamento
-Route.get('/files/:folder', 'WEB/CompartilhamentoController.Show').middleware('jwt');
+Route.get('/files/lookup/:folder', 'WEB/CompartilhamentoController.Show').middleware('jwt');
 Route.get('/files/download/:filepath', 'WEB/CompartilhamentoController.Download').middleware('jwt');
+Route.post('/files/upload/', 'WEB/CompartilhamentoController.Upload').middleware('jwt');
+Route.get('/files/permissions/', 'WEB/CompartilhamentoController.ShowIndexedFolders').middleware('jwt');

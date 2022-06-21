@@ -19,20 +19,22 @@ class Rastros {
     const token = request.header("authorization") ? request.header("authorization") : ''
 
     try {
-      await Database.insert({
-        timestamp: moment().subtract(3, 'hours').toDate(),
-        protocol: request.protocol(),
-        method: request.method(),
-        url: request.url(),
-        full_url: request.originalUrl(),
-        consumer: request.headers().origin,
-        IP: request.ip(),
-        host: request.headers().host,
-        agent: request.headers()['user-agent'],
-        token: token,
-        app_version: pacote.version,
-        environment: process.env.NODE_ENV
-      }).into('dbo.RastrosWEB')
+      if (request.protocol() !== 'OPTIONS') {
+        await Database.insert({
+          timestamp: moment().subtract(3, 'hours').toDate(),
+          protocol: request.protocol(),
+          method: request.method(),
+          url: request.url(),
+          full_url: request.originalUrl(),
+          consumer: request.headers().origin ? request.headers().origin : 'NÃO RECONHECIDO',
+          IP: request.ip(),
+          host: request.headers().host,
+          agent: request.headers()['user-agent'],
+          token: token,
+          app_version: pacote.version,
+          environment: process.env.NODE_ENV
+        }).into('dbo.RastrosWEB')
+      }
 
     } catch (err) {
       logger.error({

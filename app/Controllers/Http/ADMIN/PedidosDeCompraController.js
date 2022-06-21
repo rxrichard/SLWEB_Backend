@@ -33,18 +33,21 @@ class PedidosDeCompra {
       }
 
       let pedidosDeCompraEmAberto = await Database.raw(QUERY_PEDIDOS_DE_COMPRA_EM_ABERTO, [diffConverted])
-
+      
       for (let i = 0; i < pedidosDeCompraEmAberto.length; i++) {
         let d = await Database.raw("select PedidoItemID, CodigoProduto, Produto, QtdeVendida, PrecoUnitarioLiquido, PrecoTotal from dbo.PedidosVenda left join dbo.Produtos on dbo.PedidosVenda.CodigoProduto = dbo.Produtos.ProdId where Filial = '0201' and PedidoID = ? order by PedidoItemID ASC", [pedidosDeCompraEmAberto[i].PedidoID])
-
+        
         pedidosDeCompraEmAberto[i] = {
           ...pedidosDeCompraEmAberto[i],
           Detalhes: d
         }
       }
+      
+      let transportadoras = await Database.raw('use SDBP12 select A4_COD, A4_NREDUZ from dbo.SA4010 use SLAPLIC')
 
       response.status(200).send({
-        Pedidos: pedidosDeCompraEmAberto
+        Pedidos: pedidosDeCompraEmAberto,
+        Transportadoras: transportadoras
       });
     } catch (err) {
       response.status(400).send()

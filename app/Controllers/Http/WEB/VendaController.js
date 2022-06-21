@@ -1,5 +1,6 @@
 "use strict";
 const Database = use("Database");
+const Env = use("Env");
 const Drive = use("Drive");
 const Helpers = use("Helpers");
 const logger = require("../../../../dump/index")
@@ -572,10 +573,10 @@ class VendaController {
       //pegar nota de devolucao tambem?
 
       const paths = {
-        toDANFE: `\\\\192.168.1.104\\Integratto2\\Xml\\Emissao\\Resposta\\${names.nomeDanfe}`,
-        toXML: `\\\\192.168.1.104\\Integratto2\\Xml\\Emissao\\Resposta\\${names.nomeXml}`,
-        toCancelamento: `\\\\192.168.1.104\\Integratto2\\Docs\\${names.nomeCancelamento}`,
-        toCCorrecao: `\\\\192.168.1.104\\Integratto2\\Docs\\${names.nomeCartaDeCorrecao}`,
+        toDANFE: `${Env.get("NSJ_DOCDIR")}\\Xml\\Emissao\\Resposta\\${names.nomeDanfe}`,
+        toXML: `${Env.get("NSJ_DOCDIR")}\\Xml\\Emissao\\Resposta\\${names.nomeXml}`,
+        toCancelamento: `${Env.get("NSJ_DOCDIR")}\\Docs\\${names.nomeCancelamento}`,
+        toCCorrecao: `${Env.get("NSJ_DOCDIR")}\\Docs\\${names.nomeCartaDeCorrecao}`,
       };
 
       switch (doctype) {
