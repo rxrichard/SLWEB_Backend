@@ -1,6 +1,7 @@
 "use strict";
 
 const Database = use("Database");
+const Drive = use('Drive')
 const { seeToken } = require("../../../Services/jwtServices");
 const logger = require("../../../../dump/index")
 const moment = require('moment')
@@ -200,7 +201,7 @@ class CompartilhamentoController {
       const verified = seeToken(token);
 
       //verificar se o cara é usuário sistema
-      if (!verified.role === "Sistema") {
+      if (verified.role !== "Sistema") {
         throw new Error('Usuário não permitido')
       }
 
@@ -264,7 +265,7 @@ class CompartilhamentoController {
       const verified = seeToken(token);
 
       //verificar se é sistema
-      if (!verified.role === "Sistema") {
+      if (verified.role !== "Sistema") {
         throw new Error('Usuário não permitido')
       }
 
@@ -297,8 +298,10 @@ class CompartilhamentoController {
     try {
       const verified = seeToken(token);
 
+
+
       //verificar se é sistema
-      if (!verified.role === "Sistema") {
+      if (verified.role !== "Sistema") {
         throw new Error('Usuário não permitido')
       }
 
@@ -325,6 +328,54 @@ class CompartilhamentoController {
         payload: request.body,
         err: err,
         handler: 'CompartilhamentoController.IndexFolder',
+      })
+    }
+  }
+
+  async MoveToTrash({ request, response, params }) {
+    const token = request.header("authorization");
+    const filepath = params.filepath
+
+    try {
+      const verified = seeToken(token);
+
+      //verificar se é sistema
+      if (verified.role !== "Sistema") {
+        throw new Error('Usuário não permitido')
+      }
+
+      let root = await Database
+        .select('*')
+        .from('dbo.SLWEB_Compartilhamento_Index')
+        .where({
+          type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+        })
+
+      let trashFolder = await Database
+        .select('*')
+        .from('dbo.SLWEB_Compartilhamento_Index')
+        .where({
+          type: 'TRASH_DUMP'
+        })
+
+      // substituir o alias pelo path
+      let oldPath = decodeURI(filepath).replace(root[0].path_alias, root[0].path)
+
+      // substituir o path antigo pelo path de lixeira
+      let newPath = oldPath.replace(root[0].path, trashFolder[0].path)
+
+      // mover
+       await Drive.move(oldPath, newPath)
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: params,
+        payload: request.body,
+        err: err,
+        handler: 'CompartilhamentoController.MoveToTrash',
       })
     }
   }
@@ -413,8 +464,6 @@ const somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser = async (dir, decript
             index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
           )[0].path
       )
-
-    console.log(blockedFolders)
 
     blockedFolders.forEach(blockedFolder => {
       if (formatedItemName.includes(blockedFolder)) {
