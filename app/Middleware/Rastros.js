@@ -16,7 +16,7 @@ class Rastros {
    * @param {Function} next
    */
   async handle({ request, response, params }, next, properties) {
-    const token = request.header("authorization") ? request.header("authorization") : ''
+    const token = request.header("authorization") ? request.header("authorization") : 'TOKEN NÃO FORNECIDO'
 
     try {
       if (request.protocol() !== 'OPTIONS') {
@@ -26,7 +26,7 @@ class Rastros {
           method: request.method(),
           url: request.url(),
           full_url: request.originalUrl(),
-          consumer: request.headers().origin ? request.headers().origin : 'NÃO RECONHECIDO',
+          consumer: request.headers().origin ? request.headers().origin : 'NÃO IDENTIFICADO',
           IP: request.ip(),
           host: request.headers().host,
           agent: request.headers()['user-agent'],
