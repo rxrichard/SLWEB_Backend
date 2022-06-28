@@ -19,7 +19,17 @@ class UserController {
 
       const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, [user_code, process.env.NODE_ENV])
 
-      response.status(202).send({ ...token, Links: links }); //Retorno do token
+      let linksEmSessões = []
+
+      links.forEach(ln => {
+        if (linksEmSessões[ln.Sessao]) {
+          linksEmSessões[ln.Sessao] = [...linksEmSessões[ln.Sessao], ln]
+        } else {
+          linksEmSessões[ln.Sessao] = [ln]
+        }
+      })
+
+      response.status(202).send({ ...token, Links: linksEmSessões.filter(LS => LS !== null) });
     } catch (err) {
       response.status(401).send();
       logger.error({
@@ -89,7 +99,17 @@ class UserController {
 
       const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, [admin_code, process.env.NODE_ENV])
 
-      response.status(202).send({ ...token, Links: links });
+      let linksEmSessões = []
+
+      links.forEach(ln => {
+        if (linksEmSessões[ln.Sessao]) {
+          linksEmSessões[ln.Sessao] = [...linksEmSessões[ln.Sessao], ln]
+        } else {
+          linksEmSessões[ln.Sessao] = [ln]
+        }
+      })
+
+      response.status(202).send({ ...token, Links: linksEmSessões.filter(LS => LS !== null) });
     } catch (err) {
       response.status(401).send();
       logger.error({
@@ -118,7 +138,17 @@ class UserController {
 
       const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, [verified.admin_code, process.env.NODE_ENV])
 
-      response.status(200).send({ ...admTokenWithFilial, Links: links });
+      let linksEmSessões = []
+
+      links.forEach(ln => {
+        if (linksEmSessões[ln.Sessao]) {
+          linksEmSessões[ln.Sessao] = [...linksEmSessões[ln.Sessao], ln]
+        } else {
+          linksEmSessões[ln.Sessao] = [ln]
+        }
+      })
+
+      response.status(202).send({ ...admTokenWithFilial, Links: linksEmSessões.filter(LS => LS !== null) });
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -145,7 +175,17 @@ class UserController {
 
       const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, [verified.admin_code, process.env.NODE_ENV])
 
-      response.status(200).send({ ...admTokenLogout, Links: links });
+      let linksEmSessões = []
+
+      links.forEach(ln => {
+        if (linksEmSessões[ln.Sessao]) {
+          linksEmSessões[ln.Sessao] = [...linksEmSessões[ln.Sessao], ln]
+        } else {
+          linksEmSessões[ln.Sessao] = [ln]
+        }
+      })
+
+      response.status(202).send({ ...admTokenLogout, Links: linksEmSessões.filter(LS => LS !== null) });
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -205,7 +245,17 @@ class UserController {
 
         const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, [code, process.env.NODE_ENV])
 
-        response.status(201).send({...token, Links: links });
+        let linksEmSessões = []
+
+        links.forEach(ln => {
+          if (linksEmSessões[ln.Sessao]) {
+            linksEmSessões[ln.Sessao] = [...linksEmSessões[ln.Sessao], ln]
+          } else {
+            linksEmSessões[ln.Sessao] = [ln]
+          }
+        })
+
+        response.status(202).send({ ...token, Links: linksEmSessões.filter(LS => LS !== null) });
       } else {
         throw new Error('Mais de 1 minuto de redirecionamento');
       }
@@ -225,4 +275,4 @@ class UserController {
 
 module.exports = UserController;
 
-const QUERY_LINKS_DISPONIVEIS = "select L.Descricao, L.Link, L.Sessao, L.Icon from dbo.SLWEB_Links as L inner join ( select T.* from dbo.Operador as O inner join dbo.TipoOper as T on T.TopeCod = O.TopeCod where M0_CODFIL = ? ) as O on ( L.AccessScale = 0 and L.AccessLevel = O.AccessLevel ) or ( L.AccessScale = 1 and O.AccessLevel >= L.AccessLevel ) where Ambiente = ? and Habilitado = 1"
+const QUERY_LINKS_DISPONIVEIS = "select L.Descricao, L.Link, L.Sessao, L.Icon, L.AccessLevel from dbo.SLWEB_Links as L inner join ( select T.* from dbo.Operador as O inner join dbo.TipoOper as T on T.TopeCod = O.TopeCod where M0_CODFIL = ? ) as O on ( L.AccessScale = 0 and L.AccessLevel = O.AccessLevel ) or ( L.AccessScale = 1 and O.AccessLevel >= L.AccessLevel ) where Ambiente = ? and Habilitado = 1 order by Sessao ASC"

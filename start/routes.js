@@ -31,7 +31,7 @@ Route.get("/admAuth/logout", "UserController.AdmLogoutFilial");
 Route.post("/checkAuth", "UserController.ExternalAuth");
 
 //Usuário
-Route.get("/profile", "WEB/ProfileController.Show").middleware('jwt');
+Route.get("/profile", "WEB/ProfileController.Show").middleware(['jwt', 'vld:0,1']);
 Route.put("/profile/password", "WEB/ProfileController.ChangePassword").middleware('jwt');
 Route.put("/profile/email", "WEB/ProfileController.ChangeEmail").middleware('jwt');
 Route.put("profile/tax", "WEB/ProfileController.ChangeTax").middleware('jwt');
