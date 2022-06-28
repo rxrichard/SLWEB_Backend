@@ -708,26 +708,9 @@ class CompraController {
         return
       }
 
-      const excel = xlsx.readFile('\\\\192.168.1.250\\dados\\Franquia\\FERNANDA\\Faturamento\\Area Entrega por cliente.xlsx')
+      const rotas =  await Database.select('*').from('dbo.SLWEB_Rotas')
 
-      const segundaAba = excel.Sheets[excel.SheetNames[1]]
-
-      const segundaAbaSoCEP = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'A' && !Number.isNaN(Number(key.charAt(1)))))
-      const segundaAbaSoRegiaoCidade = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'B' && !Number.isNaN(Number(key.charAt(1)))))
-      const segundaAbaSoFaturamento = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'C' && !Number.isNaN(Number(key.charAt(1)))))
-      const segundaAbaSoRota = Object.fromEntries(Object.entries(segundaAba).filter(([key]) => key.charAt(0) === 'D' && !Number.isNaN(Number(key.charAt(1)))))
-
-      let CEPS = []
-      let RegiaoCidade = []
-      let Faturar = []
-      let Rota = []
-
-      Object.keys(segundaAbaSoCEP).forEach(keyName => { if (segundaAbaSoCEP[keyName].v !== 'CEP') { CEPS.push(String(segundaAbaSoCEP[keyName].v)) } })
-      Object.keys(segundaAbaSoRegiaoCidade).forEach(keyName => { if (segundaAbaSoRegiaoCidade[keyName].v !== 'REGIÃO / CIDADE') { RegiaoCidade.push(String(segundaAbaSoRegiaoCidade[keyName].v)) } })
-      Object.keys(segundaAbaSoFaturamento).forEach(keyName => { if (segundaAbaSoFaturamento[keyName].v !== 'FATURAR EM') { Faturar.push(String(segundaAbaSoFaturamento[keyName].v)) } })
-      Object.keys(segundaAbaSoRota).forEach(keyName => { if (segundaAbaSoRota[keyName].v !== 'ROTA') { Rota.push(String(segundaAbaSoRota[keyName].v)) } })
-
-      const matchIndexes = matchCEPWithRanges(CEPTarget, CEPS)
+      const matchIndexes = matchCEPWithRanges(CEPTarget, rotas.map(rota => rota.range_CEP))
 
       if (matchIndexes.length === 0) {
         console.log('nenhum match para o CEP:' + CEPTarget)
@@ -737,13 +720,14 @@ class CompraController {
       response.status(200).send({
         Faturamento: {
           CEP: CEPTarget,
-          Regiao: RegiaoCidade[matchIndexes[0]],
-          Faturamento: Faturar[matchIndexes[0]],
-          Rota: Rota[matchIndexes[0]],
-          PrevFaturamento: returnNextAvailableDate(Faturar[matchIndexes[0]]).format('LL'),
-          PrevRota: returnNextAvailableDate(Rota[matchIndexes[0]], returnNextAvailableDate(Faturar[matchIndexes[0]])).format('LL')
+          Regiao: rotas[matchIndexes[0]].desc_CEP,
+          Faturamento: rotas[matchIndexes[0]].faturamento,
+          Rota: rotas[matchIndexes[0]].rota,
+          PrevFaturamento: returnNextAvailableDate(rotas[matchIndexes[0]].faturamento).format('LL'),
+          PrevRota: returnNextAvailableDate(rotas[matchIndexes[0]].rota, returnNextAvailableDate(rotas[matchIndexes[0]].faturamento)).format('LL')
         }
       });
+
     } catch (err) {
       response.status(400).send();
       logger.error({
