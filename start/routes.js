@@ -118,6 +118,7 @@ Route.get("/dashboard/news", "WEB/GeneralController.ShowNews").middleware('jwt')
 Route.post("/dashboard/news/", "WEB/GeneralController.StoreNews").middleware('jwt'); //guarda nova noticia
 Route.post("/dashboard/news/check", "WEB/GeneralController.CheckNews").middleware('jwt'); //da um check que a noticia foi vizualizada
 Route.delete("/dashboard/news/:id", "WEB/GeneralController.DestroyNews").middleware('jwt'); //inativa uma noticia
+Route.get("/dashboard/block/info", "WEB/GeneralController.CheckPendencias").middleware('jwt'); //inativa uma noticia
 
 //Monitor
 Route.get("/monitor/telemetrias", "WEB/MonitorController.Telemetrias").middleware('jwt'); //Exibe ativos

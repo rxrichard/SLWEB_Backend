@@ -161,6 +161,34 @@ class GeneralController {
       })
     }
   }
+
+  async CheckPendencias({ request, response }) {
+    const token = request.header("authorization");
+
+    try {
+      const verified = seeToken(token);
+
+      const DeveConfirmacao = await Database
+      .select('Equip')
+      .from('dbo.FilialEntidadeGrVenda')
+      .where({
+        M0_CODFIL: verified.user_code
+      })
+
+      response.status(200).send({
+        Equip: DeveConfirmacao[0].Equip === 'S'
+      })
+    } catch (err) {
+      response.status(400).send()
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'GeneralController.CheckPendencias',
+      })
+    }
+  }
 }
 
 module.exports = GeneralController

@@ -16,13 +16,7 @@ class FranquiasController {
         throw new Error('Usuário não autorizado');
       }
 
-      //verificar se o token é de ADM > 
-
-      const filiais = await Database.select("*")
-        .from("dbo.FilialEntidadeGrVenda")
-        .orderBy("M0_CODFIL", "DESC");
-
-      if (filiais.length < 1) throw Error;
+      const filiais = await Database.raw(QUERY_TODAS_FILIAIS)
 
       response.status(200).send(filiais);
     } catch (err) {
@@ -39,3 +33,5 @@ class FranquiasController {
 }
 
 module.exports = FranquiasController;
+
+const QUERY_TODAS_FILIAIS = "select A1_GRPVEN, A1_COD, M0_CODFIL, GrupoVenda, M0_FILIAL, M0_CGC, NREDUZ, Inatv, Consultor, UF, DtCadastro from dbo.FilialEntidadeGrVenda where A1_GRPVEN <> '990201' and A1_GRPVEN <> '990203' and A1_GRPVEN <> '000000' order by M0_CODFIL"
