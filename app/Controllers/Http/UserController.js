@@ -22,7 +22,7 @@ class UserController {
           M0_CODFIL: user_code
         })
 
-      const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [user_code, process.env.NODE_ENV] : [user_code, user_code])
+      const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [user_code, process.env.NODE_ENV, user_code] : [user_code, user_code])
 
       let linksEmSessões = []
 
@@ -115,7 +115,7 @@ class UserController {
     try {
       const token = await genTokenAdm(admin_code, admin_password)
 
-      const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [admin_code, process.env.NODE_ENV] : [admin_code, admin_code])
+      const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [admin_code, process.env.NODE_ENV, admin_code] : [admin_code, admin_code])
 
       let linksEmSessões = []
 
@@ -154,7 +154,7 @@ class UserController {
       //crio token com codido do adm, codigo do cliente, senha e nivel do adm
       const admTokenWithFilial = await genTokenAdmWithFilial(user_code, verified);
 
-      const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [verified.admin_code, process.env.NODE_ENV] : [verified.admin_code, verified.admin_code])
+      const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [verified.admin_code, process.env.NODE_ENV, verified.admin_code] : [verified.admin_code, verified.admin_code])
 
       let linksEmSessões = []
 
@@ -191,7 +191,7 @@ class UserController {
 
       const admTokenLogout = await genTokenAdmLogout(verified.admin_code, verified.role);
 
-      const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [verified.admin_code, process.env.NODE_ENV] : [verified.admin_code, verified.admin_code])
+      const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [verified.admin_code, process.env.NODE_ENV, verified.admin_code] : [verified.admin_code, verified.admin_code])
 
       let linksEmSessões = []
 
@@ -261,7 +261,7 @@ class UserController {
 
         const token = await genTokenExternal(code);
 
-        const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [code, process.env.NODE_ENV] : [code, code])
+        const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [code, process.env.NODE_ENV, code] : [code, code])
 
         let linksEmSessões = []
 

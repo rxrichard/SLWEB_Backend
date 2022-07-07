@@ -92,7 +92,8 @@ class CompartilhamentoController {
         arquivos: files,
         pastas: folders,
         pathSegments: folderAlias.split('\\').filter(p => p !== ''),
-        controlModals: controls
+        controlModals: controls,
+        environment: 'directory'
       });
     } catch (err) {
       response.status(400).send();
