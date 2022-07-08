@@ -102,6 +102,10 @@ Route.put("/equip/requests/admin", "WEB/EquipRequestController.SistemOptions").m
 
 //Franquia
 Route.get("/administrar/franquia", "ADMIN/FranquiasController.Show").middleware('jwt');
+<<<<<<< HEAD
+=======
+Route.post("/administrar/franquia", "ADMIN/FranquiasController.Store").middleware('jwt');
+>>>>>>> ca014ee15eef9edc5d7307d889be49583356a866
 
 //Formulário de futuros franqueados
 Route.get("/form/check/:cod", "ADMIN/FuturoFranqueadoController.FutureCod"); //checa se o número do futuro franqueado existe no DB
@@ -134,7 +138,10 @@ Route.get("/coletas/novacoleta/:l1id/:l2id/:anxid/:pdvid", "WEB/ConsultaColetasC
 Route.post("/coletas/novacoleta/", "WEB/ConsultaColetasController.GravaColeta").middleware('jwt'); //grava nova coleta
 Route.delete("/coletas/detalhes/apagar/:EquiCod/:AnxId/:PdvId/:FfmSeq", "WEB/ConsultaColetasController.Delete").middleware('jwt'); //deleta coleta
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> ca014ee15eef9edc5d7307d889be49583356a866
 //Pontos de Venda
 Route.get("/pontosdevenda", "WEB/PontosDeVendaController.Show").middleware('jwt'); //retorna todos os pontos de venda do franqueado
 Route.get("/pontosdevenda/info/:pdvid/:anxid/:type", "WEB/PontosDeVendaController.See").middleware('jwt'); //retorna todos os pontos de venda do franqueado
