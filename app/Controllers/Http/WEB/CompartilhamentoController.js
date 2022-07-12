@@ -75,17 +75,44 @@ class CompartilhamentoController {
       folders = await somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser(folders, verified)
       files = await somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser(files, verified)
 
-      let controls = { security: false, upload: false }
+      let controls = {
+        security: false,
+        upload: false,
+        createFolder: false,
+        downloadContent: false,
+        renameContent: false,
+        moveContent: false,
+        blockContent: false,
+        deleteContent: false
+      }
 
       if (verified.role === "Sistema") {
         controls.security = true
         controls.upload = true
+        controls.createFolder = true
+        controls.downloadContent = true
+        controls.renameContent = true
+        controls.moveContent = true
+        controls.blockContent = true
+        controls.deleteContent = true
       } else if (verified.role === "Franquia") {
         controls.security = false
         controls.upload = false
+        controls.createFolder = false
+        controls.downloadContent = true
+        controls.renameContent = false
+        controls.moveContent = false
+        controls.blockContent = false
+        controls.deleteContent = false
       } else {
         controls.security = false
         controls.upload = true
+        controls.createFolder = true
+        controls.downloadContent = true
+        controls.renameContent = true
+        controls.moveContent = true
+        controls.blockContent = true
+        controls.deleteContent = true
       }
 
       response.status(200).send({
@@ -93,7 +120,6 @@ class CompartilhamentoController {
         pastas: folders,
         pathSegments: folderAlias.split('\\').filter(p => p !== ''),
         controlModals: controls,
-        environment: 'directory'
       });
     } catch (err) {
       response.status(400).send();
