@@ -624,7 +624,7 @@ class VendaController {
     try {
       const verified = seeToken(token);
 
-      const vendaCab = await Database.raw('select C.Nome_Fantasia, PC.PvcID, C.CNPJss, PC.DataCriacao, C.TPessoa from dbo.PedidosVendaCab as PC inner join dbo.Cliente as C on PC.CNPJ = C.CNPJ where PC.GrpVen = ? and PC.PvcID = ? and PC.PvcSerie = ?',
+      const vendaCab = await Database.raw('select C.Nome_Fantasia, PC.PvcID, PC.PvTipo, C.CNPJss, PC.DataCriacao, C.TPessoa from dbo.PedidosVendaCab as PC inner join dbo.Cliente as C on PC.CNPJ = C.CNPJ where PC.GrpVen = ? and PC.PvcID = ? and PC.PvcSerie = ?',
         [verified.grpven, pvc, serie])
 
       const vendaDet = await Database.raw('select PD.ProdId, P.Produto, PD.PvdQtd, PD.PvdVlrUnit, PD.PvdVlrTotal from dbo.PedidosVendaDet as PD inner join dbo.Produtos as P on PD.ProdId = P.ProdId where GrpVen = ? and PD.PvcID = ? and PD.PvcSerie = ?',
@@ -656,7 +656,6 @@ class VendaController {
 
 module.exports = VendaController;
 
-const queryListaDeProdutos =
-  "select Pr.* from dbo.PrecoVenda as PV inner join dbo.Produtos as Pr on PV.ProdId = Pr.ProdId where Pr.Venda = 'S' and PV.GrpVen = '000000' and PV.AnxId = 0 and PV.PdvId = 0 and Pr.Atv2Inat1 = 2 order by Pr.Produto";
+const queryListaDeProdutos = "select Pr.* from dbo.PrecoVenda as PV inner join dbo.Produtos as Pr on PV.ProdId = Pr.ProdId where Pr.Venda = 'S' and PV.GrpVen = '000000' and PV.AnxId = 0 and PV.PdvId = 0 and Pr.Atv2Inat1 = 2 order by Pr.Produto";
 
 const queryPedidosParaFaturar = "SELECT dbo.PedidosVendaCab.GrpVen, dbo.FilialEntidadeGrVenda.M0_CODFIL, ? AS PedidoId, dbo.PedidosVendaDet.PvdID, dbo.Cliente.A1_COD, dbo.Cliente.A1_LOJA, dbo.TipoNF.TNF_TblPreco, dbo.TipoNF.TNF_CodVnd, dbo.CondicaoPagamento.E4_CODIGO AS CPag, dbo.TipoNF.TNF_Frete, dbo.Produtos.CodFab, dbo.PedidosVendaDet.PvdQtd, dbo.PedidosVendaDet.PvdVlrUnit, dbo.PedidosVendaDet.PvdVlrTotal, dbo.PedidosVendaCab.DataCriacao, dbo.TipoNF.TNF_TipOp, dbo.PedidosVendaDet.PvdTES, dbo.TipoNF.TNF_NATUREZA, dbo.PedidosVendaCab.MsgNF, dbo.PedidosVendaDet.PdvVlrDesc FROM ( ( ( ( dbo.Cliente INNER JOIN ( dbo.PedidosVendaCab INNER JOIN dbo.PedidosVendaDet ON ( dbo.PedidosVendaCab.PvcID = dbo.PedidosVendaDet.PvcID ) AND ( dbo.PedidosVendaCab.PvcSerie = dbo.PedidosVendaDet.PvcSerie ) AND ( dbo.PedidosVendaCab.GrpVen = dbo.PedidosVendaDet.GrpVen ) ) ON ( dbo.Cliente.GrpVen = dbo.PedidosVendaCab.GrpVen ) AND ( dbo.Cliente.CNPJ = dbo.PedidosVendaCab.CNPJ ) ) INNER JOIN dbo.FilialEntidadeGrVenda ON dbo.PedidosVendaCab.GrpVen = dbo.FilialEntidadeGrVenda.A1_GRPVEN ) INNER JOIN dbo.CondicaoPagamento ON dbo.PedidosVendaCab.CpgId = dbo.CondicaoPagamento.CpgId ) INNER JOIN dbo.Produtos ON dbo.PedidosVendaDet.ProdId = dbo.Produtos.ProdId ) INNER JOIN dbo.TipoNF ON dbo.PedidosVendaCab.PvTipo = dbo.TipoNF.TNFCod WHERE ( ((dbo.PedidosVendaCab.GrpVen) = ?) AND ((dbo.CondicaoPagamento.GrpVen) = '000000') AND ((dbo.PedidosVendaCab.PvcID) = ?) AND ((dbo.PedidosVendaCab.PvcSerie) = 'F'))"

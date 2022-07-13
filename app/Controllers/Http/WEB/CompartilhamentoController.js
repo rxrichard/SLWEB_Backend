@@ -34,7 +34,7 @@ class CompartilhamentoController {
           .select('*')
           .from('dbo.SLWEB_Compartilhamento_Index')
           .where({
-            type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+            type: returnRootPathByRole(verified.role)
           })
 
         folderPath = root[0].path
@@ -44,7 +44,7 @@ class CompartilhamentoController {
           .select('*')
           .from('dbo.SLWEB_Compartilhamento_Index')
           .where({
-            type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+            type: returnRootPathByRole(verified.role)
           })
 
         //substituo o apelido da raiz pela propria raiz
@@ -92,7 +92,8 @@ class CompartilhamentoController {
         arquivos: files,
         pastas: folders,
         pathSegments: folderAlias.split('\\').filter(p => p !== ''),
-        controlModals: controls
+        controlModals: controls,
+        environment: 'directory'
       });
     } catch (err) {
       response.status(400).send();
@@ -123,7 +124,7 @@ class CompartilhamentoController {
         .select('*')
         .from('dbo.SLWEB_Compartilhamento_Index')
         .where({
-          type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+          type: returnRootPathByRole(verified.role)
         })
 
       const fullFilePath = decodeURI(filePath).replace(root[0].path_alias, root[0].path)
@@ -309,7 +310,7 @@ class CompartilhamentoController {
         .select('*')
         .from('dbo.SLWEB_Compartilhamento_Index')
         .where({
-          type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+          type: returnRootPathByRole(verified.role)
         })
 
       await Database.insert({
@@ -348,7 +349,7 @@ class CompartilhamentoController {
         .select('*')
         .from('dbo.SLWEB_Compartilhamento_Index')
         .where({
-          type: verified.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'
+          type: returnRootPathByRole(verified.role)
         })
 
       let trashFolder = await Database
@@ -365,7 +366,7 @@ class CompartilhamentoController {
       let newPath = oldPath.replace(root[0].path, trashFolder[0].path)
 
       // mover
-       await Drive.move(oldPath, newPath)
+      await Drive.move(oldPath, newPath)
 
       response.status(200).send();
     } catch (err) {
@@ -477,4 +478,15 @@ const somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser = async (dir, decript
   })
 
   return clearDir
+}
+
+const returnRootPathByRole = (role) => {
+  switch (role) {
+    case 'Sistema':
+      return 'ROOT'
+    case 'Marketing':
+      return 'UPLOAD_DUMP'
+    default:
+      return 'FRANQUEADO_DUMP'
+  }
 }

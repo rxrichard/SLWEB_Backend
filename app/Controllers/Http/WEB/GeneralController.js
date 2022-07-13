@@ -176,7 +176,7 @@ class GeneralController {
       })
 
       response.status(200).send({
-        Equip: DeveConfirmacao[0].Equip === 'S'
+        Equip: DeveConfirmacao[0] ? DeveConfirmacao[0].Equip === 'S' : false
       })
     } catch (err) {
       response.status(400).send()
