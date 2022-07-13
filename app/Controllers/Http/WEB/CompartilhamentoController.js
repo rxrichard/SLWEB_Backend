@@ -75,17 +75,44 @@ class CompartilhamentoController {
       folders = await somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser(folders, verified)
       files = await somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser(files, verified)
 
-      let controls = { security: false, upload: false }
+      let controls = {
+        security: false,
+        upload: false,
+        createFolder: false,
+        downloadContent: false,
+        renameContent: false,
+        moveContent: false,
+        blockContent: false,
+        deleteContent: false
+      }
 
       if (verified.role === "Sistema") {
         controls.security = true
         controls.upload = true
+        controls.createFolder = true
+        controls.downloadContent = true
+        controls.renameContent = true
+        controls.moveContent = true
+        controls.blockContent = true
+        controls.deleteContent = true
       } else if (verified.role === "Franquia") {
         controls.security = false
         controls.upload = false
+        controls.createFolder = false
+        controls.downloadContent = true
+        controls.renameContent = false
+        controls.moveContent = false
+        controls.blockContent = false
+        controls.deleteContent = false
       } else {
         controls.security = false
         controls.upload = true
+        controls.createFolder = true
+        controls.downloadContent = true
+        controls.renameContent = true
+        controls.moveContent = true
+        controls.blockContent = true
+        controls.deleteContent = true
       }
 
       response.status(200).send({
@@ -93,7 +120,6 @@ class CompartilhamentoController {
         pastas: folders,
         pathSegments: folderAlias.split('\\').filter(p => p !== ''),
         controlModals: controls,
-        environment: 'directory'
       });
     } catch (err) {
       response.status(400).send();
@@ -145,38 +171,38 @@ class CompartilhamentoController {
   async Upload({ request, response }) {
     const token = request.header("authorization");
     const multiples = request.input('multiple')
-    const formData = request.file("formData", {
-      types: ["image", "pdf"],
-    });
+    const targetFolder = request.input('targetFolder')
+    const formData = request.file("formData", { types: ["image", "pdf", "video"] });
 
     try {
       const verified = seeToken(token);
 
-      const uploadPath = await Database
-        .select('*')
-        .from('dbo.SLWEB_Compartilhamento_Index')
-        .where({
-          type: 'UPLOAD_DUMP'
-        })
-
-
       //verificar se o cara pode fazer upload
-      if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(uploadPath[0].path, verified)) {
+      if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(targetFolder, verified)) {
         throw new Error('Acesso bloqueado')
       }
 
-      const fullPathToFiles = `${uploadPath[0].path}\\MKT\\${moment().format('LL')}`
+      const root = await Database
+        .select('*')
+        .from('dbo.SLWEB_Compartilhamento_Index')
+        .where({
+          type: returnRootPathByRole(verified.role)
+        })
+
+      //substituo o apelido da raiz pela propria raiz
+      const fullPathToFiles = decodeURI(targetFolder).replace(root[0].path_alias, root[0].path)
 
       //verificar se é um ou muitos arquivos
       if (multiples === 'N') {
         await formData.move(fullPathToFiles, {
-          name: `${formData.clientName.split('.')[0]}_D${new Date().getTime()}.${formData.subtype}`,
+          name: `${formData.clientName.split('.')[0]}.${formData.subtype}`,
           overwrite: true
         });
+
       } else {
         await formData.moveAll(fullPathToFiles, (file) => {
           return {
-            name: `${file.clientName.split('.')[0]}_D${new Date().getTime()}.${file.subtype}`,
+            name: `${file.clientName.split('.')[0]}.${file.subtype}`,
             overwrite: true,
           };
         })
@@ -299,10 +325,8 @@ class CompartilhamentoController {
     try {
       const verified = seeToken(token);
 
-
-
       //verificar se é sistema
-      if (verified.role !== "Sistema") {
+      if (verified.role === "Franquia") {
         throw new Error('Usuário não permitido')
       }
 
@@ -341,7 +365,7 @@ class CompartilhamentoController {
       const verified = seeToken(token);
 
       //verificar se é sistema
-      if (verified.role !== "Sistema") {
+      if (verified.role === "Franquia") {
         throw new Error('Usuário não permitido')
       }
 
@@ -377,6 +401,79 @@ class CompartilhamentoController {
         payload: request.body,
         err: err,
         handler: 'CompartilhamentoController.MoveToTrash',
+      })
+    }
+  }
+
+  async CreateFolder({ request, response }) {
+    const token = request.header("authorization");
+    const { dirName } = request.only(['dirName'])
+
+    try {
+      const verified = seeToken(token);
+
+      if (verified.role === "Franquia") {
+        throw new Error('Usuário não permitido')
+      }
+
+      const root = await Database
+        .select('*')
+        .from('dbo.SLWEB_Compartilhamento_Index')
+        .where({
+          type: returnRootPathByRole(verified.role)
+        })
+
+      const fullDirPath = decodeURI(dirName).replace(root[0].path_alias, root[0].path)
+
+      if (!fs.existsSync(fullDirPath)) {
+        fs.mkdirSync(fullDirPath);
+      }
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompartilhamentoController.CreateFolder',
+      })
+    }
+  }
+
+  async Rename({ request, response }) {
+    const token = request.header("authorization");
+    const { currPath, newPath } = request.only(['currPath', 'newPath']);
+
+    try {
+      const verified = seeToken(token);
+
+      if (verified.role === "Franquia") {
+        throw new Error('Usuário não permitido')
+      }
+
+      const root = await Database
+        .select('*')
+        .from('dbo.SLWEB_Compartilhamento_Index')
+        .where({
+          type: returnRootPathByRole(verified.role)
+        })
+
+      const fixedCurrPath = decodeURI(currPath).replace(root[0].path_alias, root[0].path)
+      const fixedNewPath = decodeURI(newPath).replace(root[0].path_alias, root[0].path)
+
+      fs.renameSync(fixedCurrPath, fixedNewPath)
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompartilhamentoController.Rename',
       })
     }
   }

@@ -157,6 +157,8 @@ Route.get('/files/lookup/:folder', 'WEB/CompartilhamentoController.Show').middle
 Route.get('/files/download/:filepath', 'WEB/CompartilhamentoController.Download').middleware('jwt');
 Route.post('/files/upload/', 'WEB/CompartilhamentoController.Upload').middleware('jwt');
 Route.get('/files/delete/:filepath', 'WEB/CompartilhamentoController.MoveToTrash').middleware('jwt');
+Route.post('/files/create/folder', 'WEB/CompartilhamentoController.CreateFolder').middleware('jwt');
 Route.get('/files/permissions/', 'WEB/CompartilhamentoController.ShowIndexedFolders').middleware('jwt');
 Route.put('/files/permissions/', 'WEB/CompartilhamentoController.UpdateIndexedFolder').middleware('jwt');
 Route.post('/files/permissions/', 'WEB/CompartilhamentoController.IndexFolder').middleware('jwt');
+Route.put('/files/rename/', 'WEB/CompartilhamentoController.Rename').middleware('jwt');

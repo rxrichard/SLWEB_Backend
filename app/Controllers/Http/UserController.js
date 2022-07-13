@@ -116,7 +116,7 @@ class UserController {
       const token = await genTokenAdm(admin_code, admin_password)
 
       const links = await Database.raw(QUERY_LINKS_DISPONIVEIS, process.env.NODE_ENV === 'production' ? [admin_code, process.env.NODE_ENV, admin_code] : [admin_code, admin_code])
-
+      
       let linksEmSessões = []
 
       links.forEach(ln => {
@@ -293,4 +293,4 @@ class UserController {
 
 module.exports = UserController;
 
-const QUERY_LINKS_DISPONIVEIS = `select L.Descricao, L.Link, L.Sessao, L.Icon, L.AccessLevel, L.Bloqueavel from dbo.SLWEB_Links as L inner join ( select T.* from dbo.Operador as O inner join dbo.TipoOper as T on T.TopeCod = O.TopeCod where M0_CODFIL = ? ) as O on ( L.AccessScale = 0 and L.AccessLevel = O.AccessLevel ) or ( L.AccessScale = 1 and O.AccessLevel >= L.AccessLevel ) where ${process.env.NODE_ENV === 'development' ? '' : 'Ambiente = ? and'} Habilitado = 1 and (ExcludeTopeCod  <> (select TopeCod from dbo.Operador where M0_CODFIL = ?) or ExcludeTopeCod is null) order by Sessao ASC`
+const QUERY_LINKS_DISPONIVEIS = `select L.Descricao, L.Link, L.Sessao, L.Icon, L.AccessLevel, L.Bloqueavel from dbo.SLWEB_Links as L inner join ( select T.* from dbo.Operador as O inner join dbo.TipoOper as T on T.TopeCod = O.TopeCod where M0_CODFIL = ? ) as O on ( L.AccessScale = 0 and L.AccessLevel = O.AccessLevel ) or ( L.AccessScale = 1 and O.AccessLevel >= L.AccessLevel ) or ( L.AccessLevel is null ) where ${process.env.NODE_ENV === 'development' ? '' : 'Ambiente = ? and'} Habilitado = 1 and (ExcludeTopeCod  <> (select TopeCod from dbo.Operador where M0_CODFIL = ?) or ExcludeTopeCod is null) order by Sessao ASC`
