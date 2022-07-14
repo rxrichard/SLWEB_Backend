@@ -113,12 +113,12 @@ class MailerController {
 
       if (salvarNovoTemplate) {
         console.log('salvar e enviar')
-        
+
         //se o template for null é um novo modelo e eu crio as paradas, senão eu atualizo o modelo e o sql
         if (template === null) {
           templateName = `${nomeNovoTemplate}`
           templateCaminho = Helpers.resourcesPath(`/views/emails/custom/${templateName}.edge`)
-          
+
           await Database.insert({
             Ativo: true,
             ModeloNome: subject,
@@ -128,31 +128,31 @@ class MailerController {
           }).into('dbo.SLWebModeloDeEmails')
 
           await Drive.put(templateCaminho, Buffer.from(rawBodyToEdge))
-          
+
         } else {
           templateName = `${nomeNovoTemplate}`
           templateCaminho = Helpers.resourcesPath(`/views/emails/custom/${templateName}`)
 
           await Database.table("dbo.SLWebModeloDeEmails")
-          .where({
-            ModeloID: template
-          })
-          .update({
-            AtualizadoEm: moment().subtract(3, 'hours').toDate()
-          });
+            .where({
+              ModeloID: template
+            })
+            .update({
+              AtualizadoEm: moment().subtract(3, 'hours').toDate()
+            });
 
           await Drive.put(templateCaminho, Buffer.from(rawBodyToEdge))
         }
 
         //envio os emails
-        await recipients.forEach(async (recipient) => {
+        for (let i = 0; i < recipients.length; i++) {
           try {
             await Mail.connection("smtp_mass").send(
               `emails.custom.${templateName}`,
               null,
               (message) => {
                 message
-                  .to(recipient.Email)
+                  .to(recipients[i].Email)
                   .from(Env.get("MASS_SMTP_DOM"), "Pilão Professional")
                   .subject(subject);
               }
@@ -160,29 +160,30 @@ class MailerController {
 
             await Database.insert({
               DataOcor: moment().subtract(3, 'hours').toDate(),
-              A1_GRPVEN: recipient.A1_GRPVEN,
-              M0_CODFIL: recipient.M0_CODFIL,
-              Email: recipient.Email,
+              A1_GRPVEN: recipients[i].A1_GRPVEN,
+              M0_CODFIL: recipients[i].M0_CODFIL,
+              Email: recipients[i].Email,
               msg: `Envio em massa pelo site, assunto: ${subject}`,
               origem: 'SLWEB'
             }).into('dbo.LogAvisos')
 
           } catch (err) {
             console.log({
-              message: `Falha ao enviar email para filial ${recipient.M0_CODFIL}(${recipient.Email})`,
+              message: `Falha ao enviar email para filial ${recipients[i].M0_CODFIL}(${recipients[i].Email})`,
               err
             })
           }
-        })
+        }
       } else {
         console.log('somente enviar')
-        await recipients.forEach(async (recipient) => {
+
+        for (let i = 0; i < recipients.length; i++) {
           try {
             await Mail.connection("smtp_mass").raw(
               rawBodyToEdge,
               (message) => {
                 message
-                  .to(recipient.Email)
+                  .to(recipients[i].Email)
                   .from(Env.get("MASS_SMTP_DOM"), "Pilão Professional")
                   .subject(subject);
               }
@@ -190,19 +191,19 @@ class MailerController {
 
             await Database.insert({
               DataOcor: moment().subtract(3, 'hours').toDate(),
-              A1_GRPVEN: recipient.A1_GRPVEN,
-              M0_CODFIL: recipient.M0_CODFIL,
-              Email: recipient.Email,
+              A1_GRPVEN: recipients[i].A1_GRPVEN,
+              M0_CODFIL: recipients[i].M0_CODFIL,
+              Email: recipients[i].Email,
               msg: `Envio em massa pelo site, assunto: ${subject}`,
               origem: 'SLWEB'
             }).into('dbo.LogAvisos')
           } catch (err) {
             console.log({
-              message: `Falha ao enviar email para filial ${recipient.M0_CODFIL}(${recipient.Email})`,
+              message: `Falha ao enviar email para filial ${recipients[i].M0_CODFIL}(${recipients[i].Email})`,
               err
             })
           }
-        })
+        }
       }
 
       response.status(200).send();

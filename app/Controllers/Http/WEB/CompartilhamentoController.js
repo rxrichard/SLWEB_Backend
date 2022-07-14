@@ -300,6 +300,11 @@ class CompartilhamentoController {
     try {
       const verified = seeToken(token);
 
+      //verificar permissão do usuário
+      if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(path, verified)) {
+        throw new Error('Acesso bloqueado')
+      }
+
       //verificar se é sistema
       if (verified.role !== "Sistema") {
         throw new Error('Usuário não permitido')
@@ -334,9 +339,9 @@ class CompartilhamentoController {
     try {
       const verified = seeToken(token);
 
-      //verificar se é sistema
-      if (verified.role === "Franquia") {
-        throw new Error('Usuário não permitido')
+      //verificar permissão do usuário
+      if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(path, verified)) {
+        throw new Error('Acesso bloqueado')
       }
 
       const root = await Database
@@ -368,14 +373,14 @@ class CompartilhamentoController {
 
   async MoveToTrash({ request, response, params }) {
     const token = request.header("authorization");
-    const filepath = params.filepath
+    const filepath = params.filepath;
 
     try {
       const verified = seeToken(token);
 
-      //verificar se é sistema
-      if (verified.role === "Franquia") {
-        throw new Error('Usuário não permitido')
+      //verificar permissão do usuário
+      if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(filepath, verified)) {
+        throw new Error('Acesso bloqueado')
       }
 
       let root = await Database
@@ -399,7 +404,9 @@ class CompartilhamentoController {
       let newPath = oldPath.replace(root[0].path, trashFolder[0].path)
 
       // mover
-      await Drive.move(oldPath, newPath)
+      await Drive.move(oldPath, newPath, {
+        overwrite: true
+      })
 
       response.status(200).send();
     } catch (err) {
@@ -421,8 +428,9 @@ class CompartilhamentoController {
     try {
       const verified = seeToken(token);
 
-      if (verified.role === "Franquia") {
-        throw new Error('Usuário não permitido')
+      //verificar permissão do usuário
+      if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(dirName, verified)) {
+        throw new Error('Acesso bloqueado')
       }
 
       const root = await Database
@@ -458,8 +466,9 @@ class CompartilhamentoController {
     try {
       const verified = seeToken(token);
 
-      if (verified.role === "Franquia") {
-        throw new Error('Usuário não permitido')
+      //verificar permissão do usuário
+      if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(currPath, verified)) {
+        throw new Error('Acesso bloqueado')
       }
 
       const root = await Database
@@ -483,6 +492,52 @@ class CompartilhamentoController {
         payload: request.body,
         err: err,
         handler: 'CompartilhamentoController.Rename',
+      })
+    }
+  }
+
+  async Move({ request, response }) {
+    const token = request.header("authorization");
+    const { currPath, newPath } = request.only(['currPath', 'newPath']);
+
+    try {
+      const verified = seeToken(token);
+
+      //verificar permissão do usuário
+      if (await somehowVerifyIfUserShouldHaveAccessToFileOrDirectory(currPath, verified)) {
+        throw new Error('Acesso bloqueado')
+      }
+
+      let root = await Database
+        .select('*')
+        .from('dbo.SLWEB_Compartilhamento_Index')
+        .where({
+          type: returnRootPathByRole(verified.role)
+        })
+
+      // substituir o alias pelo path
+      let oldPath = decodeURI(currPath).replace(root[0].path_alias, root[0].path)
+
+      // substituir o path antigo pelo path de lixeira
+      let targetPath = decodeURI(newPath).replace(root[0].path_alias, root[0].path)
+
+      console.log(oldPath)
+      console.log(targetPath)
+
+      // mover
+      await Drive.move(oldPath, targetPath, {
+        overwrite: true
+      })
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'CompartilhamentoController.Move',
       })
     }
   }
