@@ -19,7 +19,7 @@ class Rastros {
     const token = request.header("authorization") ? request.header("authorization") : 'TOKEN NÃO FORNECIDO'
 
     try {
-      if (request.protocol() !== 'OPTIONS') {
+      if (request.method() !== 'OPTIONS' && request.headers()['user-agent'] !== 'ELB-HealthChecker/2.0') {
         await Database.insert({
           timestamp: moment().subtract(3, 'hours').toDate(),
           protocol: request.protocol(),
