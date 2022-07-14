@@ -104,6 +104,15 @@ class CompartilhamentoController {
         controls.moveContent = false
         controls.blockContent = false
         controls.deleteContent = false
+      } else if (verified.role === "Marketing") {
+        controls.security = false
+        controls.upload = true
+        controls.createFolder = true
+        controls.downloadContent = true
+        controls.renameContent = true
+        controls.moveContent = true
+        controls.blockContent = false
+        controls.deleteContent = true
       } else {
         controls.security = false
         controls.upload = true
@@ -500,7 +509,7 @@ const somehowVerifyIfUserShouldHaveAccessToFileOrDirectory = async (filepath, de
   //verificar se esta tentando acessar a raiz dos arquivos
   if (filepath === 'root') {
     // verificar se a raiz dos arquivos pode ser acessada por ele
-    if (compartilhamentoIndex.filter(folder => folder.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP'))[0].AccessLevel <= OperAccessLevel[0].AccessLevel) {
+    if (compartilhamentoIndex.filter(folder => folder.type === returnRootPathByRole(decriptedToken.role))[0].AccessLevel <= OperAccessLevel[0].AccessLevel) {
       isBlockedFolder = false
     } else {
       isBlockedFolder = true
@@ -514,11 +523,11 @@ const somehowVerifyIfUserShouldHaveAccessToFileOrDirectory = async (filepath, de
         decodeURI(filepath).replace(
           compartilhamentoIndex
             .filter(
-              index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
+              index => index.type === returnRootPathByRole(decriptedToken.role)
             )[0].path_alias,
           compartilhamentoIndex
             .filter(
-              index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
+              index => index.type === returnRootPathByRole(decriptedToken.role)
             )[0].path
         )
       ).includes(BF)) {
@@ -555,11 +564,11 @@ const somehowRemoveFilesOrDirectoriesUnauthorizedToTheUser = async (dir, decript
       .replace(
         compartilhamentoIndex
           .filter(
-            index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
+            index => index.type === returnRootPathByRole(decriptedToken.role)
           )[0].path_alias,
         compartilhamentoIndex
           .filter(
-            index => index.type === (decriptedToken.role === 'Sistema' ? 'ROOT' : 'FRANQUEADO_DUMP')
+            index => index.type === returnRootPathByRole(decriptedToken.role)
           )[0].path
       )
 
