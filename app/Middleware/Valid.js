@@ -14,7 +14,7 @@ class Valid {
    * @param {Request} ctx.request
    * @param {Function} next
    */
-  async handle({ request, params }, next, properties) {
+  async handle({ request, response, params }, next, properties) {
     const token = request.header("authorization")
     const AccessLevelRequired = properties[0]
     const ScaleLevel = Number(properties[1])
@@ -31,12 +31,13 @@ class Valid {
         (ScaleLevel && AccessLevelRequired <= AccessLevel[0].AccessLevel) ||
         (!ScaleLevel && AccessLevelRequired === AccessLevel[0].AccessLevel)
       ) {
-        console.log('allowed')
+        await next()
       }else{
-        console.log('not allowed')
+        response.status(423).send()
       }
 
     } catch (err) {
+      response.status(423).send()
       logger.error({
         token: token,
         params: params,
@@ -45,8 +46,6 @@ class Valid {
         handler: 'Valid.handle',
       })
     }
-
-    await next()
   }
 }
 
