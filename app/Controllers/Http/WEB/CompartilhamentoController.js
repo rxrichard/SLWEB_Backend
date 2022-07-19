@@ -204,14 +204,14 @@ class CompartilhamentoController {
       //verificar se é um ou muitos arquivos
       if (multiples === 'N') {
         await formData.move(fullPathToFiles, {
-          name: `${formData.clientName.split('.')[0]}.${formData.subtype}`,
+          name: formData,
           overwrite: true
         });
 
       } else {
         await formData.moveAll(fullPathToFiles, (file) => {
           return {
-            name: `${file.clientName.split('.')[0]}.${file.subtype}`,
+            name: file.clientName,
             overwrite: true,
           };
         })
@@ -520,9 +520,6 @@ class CompartilhamentoController {
 
       // substituir o path antigo pelo path de lixeira
       let targetPath = decodeURI(newPath).replace(root[0].path_alias, root[0].path)
-
-      console.log(oldPath)
-      console.log(targetPath)
 
       // mover
       await Drive.move(oldPath, targetPath, {
