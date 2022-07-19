@@ -10,7 +10,7 @@ const path = require('path');
 moment.locale("pt-br");
 
 class CompartilhamentoController {
-
+  //
   async Show({ request, response, params }) {
     const token = request.header("authorization");
     let folder = params.folder
@@ -141,7 +141,7 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async Download({ request, response, params }) {
     const token = request.header("authorization");
     const filePath = params.filepath
@@ -176,7 +176,7 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async Upload({ request, response }) {
     const token = request.header("authorization");
     const multiples = request.input('multiple')
@@ -229,7 +229,7 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async ShowIndexedFolders({ request, response }) {
     const token = request.header("authorization");
 
@@ -292,7 +292,7 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async UpdateIndexedFolder({ request, response }) {
     const token = request.header("authorization");
     const { path, newGroup } = request.only(['path', 'newGroup']);
@@ -331,7 +331,7 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async IndexFolder({ request, response }) {
     const token = request.header("authorization");
     const { path, type } = request.only(['path', 'type']);
@@ -370,7 +370,7 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async MoveToTrash({ request, response, params }) {
     const token = request.header("authorization");
     const filepath = params.filepath;
@@ -420,7 +420,7 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async CreateFolder({ request, response }) {
     const token = request.header("authorization");
     const { dirName } = request.only(['dirName'])
@@ -458,7 +458,7 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async Rename({ request, response }) {
     const token = request.header("authorization");
     const { currPath, newPath } = request.only(['currPath', 'newPath']);
@@ -495,10 +495,10 @@ class CompartilhamentoController {
       })
     }
   }
-
+  //
   async Move({ request, response }) {
     const token = request.header("authorization");
-    const { currPath, newPath } = request.only(['currPath', 'newPath']);
+    const { currPath, newPath, type } = request.only(['currPath', 'newPath', 'type']);
 
     try {
       const verified = seeToken(token);
@@ -521,10 +521,40 @@ class CompartilhamentoController {
       // substituir o path antigo pelo path de lixeira
       let targetPath = decodeURI(newPath).replace(root[0].path_alias, root[0].path)
 
-      // mover
-      await Drive.move(oldPath, targetPath, {
-        overwrite: true
-      })
+      if (type === 'file') {
+        fs.copyFileSync(oldPath, targetPath)
+
+        fs.rmSync(oldPath)
+      } else if (type === 'folder') {
+        let newPath = [...targetPath.split('\\'), oldPath.split('\\')[oldPath.split('\\').length - 1]].toString().replace(/,/g, '\\')
+
+        if (!fs.existsSync(newPath)) {
+          fs.mkdirSync(newPath);
+        }
+
+        function copyFolderRecursiveSync(source, target) {
+          var files = [];
+
+          // Copy
+          if (fs.lstatSync(source).isDirectory()) {
+            files = fs.readdirSync(source);
+
+            files.forEach(function (file) {
+              var curSource = path.join(source, file);
+
+              if (fs.lstatSync(curSource).isDirectory()) {
+                copyFolderRecursiveSync(curSource, targetFolder);
+              } else {
+                copyFileSync(curSource, targetFolder);
+              }
+            });
+          }
+
+        }
+
+        //apagar pasta antiga
+      }
+
 
       response.status(200).send();
     } catch (err) {

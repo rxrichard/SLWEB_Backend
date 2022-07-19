@@ -163,3 +163,6 @@ Route.post('/files/permissions/', 'WEB/CompartilhamentoController.IndexFolder').
 Route.put('/files/permissions/', 'WEB/CompartilhamentoController.UpdateIndexedFolder').middleware(['jwt', 'vld:4,1']);
 Route.put('/files/rename/', 'WEB/CompartilhamentoController.Rename').middleware(['jwt', 'vld:1,1']);
 Route.put('/files/move/', 'WEB/CompartilhamentoController.Move').middleware(['jwt', 'vld:1,1']);
+
+//DRE
+Route.get('/dre', 'WEB/DreController.Show').middleware('jwt');
