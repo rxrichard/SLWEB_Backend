@@ -129,6 +129,7 @@ class CompartilhamentoController {
         pastas: folders,
         pathSegments: folderAlias.split('\\').filter(p => p !== ''),
         controlModals: controls,
+        enviroment: await returnFolderEnviroment(folderPath)
       });
     } catch (err) {
       response.status(400).send();
@@ -204,7 +205,7 @@ class CompartilhamentoController {
       //verificar se é um ou muitos arquivos
       if (multiples === 'N') {
         await formData.move(fullPathToFiles, {
-          name: formData,
+          name: formData.clientName,
           overwrite: true
         });
 
@@ -526,33 +527,11 @@ class CompartilhamentoController {
 
         fs.rmSync(oldPath)
       } else if (type === 'folder') {
-        let newPath = [...targetPath.split('\\'), oldPath.split('\\')[oldPath.split('\\').length - 1]].toString().replace(/,/g, '\\')
+        let newPath = targetPath.toString().replace(/,/g, '\\')
 
-        if (!fs.existsSync(newPath)) {
-          fs.mkdirSync(newPath);
-        }
+        copyFolderRecursiveSync(oldPath, newPath)
 
-        function copyFolderRecursiveSync(source, target) {
-          var files = [];
-
-          // Copy
-          if (fs.lstatSync(source).isDirectory()) {
-            files = fs.readdirSync(source);
-
-            files.forEach(function (file) {
-              var curSource = path.join(source, file);
-
-              if (fs.lstatSync(curSource).isDirectory()) {
-                copyFolderRecursiveSync(curSource, targetFolder);
-              } else {
-                copyFileSync(curSource, targetFolder);
-              }
-            });
-          }
-
-        }
-
-        //apagar pasta antiga
+        fs.rmdirSync(oldPath, { recursive: true, force: true })
       }
 
 
@@ -676,5 +655,64 @@ const returnRootPathByRole = (role) => {
       return 'UPLOAD_DUMP'
     default:
       return 'FRANQUEADO_DUMP'
+  }
+}
+
+const returnFolderEnviroment = async (folderPath) => {
+  //pegar todas as pastas "root"
+  const dumpFolders = await Database.raw("select * from dbo.SLWEB_Compartilhamento_Index where type like '%DUMP'")
+  const rootFolders = await Database.raw("select * from dbo.SLWEB_Compartilhamento_Index where type like '%ROOT'")
+
+  if (folderPath === rootFolders[0].path) {
+    return 'ROOT'
+  }
+
+  if (dumpFolders.filter(df => df.path === folderPath).length > 0) {
+    return 'DUMP'
+  }
+
+  let foldersWithinDump = dumpFolders.filter(df => folderPath.includes(df.path))
+
+  if (foldersWithinDump.length > 0) {
+    return foldersWithinDump[0].type
+  }
+
+  return null
+}
+
+function copyFileSync(source, target) {
+
+  var targetFile = target;
+
+  // If target is a directory, a new file with the same name will be created
+  if (fs.existsSync(target)) {
+    if (fs.lstatSync(target).isDirectory()) {
+      targetFile = path.join(target, path.basename(source));
+    }
+  }
+
+  fs.writeFileSync(targetFile, fs.readFileSync(source));
+}
+
+function copyFolderRecursiveSync(source, target) {
+  var files = [];
+
+  // Check if folder needs to be created or integrated
+  var targetFolder = path.join(target, path.basename(source));
+  if (!fs.existsSync(targetFolder)) {
+    fs.mkdirSync(targetFolder);
+  }
+
+  // Copy
+  if (fs.lstatSync(source).isDirectory()) {
+    files = fs.readdirSync(source);
+    files.forEach(function (file) {
+      var curSource = path.join(source, file);
+      if (fs.lstatSync(curSource).isDirectory()) {
+        copyFolderRecursiveSync(curSource, targetFolder);
+      } else {
+        copyFileSync(curSource, targetFolder);
+      }
+    });
   }
 }
