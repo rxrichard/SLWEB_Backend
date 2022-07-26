@@ -139,7 +139,7 @@ class VendaController {
         DataCriacao: actualDate,
         DataIntegracao: null,
         DepId: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 1 : Pedido.RemOrigem : 0,
-        DepIdDest: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemOrigem : 0,
+        DepIdDest: Pedido.TipoVenda !== 'B' ? Pedido.TipoVenda === 'V' ? 0 : Pedido.RemDestino : 0,
         PvTipo: Pedido.TipoVenda,
         STATUS: 'P',
         MsgNF: Pedido.OBS
