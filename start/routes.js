@@ -165,4 +165,5 @@ Route.put('/files/rename/', 'WEB/CompartilhamentoController.Rename').middleware(
 Route.put('/files/move/', 'WEB/CompartilhamentoController.Move').middleware(['jwt', 'vld:1,1']);
 
 //DRE
-Route.get('/dre', 'WEB/DreController.Show').middleware('jwt');
+Route.get('/dre/referencia', 'WEB/DreController.Show').middleware('jwt');
+Route.get('/dre/:ano/:mes', 'WEB/DreController.See').middleware('jwt');
