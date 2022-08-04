@@ -182,7 +182,7 @@ class CompartilhamentoController {
     const token = request.header("authorization");
     const multiples = request.input('multiple')
     const targetFolder = request.input('targetFolder')
-    const formData = request.file("formData", { types: ["image", "pdf", "video"] });
+    const formData = request.file("formData", { types: ["image", "pdf", "video", 'application'] });
 
     try {
       const verified = seeToken(token);
@@ -652,7 +652,9 @@ const returnRootPathByRole = (role) => {
     case 'Sistema':
       return 'ROOT'
     case 'Marketing':
-      return 'UPLOAD_DUMP'
+      return 'ROOT'
+    // case 'Marketing':
+    //   return 'PRIVATE_DUMP'
     default:
       return 'FRANQUEADO_DUMP'
   }
