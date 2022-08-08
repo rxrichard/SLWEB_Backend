@@ -505,6 +505,8 @@ class CompraController {
     let file = null
 
     try {
+      
+      
       if (multiples === 'N') {
 
         newFileName = `comprovante-1-${new Date().getTime()}.${formData.subtype}`;

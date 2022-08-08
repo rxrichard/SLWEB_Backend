@@ -32,7 +32,7 @@ class Rastros {
           consumer: request.headers().origin ? request.headers().origin : 'NÃO IDENTIFICADO',
           IP: request.ip(),
           host: request.headers().host,
-          agent: request.headers()['user-agent'],
+          agent: request.headers()['user-agent'] ? request.headers()['user-agent'] : 'NÃO IDENTIFICADO',
           token: token,
           app_version: pacote.version,
           environment: process.env.NODE_ENV
