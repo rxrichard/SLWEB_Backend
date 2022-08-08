@@ -23,6 +23,7 @@ class GeneralController {
 
       const franqueados = await Database.select("M0_CODFIL", "GrupoVenda")
         .from("dbo.FilialEntidadeGrVenda")
+        .where({ Inatv: null })
         .orderBy("M0_CODFIL", "ASC");
 
       response.status(200).send(franqueados)

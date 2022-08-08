@@ -37,33 +37,21 @@ class DreController {
 
       const formatedTargetRef = moment().set('year', ano).set('month', mes - 1).startOf('month').subtract(3, 'hours').toDate()
 
-      //buscar na tabela DRE por grpven & ref
-      const DreJaGravado = await Database.select('*').from('dbo.DRE').where({
+      const genDRE = await Database.raw(
+        "execute dbo.GerarDRE @GrpVen = ?, @Ano = ?, @Mes = ?",
+        [verified.grpven, ano, mes]
+      )
+
+      const DovJaGravado = await Database.select('*').from('dbo.DOV').where({
         GrpVen: verified.grpven,
-        DReRef: formatedTargetRef
+        DOVRef: formatedTargetRef,
       })
 
-      if (DreJaGravado.length > 0) {
-        const DovJaGravado = await Database.select('*').from('dbo.DOV').where({
-          GrpVen: verified.grpven,
-          DOVRef: formatedTargetRef,
-        })
-
-        response.status(200).send({
-          DRE: DreJaGravado,
-          DOV: DovJaGravado,
-          Type: 'Gravado'
-          
-        });
-      } else {
-        const genDRE = await Database.raw("execute dbo.GerarDRE @GrpVen = ?, @Ano = ?, @Mes = ?", [verified.grpven, ano, mes])
-        
-        response.status(200).send({
-          DRE: genDRE,
-          DOV: [],
-          Type: 'Gerado'
-        });
-      }
+      response.status(200).send({
+        DRE: genDRE,
+        DOV: DovJaGravado,
+        Type: 'Gerado'
+      });
     } catch (err) {
       response.status(400).send();
       logger.error({
@@ -72,6 +60,36 @@ class DreController {
         payload: request.body,
         err: err,
         handler: 'DreController.See',
+      })
+    }
+  }
+
+  async Store({ request, response }) {
+    const token = request.header("authorization");
+    const { ano, mes, DRE, DOV } = request.only(['ano', 'mes', 'DRE', 'DOV'])
+
+    try {
+      const verified = seeToken(token);
+
+      const formatedTargetRef = moment().set('year', ano).set('month', mes - 1).startOf('month').subtract(3, 'hours').toDate()
+
+      // DRE.forEach(d => {
+      //   await Database.raw(`IF EXISTS (SELECT DreCod FROM dbo.DRE WHERE GrpVen = ${verified.grpven} and DReRef = ${formatedTargetRef} and DreCod = ${d.DreCod}) BEGIN UPDATE dbo.DRE SET DreVlr = ${d.DreVlr}, DrePorc = ${d.DrePorc} WHERE GrpVen = ${verified.grpven} and DReRef = ${formatedTargetRef} and DreCod = ${d.DreCod} END ELSE BEGIN INSERT INTO dbo.DRE VALUES (${verified.grpven}, ${formatedTargetRef}, ${d.DreCod}, ${d.DreDesc}, null, ${d.DreVlr}, ${d.DrePorc}) END`)
+      // })
+
+      // DOV.forEach(d => {
+      //   await Database.raw(`IF EXISTS (SELECT DOVCod FROM dbo.DOV WHERE GrpVen = ${verified.grpven} and DOVRef = ${formatedTargetRef} and DOVCod = ${d.DOVCod}) BEGIN UPDATE dbo.DOV SET DOVVlr = ${d.DOVVlr} WHERE GrpVen = ${verified.grpven} and DOVRef = ${formatedTargetRef} and DOVCod = ${d.DOVCod} END ELSE BEGIN INSERT INTO dbo.DOV VALUES (${verified.grpven}, ${formatedTargetRef}, ${d.DOVCod}, ${d.DOVDesc}, null, ${d.DOVVlr}) END`)
+      // })
+
+      response.status(200).send();
+    } catch (err) {
+      response.status(400).send();
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'DreController.Store',
       })
     }
   }

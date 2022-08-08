@@ -167,3 +167,4 @@ Route.put('/files/move/', 'WEB/CompartilhamentoController.Move').middleware(['jw
 //DRE
 Route.get('/dre/referencia', 'WEB/DreController.Show').middleware('jwt');
 Route.get('/dre/:ano/:mes', 'WEB/DreController.See').middleware('jwt');
+Route.post('/dre', 'WEB/DreController.Store').middleware('jwt');
