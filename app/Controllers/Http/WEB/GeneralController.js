@@ -16,11 +16,6 @@ class GeneralController {
     const token = request.header("authorization");
 
     try {
-      const verified = seeToken(token);
-      if (verified.role === 'Franquia') {
-        throw new Error('Acesso negado')
-      }
-
       const franqueados = await Database.select("M0_CODFIL", "GrupoVenda")
         .from("dbo.FilialEntidadeGrVenda")
         .orderBy("M0_CODFIL", "ASC");
@@ -66,12 +61,6 @@ class GeneralController {
     const { news } = request.only(['news'])
 
     try {
-      const verified = seeToken(token);
-
-      if (verified.role === 'Franquia') {
-        throw new Error('Acesso negado')
-      }
-
       await Database.insert({
         BannerTitle: news.BannerTitle,
         BannerDescription: news.BannerDescription,
@@ -169,11 +158,11 @@ class GeneralController {
       const verified = seeToken(token);
 
       const DeveConfirmacao = await Database
-      .select('Equip')
-      .from('dbo.FilialEntidadeGrVenda')
-      .where({
-        M0_CODFIL: verified.user_code
-      })
+        .select('Equip')
+        .from('dbo.FilialEntidadeGrVenda')
+        .where({
+          M0_CODFIL: verified.user_code
+        })
 
       response.status(200).send({
         Equip: DeveConfirmacao[0] ? DeveConfirmacao[0].Equip === 'S' : false

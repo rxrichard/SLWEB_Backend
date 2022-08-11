@@ -9,27 +9,25 @@ class LogsController {
   /** @param {object} ctx
    * @param {import('@adonisjs/framework/src/Request')} ctx.request
    */
-  async Navegacao({ request, response, params }) {
+  async Navegacao({ request, response }) {
     const token = request.header("authorization");
     const { url } = request.only(['url'])
 
     try {
       const verified = seeToken(token);
 
-      if (verified.role === 'Franquia') {
-        await Database.insert({
-          Quem: verified.user_code,
-          Onde: url,
-          Quando: moment().subtract(3, 'hours').toDate()
-        }).into('dbo.NavegacaoWeb')
-      }
+      await Database.insert({
+        Quem: verified.user_code,
+        Onde: url,
+        Quando: moment().subtract(3, 'hours').toDate()
+      }).into('dbo.NavegacaoWeb')
 
       response.status(200).send();
     } catch (err) {
       response.status(400).send()
       logger.error({
         token: token,
-        params: params,
+        params: null,
         payload: request.body,
         err: err,
         handler: 'LogsController.Navegacao',

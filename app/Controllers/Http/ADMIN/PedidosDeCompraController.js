@@ -14,8 +14,6 @@ class PedidosDeCompra {
     let diffConverted = 0
 
     try {
-      const verified = seeToken(token);
-
       switch (timediff) {
         case 'today':
           diffConverted = 1
@@ -26,10 +24,6 @@ class PedidosDeCompra {
         case 'month':
           diffConverted = 30
           break
-      }
-
-      if (!(verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição")) {
-        throw new Errow('Usuário não permitido')
       }
 
       let pedidosDeCompraEmAberto = await Database.raw(QUERY_PEDIDOS_DE_COMPRA_EM_ABERTO, [diffConverted])
@@ -66,12 +60,6 @@ class PedidosDeCompra {
     const { payload } = request.only(['payload'])
 
     try {
-      const verified = seeToken(token);
-
-      if (!(verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição")) {
-        throw new Errow('Usuário não permitido')
-      }
-
       //verificar se o pedido ainda não foi faturado
       const jaFoiProcessado = await Database
         .select('PedidoID')

@@ -147,10 +147,6 @@ class UserController {
     try {
       const verified = seeToken(token);
 
-      if (verified.role === 'Franquia') {
-        throw new Error('Acesso negado')
-      }
-
       //crio token com codido do adm, codigo do cliente, senha e nivel do adm
       const admTokenWithFilial = await genTokenAdmWithFilial(user_code, verified);
 
@@ -184,10 +180,6 @@ class UserController {
 
     try {
       const verified = seeToken(token);
-
-      if (verified.role === 'Franquia') {
-        throw new Error('Acesso negado')
-      }
 
       const admTokenLogout = await genTokenAdmLogout(verified.admin_code, verified.role);
 

@@ -17,17 +17,9 @@ class MailerController {
     const token = request.header("authorization");
 
     try {
-      const verified = seeToken(token);
-
-      if (verified.role === "Franquia") {
-        throw new Error('Usuário não autorizado');
-      }
-
       const log = await Database.select("*")
         .from("dbo.LogAvisos")
         .orderBy("DataOcor", "DESC");
-
-
 
       response.status(200).send({
         History: log,
@@ -48,12 +40,6 @@ class MailerController {
     const token = request.header("authorization");
 
     try {
-      const verified = seeToken(token);
-
-      if (verified.role === "Franquia") {
-        throw new Error('Usuário não autorizado');
-      }
-
       const recipients = await Database
         .raw("select A1_GRPVEN, M0_CODFIL, Email from dbo.FilialEntidadeGrVenda where Inatv IS NULL and M0_CODFIL <> '0201' and M0_CODFIL <> '0203' order by A1_GRPVEN ASC")
 
@@ -90,6 +76,7 @@ class MailerController {
 
   async DispatchEmail({ request, response }) {
     const token = request.header("authorization");
+
     const {
       subject,
       body,
@@ -100,12 +87,6 @@ class MailerController {
     } = request.only(['subject', 'body', 'recipients', 'salvarNovoTemplate', 'nomeNovoTemplate', 'template'])
 
     try {
-      const verified = seeToken(token);
-
-      if (verified.role === "Franquia") {
-        throw new Error('Usuário não autorizado');
-      }
-
       //converter texto bruto para edge(html) com as tags
       const rawBodyToEdge = FromRawMailToEdgeFormat(body);
       let templateName = null
@@ -210,7 +191,7 @@ class MailerController {
     } catch (err) {
       response.status(400).send();
       logger.error({
-        token: null,
+        token: token,
         params: null,
         payload: request.body,
         err: err,
