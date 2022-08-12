@@ -63,6 +63,12 @@ class PontosDeVendaController {
           let tiposVenda = await Database.select('TveId', 'TveDesc').from('dbo.TipoVenda')
           let receitas = await Database.select('RecId', 'RecDesc').from('dbo.Receita').where({ GrpVen: verified.grpven, RecStatus: 'A' })
 
+          for(let i = 0; i < receitas.length; i++) {
+            let aux = await Database.raw('select G.GprdDesc, R.RdetQtd, G.GprdUn from dbo.ReceitaDet as R inner join dbo.GruposInsumo as G on R.GprdId = G.GprdId where GrpVen = ? and R.RecId = ?',[verified.grpven, receitas[i].RecId])
+          
+            receitas[i].det = aux
+          }
+
           data = {
             CfgPdv: cpdv,
             CfgPadrao: ccab.map(cab => { return ({ ...cab, Produtos: cdet.filter(det => det.CfgId === cab.CfgId) }) }),

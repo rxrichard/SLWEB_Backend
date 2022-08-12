@@ -65,14 +65,9 @@ class LeadController {
     const token = request.header("authorization");
 
     try {
-      const verified = seeToken(token);
       let Leads = []
 
-      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
-        Leads = await Database.raw("select L.Id, Nome_Fantasia, Razao_Social, Estado, Municipio, AtividadeDesc, Mensagem, Insercao, Disponivel, LA.Filial from dbo.Leads as L left join (select * from dbo.LeadsAttr where Ativo = 1 or Negociacao = 1) as LA on LA.LeadId = L.Id order by Insercao DESC", [])
-      } else {
-        throw new Errow('Usuário não permitido')
-      }
+      Leads = await Database.raw("select L.Id, Nome_Fantasia, Razao_Social, Estado, Municipio, AtividadeDesc, Mensagem, Insercao, Disponivel, LA.Filial from dbo.Leads as L left join (select * from dbo.LeadsAttr where Ativo = 1 or Negociacao = 1) as LA on LA.LeadId = L.Id order by Insercao DESC", [])
 
       response.status(200).send({
         Leads: Leads
@@ -116,29 +111,23 @@ class LeadController {
     const LeadId = params.lead
 
     try {
-      const verified = seeToken(token);
       let info = null
       let hist = null
 
-      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
-        info = await Database
-          .select('*')
-          .from('dbo.Leads')
-          .where({
-            Id: LeadId
-          })
+      info = await Database
+        .select('*')
+        .from('dbo.Leads')
+        .where({
+          Id: LeadId
+        })
 
-        hist = await Database
-          .select('LeadId', 'Filial', 'DataHora', 'Ativo', 'Desistiu', 'Motivo', 'Expirou', 'Negociacao', 'DataFechamento')
-          .from('dbo.LeadsAttr')
-          .where({
-            LeadId: LeadId
-          })
-          .orderBy('DataHora', 'DESC')
-
-      } else {
-        throw new Errow('Usuário não permitido')
-      }
+      hist = await Database
+        .select('LeadId', 'Filial', 'DataHora', 'Ativo', 'Desistiu', 'Motivo', 'Expirou', 'Negociacao', 'DataFechamento')
+        .from('dbo.LeadsAttr')
+        .where({
+          LeadId: LeadId
+        })
+        .orderBy('DataHora', 'DESC')
 
       response.status(200).send({
         Info: info[0],
@@ -219,6 +208,7 @@ class LeadController {
 
         response.status(200).send();
       }
+
     } catch (err) {
       response.status(400).send()
       logger.error({
@@ -237,17 +227,12 @@ class LeadController {
     const Status = params.status
 
     try {
-      const verified = seeToken(token);
+      await Database.table("dbo.Leads")
+        .where({ Id: LeadId })
+        .update({
+          Disponivel: Status === 'A' ? true : false
+        })
 
-      if (verified.role === "Sistema" || verified.role === "BackOffice" || verified.role === "Técnica Pilão" || verified.role === "Técnica Bianchi" || verified.role === "Expedição") {
-        await Database.table("dbo.Leads")
-          .where({ Id: LeadId })
-          .update({
-            Disponivel: Status === 'A' ? true : false
-          })
-      } else {
-        throw new Error('Usuário não permitido')
-      }
       response.status(200).send()
     } catch (err) {
       response.status(400).send()
@@ -266,11 +251,6 @@ class LeadController {
     const { lead } = request.only(["lead"]);
 
     try {
-      const verified = seeToken(token);
-      if (verified.role === "Franquia") {
-        throw Error;
-      }
-
       await Database.insert({
         Nome_Fantasia: lead.NomeFantasia,
         Razao_Social: lead.RazaoSocial,
@@ -285,7 +265,7 @@ class LeadController {
         Disponivel: true,
       }).into("dbo.Leads");
 
-      response.status(201).send("Ok");
+      response.status(201).send();
     } catch (err) {
       response.status(400).send()
       logger.error({
