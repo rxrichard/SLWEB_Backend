@@ -195,7 +195,7 @@ class VendaController {
         }).into("dbo.SDBase")
       });
 
-      response.status(200).send({ message: "ok" });
+      response.status(200).send();
     } catch (err) {
       response.status(200).send()
       logger.error({

@@ -168,3 +168,4 @@ Route.put('/files/move/', 'WEB/CompartilhamentoController.Move').middleware(['jw
 Route.get('/dre/referencia', 'WEB/DreController.Show').middleware(['jwt', 'vld:0,1']);
 Route.get('/dre/:ano/:mes', 'WEB/DreController.See').middleware(['jwt', 'vld:0,1']);
 Route.put('/dre', 'WEB/DreController.UpdateDRE').middleware(['jwt', 'vld:0,1']);
+Route.put('/dov', 'WEB/DreController.UpdateDOV').middleware(['jwt', 'vld:0,1']);

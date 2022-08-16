@@ -113,11 +113,10 @@ class DreController {
     const token = request.header("authorization");
     const { ano, mes, cod, vlr, porc } = request.only(['ano', 'mes', 'cod', 'vlr', 'porc'])
 
+    const verified = seeToken(token);
+    const formatedTargetRef = moment().set('year', ano).set('month', mes - 1).startOf('month').subtract(3, 'hours').toDate()
+
     try {
-      const verified = seeToken(token);
-
-      const formatedTargetRef = moment().set('year', ano).set('month', mes - 1).startOf('month').subtract(3, 'hours').toDate()
-
       await Database.table("dbo.DRE")
         .where({
           DreCod: cod,
@@ -145,13 +144,96 @@ class DreController {
         Type: 'Gerado'
       });
     } catch (err) {
-      response.status(400).send();
+      const subDRE = await Database.raw("execute dbo.GerarDRE @GrpVen = ?, @Ano = ?, @Mes = ?", [verified.grpven, ano, mes])
+      const subDOV = await Database.select('*').from('dbo.DOV').where({ GrpVen: verified.grpven, DOVRef: formatedTargetRef, })
+
+      response.status(400).send({
+        DRE: subDRE,
+        DOV: subDOV,
+        Type: 'Gerado'
+      });
+
       logger.error({
         token: token,
         params: null,
         payload: request.body,
         err: err,
         handler: 'DreController.UpdateDRE',
+      })
+    }
+  }
+
+  async UpdateDOV({ request, response }) {
+    const token = request.header("authorization");
+    const { ano, mes, cod, vlr, desc } = request.only(['ano', 'mes', 'cod', 'vlr', 'desc'])
+
+    const verified = seeToken(token);
+    const formatedTargetRef = moment().set('year', ano).set('month', mes - 1).startOf('month').subtract(3, 'hours').toDate()
+
+    try {
+
+      const jaTemODOV = await Database
+        .select('*')
+        .from('dbo.DOV')
+        .where({
+          GrpVen: verified.grpven,
+          DOVRef: formatedTargetRef,
+          DOVCod: cod
+        })
+
+      if (jaTemODOV.length > 0) {
+        await Database.table("dbo.DOV")
+          .where({
+            GrpVen: verified.grpven,
+            DOVRef: formatedTargetRef,
+            DOVCod: cod
+          })
+          .update({
+            DOVDesc: desc,
+            DOVVlr: vlr
+          });
+      } else {
+        await Database.insert({
+          GrpVen: verified.grpven,
+          DOVRef: formatedTargetRef,
+          DOVCod: cod,
+          DOVDesc: desc,
+          DOVTipo: null,
+          DOVVlr: vlr
+        }).into('dbo.DOV')
+      }
+
+      const genDRE = await Database.raw(
+        "execute dbo.GerarDRE @GrpVen = ?, @Ano = ?, @Mes = ?",
+        [verified.grpven, ano, mes]
+      )
+
+      const DovJaGravado = await Database.select('*').from('dbo.DOV').where({
+        GrpVen: verified.grpven,
+        DOVRef: formatedTargetRef,
+      })
+
+      response.status(200).send({
+        DRE: genDRE,
+        DOV: DovJaGravado,
+        Type: 'Gerado'
+      });
+    } catch (err) {
+      const subDRE = await Database.raw("execute dbo.GerarDRE @GrpVen = ?, @Ano = ?, @Mes = ?", [verified.grpven, ano, mes])
+      const subDOV = await Database.select('*').from('dbo.DOV').where({ GrpVen: verified.grpven, DOVRef: formatedTargetRef, })
+
+      response.status(400).send({
+        DRE: subDRE,
+        DOV: subDOV,
+        Type: 'Gerado'
+      });
+
+      logger.error({
+        token: token,
+        params: null,
+        payload: request.body,
+        err: err,
+        handler: 'DreController.UpdateDOV',
       })
     }
   }
