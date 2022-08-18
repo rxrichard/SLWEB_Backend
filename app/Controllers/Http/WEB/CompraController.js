@@ -11,7 +11,6 @@ const PdfPrinter = require("pdfmake");
 const toArray = require('stream-to-array')
 const fs = require("fs");
 const { PDFGen } = require("../../../../resources/pdfModels/detalhesCompra_pdfModel");
-const xlsx = require('xlsx');
 
 moment.locale("pt-br");
 

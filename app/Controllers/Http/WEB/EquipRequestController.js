@@ -535,6 +535,7 @@ class EquipRequestController {
                     Env.get("EMAIL_TECNICA_1"),
                     Env.get("EMAIL_TECNICA_2"),
                     Env.get("EMAIL_TECNICA_3"),
+                    Env.get("EMAIL_2BTECH_ATENDIMENTO"),
                   ])
                   .from(Env.get("MAIL_USERNAME"), "SLAplic Web")
                   .subject("OS Validada pela Pilão")

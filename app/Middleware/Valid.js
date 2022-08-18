@@ -27,12 +27,13 @@ class Valid {
         [verified.admin_code ? verified.admin_code : verified.user_code]
       )
 
+
       if (
         (ScaleLevel && AccessLevelRequired <= AccessLevel[0].AccessLevel) ||
         (!ScaleLevel && AccessLevelRequired === AccessLevel[0].AccessLevel)
       ) {
         await next()
-      }else{
+      } else {
         response.status(423).send()
       }
 
