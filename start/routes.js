@@ -147,7 +147,6 @@ Route.put('/pedidos/compra/', 'ADMIN/PedidosDeCompraController.Update').middlewa
 
 //quebra galho
 Route.get("/SLAPLIC/ATT", "MODS/SLaplicIntController.AttSLAPLIC"); //baixa a versão mais recente do SLAplic
-// Route.get("/testar", "ADMIN/ConsultorController.GeraTabelaExcel").middleware('jwt'); //cria a planilha que a cris pediu
 
 //rastros
 Route.post('/navegacao/', 'ADMIN/LogsController.Navegacao').middleware(['jwt', 'vld:0,0'])
@@ -169,3 +168,5 @@ Route.get('/dre/referencia', 'WEB/DreController.Show').middleware(['jwt', 'vld:0
 Route.get('/dre/:ano/:mes', 'WEB/DreController.See').middleware(['jwt', 'vld:0,1']);
 Route.put('/dre', 'WEB/DreController.UpdateDRE').middleware(['jwt', 'vld:0,1']);
 Route.put('/dov', 'WEB/DreController.UpdateDOV').middleware(['jwt', 'vld:0,1']);
+Route.get('/dre/excel/baseroy/:ano/:mes', 'WEB/DreController.GenExcelBaseRoyalties').middleware(['jwt', 'vld:0,1']);
+Route.get('/dre/excel/dre/:ano/:mes', 'WEB/DreController.GenExcelDRE').middleware(['jwt', 'vld:0,1']);
