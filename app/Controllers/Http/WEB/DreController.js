@@ -53,18 +53,18 @@ class DreController {
       let DreJaGravado = []
 
       if (TemDre.length > 0) {
-        for (let i = 0; i < genDRE.length; i++) {
-          await Database.table("dbo.DRE")
-            .where({
-              DreCod: genDRE[i].DreCod,
-              GrpVen: verified.grpven,
-              DReRef: formatedTargetRef
-            })
-            .update({
-              DreVlr: genDRE[i].DreVlr !== null ? genDRE[i].DreVlr : 0,
-              DrePorc: genDRE[i].DrePorc !== null ? genDRE[i].DrePorc : 0
-            });
-        }
+        // for (let i = 0; i < genDRE.length; i++) {
+        //   await Database.table("dbo.DRE")
+        //     .where({
+        //       DreCod: genDRE[i].DreCod,
+        //       GrpVen: verified.grpven,
+        //       DReRef: formatedTargetRef
+        //     })
+        //     .update({
+        //       DreVlr: genDRE[i].DreVlr !== null ? genDRE[i].DreVlr : 0,
+        //       DrePorc: genDRE[i].DrePorc !== null ? genDRE[i].DrePorc : 0
+        //     });
+        // }
 
         DreJaGravado = genDRE
       } else {
@@ -344,7 +344,7 @@ class DreController {
 
       objToExcel[0].workSheetColumnNames = ['Item', 'Descrição', 'Valor(R$)', 'Porcentagem(%)']
       objToExcel[0].workSheetData = concatDREeDOV
-        objToExcel[0].workSheetName = `DRE ${ano}_${mes}`
+      objToExcel[0].workSheetName = `DRE ${ano}_${mes}`
 
       await GerarExcel(
         objToExcel,
